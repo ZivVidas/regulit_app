@@ -1,0 +1,114 @@
+name: regulit_app
+description: Regulit – GRC SaaS for Israeli Privacy Law Compliance (Amendment 13)
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # ── State Management ──────────────────────────────────────
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # ── Routing ───────────────────────────────────────────────
+  go_router: ^14.2.0
+
+  # ── Networking ────────────────────────────────────────────
+  # retrofit removed: retrofit 4.9.2 (resolved by pub) added Parser.DartMappable
+  # which retrofit_generator 9.7.0 doesn't handle exhaustively → build script crash.
+  # The project calls Dio directly in api_client.dart with no @RestApi classes,
+  # so retrofit/retrofit_generator are not needed for MVP. Re-add when typed
+  # REST clients are required (Phase 2).
+  dio: ^5.4.3
+  pretty_dio_logger: ^1.3.1
+
+  # ── Local Storage ─────────────────────────────────────────
+  # hive_flutter removed for MVP: hive_generator conflicts with freezed on analyzer version.
+  # Re-add hive when you need custom TypeAdapters for complex local caching.
+  shared_preferences: ^2.3.2      # Simple key-value cache (non-sensitive data)
+  flutter_secure_storage: ^9.0.0  # JWT token storage (encrypted)
+
+  # ── Forms ─────────────────────────────────────────────────
+  flutter_form_builder: ^9.3.0
+  form_builder_validators: ^10.0.1
+
+  # ── Charts & Gauges ───────────────────────────────────────
+  fl_chart: ^0.68.0
+  syncfusion_flutter_gauges: ^26.1.35  # SfRadialGauge for risk meter
+
+  # ── File Handling ─────────────────────────────────────────
+  file_picker: ^8.0.3
+  path_provider: ^2.1.3
+  url_launcher: ^6.3.0
+
+  # ── PDF Generation ────────────────────────────────────────
+  pdf: ^3.11.1
+  printing: ^5.13.1
+
+  # ── UI & Icons ────────────────────────────────────────────
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.3.1
+  dotted_border: ^2.1.0
+  shimmer: ^3.0.0             # Loading skeletons
+  flutter_animate: ^4.5.0     # Micro-animations
+  badges: ^3.1.2              # Notification badge on icons
+  gap: ^3.0.1                 # SizedBox shorthand
+
+  # ── Real-time ─────────────────────────────────────────────
+  web_socket_channel: ^3.0.1
+
+  # ── Internationalisation ──────────────────────────────────
+  intl: any          # pinned by flutter_localizations SDK — see dependency_overrides
+
+  # ── Utils ─────────────────────────────────────────────────
+  uuid: ^4.4.0
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+  logger: ^2.3.0
+  equatable: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.11
+  riverpod_generator: ^2.4.3
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+  # retrofit_generator removed — see networking comment above
+  # hive_generator removed — conflicts with freezed >=2.5.8 on analyzer version
+  mocktail: ^1.0.4
+
+# ── Force intl to the version pinned by the Flutter SDK ──────
+# flutter_localizations pins intl to 0.20.x; form_builder_validators
+# still declares ^0.19.0. Overriding here resolves the conflict.
+dependency_overrides:
+  intl: ^0.20.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/fonts/
+
+  fonts:
+    - family: Heebo
+      fonts:
+        - asset: assets/fonts/Heebo-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Heebo-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Heebo-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Heebo-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Heebo-ExtraBold.ttf
+          weight: 800

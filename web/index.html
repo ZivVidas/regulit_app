@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Regulit — Compliance that protects.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Regulit">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Regulit</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(135deg, #0D3328 0%, #1B4D3E 50%, #2E7D5C 100%);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Decorative glow circles ── */
+    .circle {
+      position: fixed;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      animation: scaleIn 1.2s ease-out forwards;
+    }
+    .circle-1 { width: 300px; height: 300px; top: -80px; right: -80px; animation-duration: 1.2s; }
+    .circle-2 { width: 240px; height: 240px; bottom: -60px; left: -60px; animation-duration: 1.4s; }
+    .circle-3 { width: 120px; height: 120px; top: 140px; left: -30px; opacity: 0.04; animation: none; }
+
+    @keyframes scaleIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    /* ── Centre content ── */
+    .splash-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ── Logo badge ── */
+    .logo-wrap {
+      position: relative;
+      width: 130px;
+      height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: badgeIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both, pulse 2.4s ease-in-out 0.7s infinite alternate;
+    }
+
+    @keyframes badgeIn {
+      from { transform: scale(0.4); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    @keyframes pulse {
+      from { transform: scale(1.0); }
+      to   { transform: scale(1.04); }
+    }
+
+    .ring-outer {
+      position: absolute;
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      background: rgba(74,222,128,0.08);
+    }
+    .ring-mid {
+      position: absolute;
+      width: 108px; height: 108px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .badge {
+      position: absolute;
+      width: 86px; height: 86px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, #2E7D5C, #16A34A);
+      box-shadow: 0 8px 32px 2px rgba(22,163,74,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .shield-icon {
+      width: 44px;
+      height: 44px;
+      fill: white;
+    }
+
+    /* ── Text ── */
+    .app-name {
+      margin-top: 32px;
+      color: white;
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      animation: slideUp 0.5s ease-out 0.25s both;
+    }
+    .tagline {
+      margin-top: 10px;
+      color: rgba(255,255,255,0.55);
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+      animation: slideUp 0.5s ease-out 0.4s both;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(12px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    /* ── Progress bar ── */
+    .progress-wrap {
+      margin-top: 72px;
+      width: 180px;
+      animation: slideUp 0.4s ease-out 0.5s both;
+    }
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.12);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 6px;
+      background: #4ADE80;
+      width: 0%;
+      animation: fillBar 2.2s ease-in-out 0.5s forwards;
+    }
+    @keyframes fillBar {
+      from { width: 0%; }
+      to   { width: 100%; }
+    }
+    .loading-text {
+      margin-top: 12px;
+      text-align: center;
+      color: rgba(255,255,255,0.4);
+      font-size: 11px;
+      letter-spacing: 1.2px;
+      font-weight: 500;
+      animation: blink 1.6s ease-in-out 0.5s infinite alternate;
+    }
+    @keyframes blink {
+      from { opacity: 0.4; }
+      to   { opacity: 0.1; }
+    }
+
+    /* ── Footer ── */
+    .footer {
+      position: fixed;
+      bottom: 36px;
+      left: 0; right: 0;
+      text-align: center;
+      color: rgba(255,255,255,0.25);
+      font-size: 11px;
+      letter-spacing: 0.3px;
+      animation: fadeIn 0.6s ease-out 0.7s both;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* ── Hide splash once Flutter is ready ── */
+    #splash { transition: opacity 0.3s ease; }
+    #splash.hidden { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div id="splash">
+    <!-- Decorative circles -->
+    <div class="circle circle-1"></div>
+    <div class="circle circle-2"></div>
+    <div class="circle circle-3"></div>
+
+    <!-- Centre content -->
+    <div class="splash-center">
+      <div class="logo-wrap">
+        <div class="ring-outer"></div>
+        <div class="ring-mid"></div>
+        <div class="badge">
+          <!-- Shield SVG matching Material Icons shield_rounded -->
+          <svg class="shield-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5L12 1z"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="app-name">Regulit</div>
+      <div class="tagline">Compliance that protects.</div>
+
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill"></div>
+        </div>
+        <div class="loading-text">Loading…</div>
+      </div>
+    </div>
+
+    <div class="footer">© 2025 Regulit · Privacy by design</div>
+  </div>
+
+  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Remove splash once Flutter signals it is ready
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('splash');
+      if (splash) {
+        splash.classList.add('hidden');
+        setTimeout(function () { splash.remove(); }, 350);
+      }
+    });
+  </script>
+</body>
+</html>
