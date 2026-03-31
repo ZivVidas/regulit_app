@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
@@ -26,9 +27,16 @@ const _kSub     = Color(0xFF6B7280);
 
 // ── Pending evidence file (uploaded but not yet linked to answer) ─────────
 class _PendingFile {
-  final String id;   // file_id returned by POST /files/upload
-  final String name; // original filename for display
-  const _PendingFile({required this.id, required this.name});
+  final String id;                   // file_id returned by POST /files/upload
+  final String name;                 // original filename for display
+  final String? fileText;            // structured text (documents)
+  final String? imageDescription;    // AI description (images)
+  const _PendingFile({
+    required this.id,
+    required this.name,
+    this.fileText,
+    this.imageDescription,
+  });
 }
 
 // ── Local answer model ────────────────────────────────────────
@@ -36,11 +44,15 @@ class _LocalAns {
   int? answerNumber;
   String answerText;
   Set<String> pickedOptionIds;
+  int? evidenceSufficiencyPcntg; // loaded from server, shown as badge
+  String? answerId;              // server answer ID — used to load evidence files
 
   _LocalAns({
     this.answerNumber,
     this.answerText = '',
     Set<String>? pickedOptionIds,
+    this.evidenceSufficiencyPcntg,
+    this.answerId,
   }) : pickedOptionIds = pickedOptionIds ?? {};
 
   bool get hasValue =>
@@ -53,12 +65,17 @@ class _LocalAns {
     bool clearAnswerNumber = false,
     String? answerText,
     Set<String>? pickedOptionIds,
+    int? evidenceSufficiencyPcntg,
+    bool clearSufficiency = false,
   }) =>
       _LocalAns(
         answerNumber:
             clearAnswerNumber ? null : (answerNumber ?? this.answerNumber),
         answerText: answerText ?? this.answerText,
         pickedOptionIds: pickedOptionIds ?? Set.from(this.pickedOptionIds),
+        evidenceSufficiencyPcntg: clearSufficiency
+            ? null
+            : (evidenceSufficiencyPcntg ?? this.evidenceSufficiencyPcntg),
       );
 }
 
@@ -236,6 +253,8 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
           answerText: m['answerText'] as String? ?? '',
           pickedOptionIds:
               Set<String>.from(m['pickedOptionIds'] as List? ?? []),
+          evidenceSufficiencyPcntg: m['evidenceSufficiencyPcntg'] as int?,
+          answerId: m['id'] as String?,
         );
       }
 
@@ -357,11 +376,22 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
 
   // ── Evidence file tracking ──────────────────────────────────
 
-  void addPendingFile(String questionId, String fileId, String fileName) {
+  void addPendingFile(
+    String questionId,
+    String fileId,
+    String fileName, {
+    String? fileText,
+    String? imageDescription,
+  }) {
     final updated = Map<String, List<_PendingFile>>.from(state.pendingFiles);
     updated[questionId] = [
       ...(updated[questionId] ?? []),
-      _PendingFile(id: fileId, name: fileName),
+      _PendingFile(
+        id: fileId,
+        name: fileName,
+        fileText: fileText,
+        imageDescription: imageDescription,
+      ),
     ];
     state = state.copyWith(pendingFiles: updated);
   }
@@ -622,6 +652,16 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
     _autoAdvanceTimer?.cancel();
     _autoAdvanceTimer = Timer(const Duration(milliseconds: 550), () {
       if (!mounted) return;
+      // Block auto-advance when evidence is required but not yet uploaded.
+      final s = ref.read(_ansProvider(widget.sessionId));
+      final q = s.currentQuestion;
+      if (q != null) {
+        final qId     = q['id'] as String;
+        final reqsEv  = q['requiresEvidence'] as bool? ?? false;
+        final hasFiles = s.pendingFiles[qId]?.isNotEmpty ?? false;
+        final alreadyAnswered = s.serverAnsweredIds.contains(qId);
+        if (reqsEv && !hasFiles && !alreadyAnswered) return;
+      }
       _advance();
     });
   }
@@ -1254,12 +1294,14 @@ class _QuestionView extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 14),
                     child: _EvidencePanel(
-                      sessionId:     sessionId,
-                      questionId:    qId,
-                      promptText:    evidencePrompt,
-                      pendingFiles:  pendingFiles,
-                      alreadyAnswered: alreadyAnswered,
-                      notifier:      notifier,
+                      sessionId:        sessionId,
+                      questionId:       qId,
+                      answerId:         localAns.answerId,
+                      promptText:       evidencePrompt,
+                      pendingFiles:     pendingFiles,
+                      alreadyAnswered:  alreadyAnswered,
+                      notifier:         notifier,
+                      sufficiencyPcntg: localAns.evidenceSufficiencyPcntg,
                     )
                         .animate()
                         .fadeIn(duration: 300.ms)
@@ -1319,24 +1361,54 @@ class _QuizSectionLabel extends StatelessWidget {
   }
 }
 
+// ── Server-side answer file (already linked) ──────────────────
+class _ServerFile {
+  final String id;        // AnswerFile.id (for DELETE)
+  final String fileId;
+  final String fileName;
+  final String? fileText;
+  final String? imageDescription;
+  final String createdAt;
+  const _ServerFile({
+    required this.id,
+    required this.fileId,
+    required this.fileName,
+    this.fileText,
+    this.imageDescription,
+    required this.createdAt,
+  });
+  factory _ServerFile.fromJson(Map<String, dynamic> j) => _ServerFile(
+        id: j['id'] as String,
+        fileId: j['fileId'] as String,
+        fileName: j['fileName'] as String? ?? '',
+        fileText: j['fileText'] as String?,
+        imageDescription: j['imageDescription'] as String?,
+        createdAt: j['createdAt'] as String? ?? '',
+      );
+}
+
 // ── Evidence Panel (mandatory upload) ─────────────────────────
 // Shown when quiz_questions.requires_evidence = true.
 // The user must upload at least one file before the Next button is enabled.
 class _EvidencePanel extends StatefulWidget {
   final String sessionId;
   final String questionId;
+  final String? answerId;
   final String? promptText;
   final List<_PendingFile> pendingFiles;
   final bool alreadyAnswered;
   final _AnsNotifier notifier;
+  final int? sufficiencyPcntg;
 
   const _EvidencePanel({
     required this.sessionId,
     required this.questionId,
+    this.answerId,
     required this.promptText,
     required this.pendingFiles,
     required this.alreadyAnswered,
     required this.notifier,
+    this.sufficiencyPcntg,
   });
 
   @override
@@ -1345,9 +1417,56 @@ class _EvidencePanel extends StatefulWidget {
 
 class _EvidencePanelState extends State<_EvidencePanel> {
   bool   _uploading = false;
-  bool   _analyzing = false; // true after bytes sent, while server processes/AI analyses
+  bool   _analyzing = false;
   double _uploadProgress = 0.0;
   String? _uploadError;
+  bool   _reviewingEvidence = false;
+  int?   _sufficiency;
+  String? _reviewDecision;
+  String? _reviewSummary;
+  List<_ServerFile> _serverFiles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _sufficiency = widget.sufficiencyPcntg;
+    if (widget.answerId != null) _loadServerFiles();
+  }
+
+  @override
+  void didUpdateWidget(_EvidencePanel old) {
+    super.didUpdateWidget(old);
+    if (old.answerId != widget.answerId && widget.answerId != null) {
+      _loadServerFiles();
+    }
+    if (old.sufficiencyPcntg != widget.sufficiencyPcntg) {
+      setState(() => _sufficiency = widget.sufficiencyPcntg);
+    }
+  }
+
+  Future<void> _loadServerFiles() async {
+    try {
+      // Use a Consumer ref — accessed via the build Consumer below.
+      // We call this lazily inside build via a flag instead.
+    } catch (_) {}
+  }
+
+  Future<void> _fetchServerFiles(WidgetRef ref) async {
+    if (widget.answerId == null) return;
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.get<List<dynamic>>(
+        '/answers/${widget.answerId}/files',
+      );
+      if (!mounted) return;
+      setState(() {
+        _serverFiles = (res.data ?? [])
+            .cast<Map<String, dynamic>>()
+            .map(_ServerFile.fromJson)
+            .toList();
+      });
+    } catch (_) {}
+  }
 
   Future<void> _pickAndUpload(WidgetRef ref) async {
     final result = await FilePicker.platform.pickFiles(withData: true);
@@ -1376,13 +1495,19 @@ class _EvidencePanelState extends State<_EvidencePanel> {
           final progress = sent / total;
           setState(() {
             _uploadProgress = progress;
-            // All bytes sent → server is now processing / running AI analysis
             if (progress >= 1.0) _analyzing = true;
           });
         },
       );
-      final fileId = uploadRes.data!['id'] as String;
-      widget.notifier.addPendingFile(widget.questionId, fileId, picked.name);
+      final data   = uploadRes.data!;
+      final fileId = data['id'] as String;
+      widget.notifier.addPendingFile(
+        widget.questionId,
+        fileId,
+        picked.name,
+        fileText:         data['fileText'] as String?,
+        imageDescription: data['imageDescription'] as String?,
+      );
     } catch (e) {
       if (mounted) setState(() => _uploadError = 'Upload failed. Please try again.');
     } finally {
@@ -1390,174 +1515,386 @@ class _EvidencePanelState extends State<_EvidencePanel> {
     }
   }
 
+  Future<void> _removeServerFile(WidgetRef ref, _ServerFile f) async {
+    if (widget.answerId == null) return;
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.delete('/answers/${widget.answerId}/files/${f.id}');
+      if (mounted) setState(() => _serverFiles.removeWhere((x) => x.id == f.id));
+    } catch (_) {}
+  }
+
+  Future<void> _reviewEvidence(WidgetRef ref) async {
+    if (widget.answerId == null) return;
+    setState(() => _reviewingEvidence = true);
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.post<Map<String, dynamic>>(
+        '/evidence-review',
+        data: {'type': 'answer', 'elementId': widget.answerId},
+      );
+      if (!mounted) return;
+      final d = res.data!;
+      setState(() {
+        _sufficiency    = (d['evidenceSufficiencyPcntg'] as num?)?.toInt();
+        _reviewDecision = d['decision'] as String?;
+        _reviewSummary  = d['summary'] as String?;
+      });
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _reviewingEvidence = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // _EvidencePanel is inside _QuestionView which is a StatelessWidget with a
-    // WidgetRef. We access it through a Consumer wrapper.
     return Consumer(
       builder: (context, ref, _) {
-        final hasFiles = widget.pendingFiles.isNotEmpty;
-        final satisfied = hasFiles || widget.alreadyAnswered;
+        // Fetch server files once when answerId becomes available
+        if (widget.answerId != null && _serverFiles.isEmpty && !_uploading) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _serverFiles.isEmpty) _fetchServerFiles(ref);
+          });
+        }
 
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: satisfied
-                ? const Color(0xFFF0FDF4)
-                : const Color(0xFFFFFBEB),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: satisfied
-                  ? const Color(0xFF16A34A).withOpacity(0.4)
-                  : const Color(0xFFF59E0B).withOpacity(0.5),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header row
-              Row(
-                children: [
-                  Icon(
-                    satisfied
-                        ? Icons.check_circle_outline_rounded
-                        : Icons.upload_file_outlined,
-                    size: 16,
-                    color: satisfied
-                        ? const Color(0xFF16A34A)
-                        : const Color(0xFFD97706),
-                  ),
-                  const Gap(8),
-                  Expanded(
-                    child: Text(
-                      satisfied && widget.alreadyAnswered && !hasFiles
-                          ? 'Evidence previously submitted.'
-                          : widget.promptText != null && widget.promptText!.isNotEmpty
-                              ? widget.promptText!
-                              : 'Evidence upload required to proceed.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: satisfied
-                            ? const Color(0xFF16A34A)
-                            : const Color(0xFFD97706),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        final allFiles = [..._serverFiles.map((f) => _FileEntry.server(f)),
+                          ...widget.pendingFiles.map((f) => _FileEntry.pending(f))];
+        final hasFiles = allFiles.isNotEmpty;
+        final baseUrl  = ref.read(dioProvider).options.baseUrl;
 
-              // Uploaded files list
-              if (widget.pendingFiles.isNotEmpty) ...[
-                const Gap(10),
-                ...widget.pendingFiles.map((f) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.insert_drive_file_outlined,
-                              size: 13, color: Color(0xFF6B7280)),
-                          const Gap(6),
-                          Expanded(
-                            child: Text(
-                              f.name,
-                              style: const TextStyle(
-                                  fontSize: 12, color: Color(0xFF374151)),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => widget.notifier
-                                .removePendingFile(widget.questionId, f.id),
-                            child: const Icon(Icons.close_rounded,
-                                size: 14, color: Color(0xFF9CA3AF)),
-                          ),
-                        ],
-                      ),
-                    )),
-              ],
-
-              // Progress / analyzing indicator
-              if (_uploading) ...[
-                const Gap(8),
-                if (_analyzing) ...[
-                  // Upload complete — server is analyzing the document
-                  Row(
-                    children: [
-                      const SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.8,
-                          color: Color(0xFF7C3AED),
-                        ),
-                      ),
-                      const Gap(8),
-                      Text(
-                        'AI analyzing document…',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF7C3AED),
-                        ),
-                      ).animate(onPlay: (c) => c.repeat(reverse: true))
-                          .fadeIn(begin: 0.5, duration: 800.ms),
-                    ],
-                  ),
-                ] else ...[
-                  // Bytes still uploading — show progress bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: _uploadProgress > 0 ? _uploadProgress : null,
-                      backgroundColor: const Color(0xFFE5E7EB),
-                      color: const Color(0xFFD97706),
-                      minHeight: 4,
-                    ),
-                  ),
-                  const Gap(4),
-                  Text(
-                    'Uploading… ${(_uploadProgress * 100).toInt()}%',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFFD97706),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ],
-
-              // Error
-              if (_uploadError != null) ...[
-                const Gap(6),
-                Text(_uploadError!,
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.danger)),
-              ],
-
-              // Upload button
-              const Gap(10),
-              SizedBox(
-                height: 34,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFD97706),
-                    side: const BorderSide(color: Color(0xFFF59E0B)),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
-                  onPressed: _uploading ? null : () => _pickAndUpload(ref),
-                  icon: const Icon(Icons.upload_file_outlined, size: 14),
-                  label: Text(
-                    hasFiles ? 'Add another file' : 'Upload evidence',
-                    style: const TextStyle(fontSize: 12),
-                  ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header: label + sufficiency badge ─────────────────
+            Row(children: [
+              const Icon(Icons.attach_file_rounded,
+                  size: 14, color: Color(0xFF6B7280)),
+              const Gap(6),
+              Expanded(
+                child: Text(
+                  widget.promptText != null && widget.promptText!.isNotEmpty
+                      ? widget.promptText!
+                      : 'Evidence',
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF374151)),
                 ),
               ),
+              if (_sufficiency != null)
+                _SufficiencyBadge(pcntg: _sufficiency!),
+            ]),
+            const Gap(8),
+
+            // ── Review summary box ─────────────────────────────────
+            if (_reviewSummary != null && _reviewSummary!.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: (_reviewDecision == 'APPROVE'
+                          ? const Color(0xFF16A34A)
+                          : const Color(0xFFD97706))
+                      .withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: (_reviewDecision == 'APPROVE'
+                            ? const Color(0xFF16A34A)
+                            : const Color(0xFFD97706))
+                        .withOpacity(0.35),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      _reviewDecision == 'APPROVE'
+                          ? Icons.check_circle_outline
+                          : Icons.info_outline,
+                      size: 15,
+                      color: _reviewDecision == 'APPROVE'
+                          ? const Color(0xFF16A34A)
+                          : const Color(0xFFD97706),
+                    ),
+                    const Gap(8),
+                    Expanded(
+                      child: Text(_reviewSummary!,
+                          style: const TextStyle(fontSize: 12, height: 1.5)),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(8),
             ],
-          ),
+
+            // ── Upload progress ────────────────────────────────────
+            if (_uploading) ...[
+              if (_analyzing) ...[
+                Row(children: [
+                  const SizedBox(
+                    width: 12, height: 12,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 1.8, color: Color(0xFF7C3AED)),
+                  ),
+                  const Gap(8),
+                  const Text('AI analyzing document…',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF7C3AED))),
+                ]),
+              ] else ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: _uploadProgress > 0 ? _uploadProgress : null,
+                    backgroundColor: const Color(0xFFE5E7EB),
+                    color: const Color(0xFF1A3C6B),
+                    minHeight: 4,
+                  ),
+                ),
+                const Gap(4),
+                Text(
+                  'Uploading… ${(_uploadProgress * 100).toInt()}%',
+                  style: const TextStyle(
+                      fontSize: 10, color: Color(0xFF6B7280)),
+                ),
+              ],
+              const Gap(8),
+            ],
+
+            // ── File rows ─────────────────────────────────────────
+            if (!hasFiles && !_uploading)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'No evidence uploaded yet.',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                ),
+              )
+            else
+              ...allFiles.map((entry) => _EvidenceFileEntryRow(
+                    entry: entry,
+                    baseUrl: baseUrl,
+                    onRemoveServer: (f) => _removeServerFile(ref, f),
+                    onRemovePending: (f) =>
+                        widget.notifier.removePendingFile(widget.questionId, f.id),
+                    onView: (title, text) => showDialog(
+                      context: context,
+                      builder: (_) => _TextViewerDialog(title: title, content: text),
+                    ),
+                  )),
+
+            if (_uploadError != null) ...[
+              const Gap(4),
+              Text(_uploadError!,
+                  style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626))),
+            ],
+
+            // ── Buttons ───────────────────────────────────────────
+            const Gap(10),
+            Row(children: [
+              OutlinedButton.icon(
+                onPressed: _uploading ? null : () => _pickAndUpload(ref),
+                icon: const Icon(Icons.upload_file_outlined, size: 15),
+                label: Text(hasFiles ? 'הוסף ראיה' : 'הוסף ראיה',
+                    style: const TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF1A3C6B),
+                  side: const BorderSide(color: Color(0xFF1A3C6B)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              if (hasFiles && widget.answerId != null) ...[
+                const Gap(10),
+                OutlinedButton.icon(
+                  onPressed: _reviewingEvidence ? null : () => _reviewEvidence(ref),
+                  icon: _reviewingEvidence
+                      ? const SizedBox(
+                          width: 13, height: 13,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Color(0xFF6C3FC5)),
+                        )
+                      : const Icon(Icons.fact_check_outlined, size: 15),
+                  label: Text(
+                    _reviewingEvidence ? 'Reviewing…' : 'Review Evidence',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF6C3FC5),
+                    side: const BorderSide(color: Color(0xFF6C3FC5)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ],
+            ]),
+          ],
         );
       },
+    );
+  }
+}
+
+// ── Unified file entry (server-linked or pending) ──────────────
+class _FileEntry {
+  final _ServerFile? server;
+  final _PendingFile? pending;
+  const _FileEntry.server(this.server) : pending = null;
+  const _FileEntry.pending(this.pending) : server = null;
+
+  String get name     => server?.fileName ?? pending?.name ?? '';
+  String get fileId   => server?.fileId   ?? pending?.id   ?? '';
+  String? get text    => server?.fileText ?? pending?.fileText;
+  String? get imgDesc => server?.imageDescription ?? pending?.imageDescription;
+  String? get date    => server?.createdAt;
+  bool   get isImage  => imgDesc != null && imgDesc!.isNotEmpty;
+  bool   get hasContent => (text != null && text!.isNotEmpty) ||
+                           (imgDesc != null && imgDesc!.isNotEmpty);
+}
+
+class _EvidenceFileEntryRow extends StatelessWidget {
+  final _FileEntry entry;
+  final String baseUrl;
+  final void Function(_ServerFile) onRemoveServer;
+  final void Function(_PendingFile) onRemovePending;
+  final void Function(String title, String text) onView;
+
+  const _EvidenceFileEntryRow({
+    required this.entry,
+    required this.baseUrl,
+    required this.onRemoveServer,
+    required this.onRemovePending,
+    required this.onView,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dateStr = entry.date != null
+        ? entry.date!.substring(0, 10).split('-').reversed.join('/')
+        : null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          // Delete
+          GestureDetector(
+            onTap: () {
+              if (entry.server != null) onRemoveServer(entry.server!);
+              else if (entry.pending != null) onRemovePending(entry.pending!);
+            },
+            child: const Icon(Icons.delete_outline_rounded,
+                size: 16, color: Color(0xFFDC2626)),
+          ),
+          const Gap(8),
+          // Download (server files only)
+          if (entry.server != null) ...[
+            GestureDetector(
+              onTap: () async {
+                final url = Uri.parse('$baseUrl/files/${entry.fileId}/download');
+                if (await canLaunchUrl(url)) launchUrl(url);
+              },
+              child: const Icon(Icons.download_outlined,
+                  size: 16, color: Color(0xFF16A34A)),
+            ),
+            const Gap(8),
+          ],
+          // View content
+          if (entry.hasContent) ...[
+            GestureDetector(
+              onTap: () => onView(
+                entry.name,
+                entry.isImage ? entry.imgDesc! : entry.text!,
+              ),
+              child: const Icon(Icons.visibility_outlined,
+                  size: 16, color: Color(0xFF1A3C6B)),
+            ),
+            const Gap(8),
+          ],
+          // Name + date + type icon
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(entry.name,
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right),
+                if (dateStr != null)
+                  Text(dateStr,
+                      style: const TextStyle(
+                          fontSize: 10, color: Color(0xFF9CA3AF))),
+              ],
+            ),
+          ),
+          const Gap(8),
+          Icon(
+            entry.isImage
+                ? Icons.image_outlined
+                : Icons.insert_drive_file_outlined,
+            size: 16,
+            color: const Color(0xFF9CA3AF),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Simple text/image content viewer dialog ───────────────────
+class _TextViewerDialog extends StatelessWidget {
+  final String title;
+  final String content;
+  const _TextViewerDialog({required this.title, required this.content});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640, maxHeight: 560),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
+              child: Row(children: [
+                Expanded(
+                  child: Text(title,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ]),
+            ),
+            const Divider(height: 16),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: Text(
+                  content.isEmpty ? '(No content available)' : content,
+                  style: const TextStyle(fontSize: 13, height: 1.6),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -2609,3 +2946,40 @@ class _ErrorView extends StatelessWidget {
     );
   }
 }
+
+// ── Evidence sufficiency badge ────────────────────────────────────────────────
+class _SufficiencyBadge extends StatelessWidget {
+  final int pcntg;
+  const _SufficiencyBadge({required this.pcntg});
+
+  Color get _color {
+    if (pcntg >= 75) return const Color(0xFF16A34A);
+    if (pcntg >= 40) return const Color(0xFFD97706);
+    return const Color(0xFFDC2626);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: _color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _color.withOpacity(0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.verified_outlined, size: 11, color: _color),
+          const Gap(4),
+          Text(
+            '$pcntg%',
+            style: TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w700, color: _color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
