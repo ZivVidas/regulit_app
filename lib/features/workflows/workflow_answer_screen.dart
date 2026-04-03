@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
@@ -24,6 +25,17 @@ const _kCard    = Colors.white;
 const _kMuted   = Color(0xFF94A3B8);
 const _kText    = Color(0xFF111827);
 const _kSub     = Color(0xFF6B7280);
+
+// ── Helper: does the evidence condition apply for the current answer? ─────────
+// Returns true when evidence upload is actually required right now.
+bool _evidenceConditionMet(String? evidCond, _LocalAns localAns) {
+  if (!localAns.hasValue) return false; // no answer yet — never block / never show
+  if (evidCond == null || evidCond.isEmpty) return true; // no condition → always required
+  final c = evidCond.toLowerCase();
+  if ((c == 'yes' || c == '1') && localAns.answerNumber == 1) return true;
+  if ((c == 'no'  || c == '0') && localAns.answerNumber == 0) return true;
+  return false; // answer doesn't match the condition
+}
 
 // ── Pending evidence file (uploaded but not yet linked to answer) ─────────
 class _PendingFile {
@@ -67,6 +79,7 @@ class _LocalAns {
     Set<String>? pickedOptionIds,
     int? evidenceSufficiencyPcntg,
     bool clearSufficiency = false,
+    String? answerId,
   }) =>
       _LocalAns(
         answerNumber:
@@ -76,6 +89,7 @@ class _LocalAns {
         evidenceSufficiencyPcntg: clearSufficiency
             ? null
             : (evidenceSufficiencyPcntg ?? this.evidenceSufficiencyPcntg),
+        answerId: answerId ?? this.answerId,
       );
 }
 
@@ -460,6 +474,14 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
       // ── 3. Link any pending evidence files to the saved answer ─────────────
       final answerId = ansRes.data?['id'] as String?;
       if (answerId != null) {
+        // Store the answerId in _LocalAns so the evidence panel can load
+        // server files if the user navigates back to this question.
+        final updatedAnswers = Map<String, _LocalAns>.from(state.answers);
+        if (updatedAnswers.containsKey(qId)) {
+          updatedAnswers[qId] = updatedAnswers[qId]!.copyWith(answerId: answerId);
+        }
+        state = state.copyWith(answers: updatedAnswers);
+
         final toLink = List<_PendingFile>.from(state.pendingFiles[qId] ?? []);
         for (final f in toLink) {
           try {
@@ -652,15 +674,20 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
     _autoAdvanceTimer?.cancel();
     _autoAdvanceTimer = Timer(const Duration(milliseconds: 550), () {
       if (!mounted) return;
-      // Block auto-advance when evidence is required but not yet uploaded.
+      // Block auto-advance when evidence is required and condition is met
+      // but no file has been uploaded yet.
       final s = ref.read(_ansProvider(widget.sessionId));
       final q = s.currentQuestion;
       if (q != null) {
-        final qId     = q['id'] as String;
-        final reqsEv  = q['requiresEvidence'] as bool? ?? false;
-        final hasFiles = s.pendingFiles[qId]?.isNotEmpty ?? false;
-        final alreadyAnswered = s.serverAnsweredIds.contains(qId);
-        if (reqsEv && !hasFiles && !alreadyAnswered) return;
+        final qId      = q['id'] as String;
+        final reqsEv   = q['requiresEvidence'] as bool? ?? false;
+        final evidCond = q['evidenceCondition'] as String?;
+        final localAns = s.answers[qId] ?? _LocalAns();
+        if (reqsEv && _evidenceConditionMet(evidCond, localAns)) {
+          final hasFiles        = s.pendingFiles[qId]?.isNotEmpty ?? false;
+          final alreadyAnswered = s.serverAnsweredIds.contains(qId);
+          if (!hasFiles && !alreadyAnswered) return;
+        }
       }
       _advance();
     });
@@ -794,10 +821,13 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
                   final q = s.currentQuestion;
                   if (q == null) return true;
                   final qId = q['id'] as String;
-                  final hasAnswer = s.answers[qId]?.hasValue ?? false;
-                  if (!hasAnswer) return false;
-                  final reqsEv = q['requiresEvidence'] as bool? ?? false;
+                  final localAns = s.answers[qId] ?? _LocalAns();
+                  if (!localAns.hasValue) return false;
+                  final reqsEv  = q['requiresEvidence'] as bool? ?? false;
                   if (!reqsEv) return true;
+                  // Evidence only required when the condition matches the answer.
+                  final evidCond = q['evidenceCondition'] as String?;
+                  if (!_evidenceConditionMet(evidCond, localAns)) return true;
                   // Already answered server-side → evidence was previously provided.
                   if (s.serverAnsweredIds.contains(qId)) return true;
                   // New answer → must have at least one pending file.
@@ -1149,16 +1179,18 @@ class _QuestionView extends StatelessWidget {
     final pendingFiles = s.pendingFiles[qId] ?? [];
     final alreadyAnswered = s.serverAnsweredIds.contains(qId);
 
-    // Conditional evidence notice (based on answer value, not requiresEvidence flag).
-    bool showEvidenceNotice = false;
-    if (!requiresEvidence && evidCond != null && evidCond.isNotEmpty && qType == 'yes_no') {
-      final cond = evidCond.toLowerCase();
-      if ((cond == 'yes' || cond == '1') && localAns.answerNumber == 1) {
-        showEvidenceNotice = true;
-      } else if ((cond == 'no' || cond == '0') && localAns.answerNumber == 0) {
-        showEvidenceNotice = true;
-      }
-    }
+    // Show evidence panel only after the user picks an answer AND
+    // the evidence_condition matches that answer.
+    final showEvidencePanel = requiresEvidence &&
+        _evidenceConditionMet(evidCond, localAns);
+
+    // Soft notice (no upload required) when evidenceCondition applies
+    // but requiresEvidence is false.
+    final showEvidenceNotice = !requiresEvidence &&
+        evidCond != null &&
+        evidCond.isNotEmpty &&
+        qType == 'yes_no' &&
+        _evidenceConditionMet(evidCond, localAns);
 
     // Key used for AnimatedSwitcher — changes when question changes
     final questionKey = ValueKey('$qId-${s.slideDir}');
@@ -1290,7 +1322,7 @@ class _QuestionView extends StatelessWidget {
                 ),
 
                 // ── Mandatory evidence panel ──────────────
-                if (requiresEvidence)
+                if (showEvidencePanel)
                   Padding(
                     padding: const EdgeInsets.only(top: 14),
                     child: _EvidencePanel(
@@ -1425,30 +1457,23 @@ class _EvidencePanelState extends State<_EvidencePanel> {
   String? _reviewDecision;
   String? _reviewSummary;
   List<_ServerFile> _serverFiles = [];
+  bool _filesFetched = false;
 
   @override
   void initState() {
     super.initState();
     _sufficiency = widget.sufficiencyPcntg;
-    if (widget.answerId != null) _loadServerFiles();
   }
 
   @override
   void didUpdateWidget(_EvidencePanel old) {
     super.didUpdateWidget(old);
-    if (old.answerId != widget.answerId && widget.answerId != null) {
-      _loadServerFiles();
+    if (old.answerId != widget.answerId) {
+      setState(() { _filesFetched = false; _serverFiles = []; });
     }
     if (old.sufficiencyPcntg != widget.sufficiencyPcntg) {
       setState(() => _sufficiency = widget.sufficiencyPcntg);
     }
-  }
-
-  Future<void> _loadServerFiles() async {
-    try {
-      // Use a Consumer ref — accessed via the build Consumer below.
-      // We call this lazily inside build via a flag instead.
-    } catch (_) {}
   }
 
   Future<void> _fetchServerFiles(WidgetRef ref) async {
@@ -1550,10 +1575,11 @@ class _EvidencePanelState extends State<_EvidencePanel> {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
-        // Fetch server files once when answerId becomes available
-        if (widget.answerId != null && _serverFiles.isEmpty && !_uploading) {
+        // Fetch server files once per answerId
+        if (widget.answerId != null && !_filesFetched) {
+          _filesFetched = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && _serverFiles.isEmpty) _fetchServerFiles(ref);
+            if (mounted) _fetchServerFiles(ref);
           });
         }
 
@@ -1679,9 +1705,9 @@ class _EvidencePanelState extends State<_EvidencePanel> {
                     onRemoveServer: (f) => _removeServerFile(ref, f),
                     onRemovePending: (f) =>
                         widget.notifier.removePendingFile(widget.questionId, f.id),
-                    onView: (title, text) => showDialog(
+                    onView: (entry) => showDialog(
                       context: context,
-                      builder: (_) => _TextViewerDialog(title: title, content: text),
+                      builder: (_) => _EvidenceViewerDialog(entry: entry),
                     ),
                   )),
 
@@ -1761,7 +1787,7 @@ class _EvidenceFileEntryRow extends StatelessWidget {
   final String baseUrl;
   final void Function(_ServerFile) onRemoveServer;
   final void Function(_PendingFile) onRemovePending;
-  final void Function(String title, String text) onView;
+  final void Function(_FileEntry entry) onView;
 
   const _EvidenceFileEntryRow({
     required this.entry,
@@ -1781,7 +1807,7 @@ class _EvidenceFileEntryRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFF9FAFB),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
@@ -1812,10 +1838,7 @@ class _EvidenceFileEntryRow extends StatelessWidget {
           // View content
           if (entry.hasContent) ...[
             GestureDetector(
-              onTap: () => onView(
-                entry.name,
-                entry.isImage ? entry.imgDesc! : entry.text!,
-              ),
+              onTap: () => onView(entry),
               child: const Icon(Icons.visibility_outlined,
                   size: 16, color: Color(0xFF1A3C6B)),
             ),
@@ -1852,49 +1875,201 @@ class _EvidenceFileEntryRow extends StatelessWidget {
   }
 }
 
-// ── Simple text/image content viewer dialog ───────────────────
-class _TextViewerDialog extends StatelessWidget {
-  final String title;
-  final String content;
-  const _TextViewerDialog({required this.title, required this.content});
+// ── Evidence content viewer dialog ────────────────────────────
+// Mirrors _EvidenceViewerDialog in task_edit_dialog.dart:
+//   • Documents → _DocumentView  (parses structured JSON or falls back to plain text)
+//   • Images    → _ImageDescriptionView  (AI-generated description)
+class _EvidenceViewerDialog extends StatelessWidget {
+  final _FileEntry entry;
+  const _EvidenceViewerDialog({required this.entry});
 
   @override
   Widget build(BuildContext context) {
+    final isImage = entry.isImage;
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      insetPadding:
+          const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640, maxHeight: 560),
+        constraints: const BoxConstraints(maxWidth: 720, maxHeight: 680),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
-              child: Row(children: [
-                Expanded(
-                  child: Text(title,
+            // ── Header ─────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+              decoration: BoxDecoration(
+                color: isImage
+                    ? const Color(0xFF0EA5E9).withOpacity(0.08)
+                    : const Color(0xFF1A3C6B).withOpacity(0.08),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+                border: const Border(
+                    bottom: BorderSide(color: Color(0xFFE5E7EB))),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isImage
+                        ? Icons.image_outlined
+                        : Icons.article_outlined,
+                    color: isImage
+                        ? const Color(0xFF0EA5E9)
+                        : const Color(0xFF1A3C6B),
+                    size: 20,
+                  ),
+                  const Gap(10),
+                  Expanded(
+                    child: Text(
+                      entry.name.isNotEmpty ? entry.name : 'Evidence',
                       style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ]),
+                          fontSize: 15, fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    color: const Color(0xFF6B7280),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
             ),
-            const Divider(height: 16),
-            Flexible(
+            // ── Body ───────────────────────────────────────────
+            Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: Text(
-                  content.isEmpty ? '(No content available)' : content,
-                  style: const TextStyle(fontSize: 13, height: 1.6),
-                ),
+                padding: const EdgeInsets.all(20),
+                child: isImage
+                    ? _ImageDescriptionView(
+                        description: entry.imgDesc ?? '')
+                    : _DocumentView(fileText: entry.text ?? ''),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── Structured document renderer ──────────────────────────────
+// Parses {"title":"…","content":[{"sectionName":"…","sectionContent":"…"}]}
+// Falls back to plain selectable text for any other format.
+class _DocumentView extends StatelessWidget {
+  final String fileText;
+  const _DocumentView({required this.fileText});
+
+  @override
+  Widget build(BuildContext context) {
+    if (fileText.isEmpty) {
+      return Center(
+        child: Text('No content available.',
+            style: const TextStyle(
+                fontSize: 13, color: Color(0xFF9CA3AF))),
+      );
+    }
+    try {
+      final decoded = jsonDecode(fileText) as Map<String, dynamic>;
+      final title = decoded['title'] as String? ?? '';
+      final content =
+          (decoded['content'] as List?)?.cast<Map<String, dynamic>>() ??
+              [];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (title.isNotEmpty) ...[
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A237E))),
+            const Gap(16),
+            const Divider(color: Color(0xFFE5E7EB)),
+            const Gap(16),
+          ],
+          ...content.map((section) {
+            final name = section['sectionName'] as String? ?? '';
+            final body = section['sectionContent'] as String? ?? '';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (name.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8EAF6),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(name,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A237E))),
+                    ),
+                    const Gap(8),
+                  ],
+                  Text(body,
+                      style: const TextStyle(fontSize: 13, height: 1.6)),
+                ],
+              ),
+            );
+          }),
+        ],
+      );
+    } catch (_) {
+      // Not structured JSON — show as plain selectable text
+      return SelectableText(fileText,
+          style: const TextStyle(fontSize: 13, height: 1.6));
+    }
+  }
+}
+
+// ── AI image description renderer ─────────────────────────────
+class _ImageDescriptionView extends StatelessWidget {
+  final String description;
+  const _ImageDescriptionView({required this.description});
+
+  @override
+  Widget build(BuildContext context) {
+    if (description.isEmpty) {
+      return Center(
+        child: Text('No description available.',
+            style: const TextStyle(
+                fontSize: 13, color: Color(0xFF9CA3AF))),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          const Icon(Icons.auto_awesome_outlined,
+              size: 16, color: Color(0xFF0EA5E9)),
+          const Gap(6),
+          const Text('AI-Generated Description',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0EA5E9))),
+        ]),
+        const Gap(12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F9FF),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFF0EA5E9).withOpacity(0.3)),
+          ),
+          child: SelectableText(
+            description,
+            style: const TextStyle(fontSize: 13, height: 1.6),
+          ),
+        ),
+      ],
     );
   }
 }

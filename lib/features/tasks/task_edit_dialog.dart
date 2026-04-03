@@ -6,6 +6,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
@@ -13,7 +14,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
@@ -63,7 +65,32 @@ class TaskEditDialog extends ConsumerStatefulWidget {
   final WorkflowTask task;
   final AppLocalizations l10n;
 
-  const TaskEditDialog({super.key, required this.task, required this.l10n});
+  /// When true, all inputs are disabled and the footer shows only a Close
+  /// button.  Status change is still allowed if [canChangeStatus] is true.
+  final bool readOnly;
+
+  /// Meaningful only when [readOnly] is true.  If true, the status dropdown
+  /// is interactive and a "Save Status" button appears in the footer whenever
+  /// the status differs from the original.
+  final bool canChangeStatus;
+
+  /// Meaningful only when [readOnly] is true.  If true, the Upload Evidence
+  /// button is shown so the assigned user can attach files without editing
+  /// any other task fields.
+  final bool canUploadEvidence;
+
+  /// Called after a successful status-only save (read-only mode).
+  final VoidCallback? onStatusChanged;
+
+  const TaskEditDialog({
+    super.key,
+    required this.task,
+    required this.l10n,
+    this.readOnly = false,
+    this.canChangeStatus = false,
+    this.canUploadEvidence = false,
+    this.onStatusChanged,
+  });
 
   @override
   ConsumerState<TaskEditDialog> createState() => _TaskEditDialogState();
@@ -251,6 +278,32 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
     }
   }
 
+  bool get _statusDirty => _statusId != widget.task.statusId;
+
+  /// Saves only the status field (used in read-only mode when canChangeStatus).
+  Future<void> _saveStatus() async {
+    setState(() => _saving = true);
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.put('/workflow-tasks/${widget.task.id}', data: {
+        'taskName': widget.task.taskName,
+        'statusId': _statusId,
+      });
+      if (mounted) {
+        widget.onStatusChanged?.call();
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      setState(() => _saving = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to save: $e'),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+    }
+  }
+
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -329,7 +382,10 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                           color: _statusColor(_statusId).withOpacity(0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.edit_note_rounded,
+                        child: Icon(
+                            widget.readOnly
+                                ? Icons.visibility_outlined
+                                : Icons.edit_note_rounded,
                             color: _statusColor(_statusId), size: 20),
                       ),
                       const Gap(12),
@@ -337,7 +393,10 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(l10n.editTask, style: AppTextStyles.h3),
+                            Text(
+                              widget.readOnly ? l10n.taskDetails : l10n.editTask,
+                              style: AppTextStyles.h3,
+                            ),
                             Text(
                               widget.task.taskName,
                               style: AppTextStyles.caption,
@@ -364,7 +423,8 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                   const Gap(6),
                   TextFormField(
                     controller: _nameCtrl,
-                    autofocus: true,
+                    autofocus: !widget.readOnly,
+                    enabled: !widget.readOnly,
                     decoration: _inputDeco(hint: l10n.taskNameLabel),
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? l10n.required : null,
@@ -378,6 +438,7 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                   TextFormField(
                     controller: _whatCtrl,
                     maxLines: 3,
+                    enabled: !widget.readOnly,
                     decoration: _inputDeco(
                         hint: 'Describe the steps to complete this task…'),
                   ),
@@ -449,8 +510,9 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                                             ),
                                           ))
                                       .toList(),
-                                  onChanged: (v) =>
-                                      setState(() => _statusId = v!),
+                                  onChanged: (widget.readOnly && !widget.canChangeStatus)
+                                      ? null
+                                      : (v) => setState(() => _statusId = v!),
                                 ),
                               ),
                             ),
@@ -466,7 +528,7 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                                 style: AppTextStyles.label),
                             const Gap(6),
                             GestureDetector(
-                              onTap: _pickDate,
+                              onTap: widget.readOnly ? null : _pickDate,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 10),
@@ -491,7 +553,7 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                                       ),
                                     ),
                                   ),
-                                  if (_dueDate != null)
+                                  if (_dueDate != null && !widget.readOnly)
                                     GestureDetector(
                                       onTap: () =>
                                           setState(() => _dueDate = null),
@@ -557,33 +619,46 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                                     ],
                                     onChanged: (_) {},
                                   ),
-                                  data: (users) => DropdownButton<String?>(
-                                    value: _assignedToUserId,
-                                    isExpanded: true,
-                                    isDense: true,
-                                    style: AppTextStyles.body
-                                        .copyWith(color: AppColors.text),
-                                    items: [
-                                      DropdownMenuItem<String?>(
-                                        value: null,
-                                        child: Text(
-                                          l10n.unassigned,
-                                          style: AppTextStyles.body.copyWith(
-                                              color: AppColors.muted),
+                                  data: (users) {
+                                    // If the assigned user was unlinked from
+                                    // the customer, fall back to null so the
+                                    // dropdown doesn't violate its assertion.
+                                    final assigneeInList = users.any(
+                                        (u) => u.userId == _assignedToUserId);
+                                    final dropdownValue = assigneeInList
+                                        ? _assignedToUserId
+                                        : null;
+                                    return DropdownButton<String?>(
+                                      value: dropdownValue,
+                                      isExpanded: true,
+                                      isDense: true,
+                                      style: AppTextStyles.body
+                                          .copyWith(color: AppColors.text),
+                                      items: [
+                                        DropdownMenuItem<String?>(
+                                          value: null,
+                                          child: Text(
+                                            l10n.unassigned,
+                                            style: AppTextStyles.body.copyWith(
+                                                color: AppColors.muted),
+                                          ),
                                         ),
-                                      ),
-                                      ...users.map((u) =>
-                                          DropdownMenuItem<String?>(
-                                            value: u.userId,
-                                            child: Text(
-                                              u.displayName,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          )),
-                                    ],
-                                    onChanged: (v) =>
-                                        setState(() => _assignedToUserId = v),
-                                  ),
+                                        ...users.map((u) =>
+                                            DropdownMenuItem<String?>(
+                                              value: u.userId,
+                                              child: Text(
+                                                u.displayName,
+                                                overflow:
+                                                    TextOverflow.ellipsis,
+                                              ),
+                                            )),
+                                      ],
+                                      onChanged: widget.readOnly
+                                          ? null
+                                          : (v) => setState(
+                                              () => _assignedToUserId = v),
+                                    );
+                                  },
                                 ),
                               ),
                             ),
@@ -601,6 +676,7 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                             const Gap(6),
                             TextFormField(
                               controller: _fineCtrl,
+                              enabled: !widget.readOnly,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                       decimal: true),
@@ -622,7 +698,9 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                   Row(children: [
                     Switch(
                       value: _isRequired,
-                      onChanged: (v) => setState(() => _isRequired = v),
+                      onChanged: widget.readOnly
+                          ? null
+                          : (v) => setState(() => _isRequired = v),
                       activeColor: AppColors.danger,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -721,46 +799,21 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
 
                   ..._evidenceItems.map((item) => _EvidenceRow(
                         item: item,
-                        baseUrl: ref.read(dioProvider).options.baseUrl,
+                        dio: ref.read(dioProvider),
                         onRemove: () => _removeEvidence(item),
+                        readOnly: widget.readOnly,
                       )),
 
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: _uploading ? null : _pickAndUpload,
-                        icon: const Icon(Icons.upload_file_outlined, size: 16),
-                        label: Text(l10n.addEvidence),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.blue,
-                          side: const BorderSide(color: AppColors.blue),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 10),
-                          textStyle: AppTextStyles.button,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                      if (_evidenceItems.isNotEmpty) ...[
-                        const Gap(10),
+                  if (!widget.readOnly || widget.canUploadEvidence)
+                    Row(
+                      children: [
                         OutlinedButton.icon(
-                          onPressed: _reviewingEvidence ? null : _reviewEvidence,
-                          icon: _reviewingEvidence
-                              ? const SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Color(0xFF6C3FC5)),
-                                )
-                              : const Icon(Icons.fact_check_outlined, size: 16),
-                          label: Text(_reviewingEvidence
-                              ? 'Reviewing…'
-                              : 'Review Evidence'),
+                          onPressed: _uploading ? null : _pickAndUpload,
+                          icon: const Icon(Icons.upload_file_outlined, size: 16),
+                          label: Text(l10n.addEvidence),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF6C3FC5),
-                            side:
-                                const BorderSide(color: Color(0xFF6C3FC5)),
+                            foregroundColor: AppColors.blue,
+                            side: const BorderSide(color: AppColors.blue),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 10),
                             textStyle: AppTextStyles.button,
@@ -768,9 +821,36 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                                 borderRadius: BorderRadius.circular(8)),
                           ),
                         ),
+                        if (_evidenceItems.isNotEmpty) ...[
+                          const Gap(10),
+                          OutlinedButton.icon(
+                            onPressed: _reviewingEvidence ? null : _reviewEvidence,
+                            icon: _reviewingEvidence
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Color(0xFF6C3FC5)),
+                                  )
+                                : const Icon(Icons.fact_check_outlined, size: 16),
+                            label: Text(_reviewingEvidence
+                                ? 'Reviewing…'
+                                : 'Review Evidence'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF6C3FC5),
+                              side:
+                                  const BorderSide(color: Color(0xFF6C3FC5)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              textStyle: AppTextStyles.button,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
+                    ),
 
                   const Gap(20),
                   const Divider(color: AppColors.border, height: 1),
@@ -779,38 +859,77 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                   // ── Action buttons ─────────────────────────────────────
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: _saving
-                            ? null
-                            : () => Navigator.of(context).pop(false),
-                        child: Text(l10n.cancel,
-                            style: AppTextStyles.button
-                                .copyWith(color: AppColors.muted)),
-                      ),
-                      const Gap(8),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.blue,
-                          foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          textStyle: AppTextStyles.button,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          elevation: 0,
-                        ),
-                        onPressed: _saving ? null : _submit,
-                        icon: _saving
-                            ? const SizedBox(
-                                width: 14, height: 14,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: AppColors.white),
-                              )
-                            : const Icon(Icons.check_rounded, size: 16),
-                        label: Text(l10n.save),
-                      ),
-                    ],
+                    children: widget.readOnly
+                        ? [
+                            // Read-only footer: Close + optional Save Status
+                            if (widget.canChangeStatus && _statusDirty) ...[
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.blue,
+                                  foregroundColor: AppColors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 12),
+                                  textStyle: AppTextStyles.button,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                  elevation: 0,
+                                ),
+                                onPressed: _saving ? null : _saveStatus,
+                                icon: _saving
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.white),
+                                      )
+                                    : const Icon(Icons.check_rounded, size: 16),
+                                label: Text(l10n.save),
+                              ),
+                              const Gap(8),
+                            ],
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: Text(l10n.close,
+                                  style: AppTextStyles.button
+                                      .copyWith(color: AppColors.muted)),
+                            ),
+                          ]
+                        : [
+                            // Edit footer: Cancel + Save
+                            TextButton(
+                              onPressed: _saving
+                                  ? null
+                                  : () => Navigator.of(context).pop(false),
+                              child: Text(l10n.cancel,
+                                  style: AppTextStyles.button
+                                      .copyWith(color: AppColors.muted)),
+                            ),
+                            const Gap(8),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.blue,
+                                foregroundColor: AppColors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 12),
+                                textStyle: AppTextStyles.button,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                                elevation: 0,
+                              ),
+                              onPressed: _saving ? null : _submit,
+                              icon: _saving
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.white),
+                                    )
+                                  : const Icon(Icons.check_rounded, size: 16),
+                              label: Text(l10n.save),
+                            ),
+                          ],
                   ),
                 ],
               ),
@@ -863,16 +982,25 @@ class _SufficiencyBadge extends StatelessWidget {
 
 // ── Private evidence helpers ──────────────────────────────────────────────────
 
-class _EvidenceRow extends StatelessWidget {
+class _EvidenceRow extends StatefulWidget {
   final TaskFileEvidence item;
   final VoidCallback onRemove;
-  final String baseUrl;
+  final Dio dio;
+  final bool readOnly;
 
   const _EvidenceRow({
     required this.item,
     required this.onRemove,
-    required this.baseUrl,
+    required this.dio,
+    this.readOnly = false,
   });
+
+  @override
+  State<_EvidenceRow> createState() => _EvidenceRowState();
+}
+
+class _EvidenceRowState extends State<_EvidenceRow> {
+  bool _downloading = false;
 
   String _fmtDate(DateTime d) {
     final mm = d.month.toString().padLeft(2, '0');
@@ -883,17 +1011,61 @@ class _EvidenceRow extends StatelessWidget {
   void _openViewer(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => _EvidenceViewerDialog(item: item),
+      builder: (_) => _EvidenceViewerDialog(item: widget.item),
     );
+  }
+
+  /// Downloads the file via the authenticated Dio instance, saves it to the
+  /// system temp directory, then opens it with the OS default app.
+  Future<void> _download(BuildContext context) async {
+    if (_downloading) return;
+    setState(() => _downloading = true);
+    try {
+      // Derive a clean filename from the stored path
+      final rawName = widget.item.filePath.split('/').last;
+      final idx = rawName.indexOf('_');
+      final cleanName = (idx == 8 && idx < rawName.length - 1)
+          ? rawName.substring(idx + 1)
+          : rawName;
+
+      final dir = await getTemporaryDirectory();
+      final savePath = '${dir.path}/$cleanName';
+
+      await widget.dio.download(
+        '/files/${widget.item.fileId}/download',
+        savePath,
+      );
+
+      if (!context.mounted) return;
+      final result = await OpenFile.open(savePath);
+      if (result.type != ResultType.done && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not open file: ${result.message}'),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Download failed: $e'),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isImage = item.fileType == 'image';
-    final hasContent = (item.fileText != null && item.fileText!.isNotEmpty) ||
-        (item.imageDescription != null && item.imageDescription!.isNotEmpty);
-    final displayName =
-        item.fileName.isNotEmpty ? item.fileName : item.filePath.split('/').last;
+    final isImage = widget.item.fileType == 'image';
+    final hasContent =
+        (widget.item.fileText != null && widget.item.fileText!.isNotEmpty) ||
+            (widget.item.imageDescription != null &&
+                widget.item.imageDescription!.isNotEmpty);
+    final displayName = widget.item.fileName.isNotEmpty
+        ? widget.item.fileName
+        : widget.item.filePath.split('/').last;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -923,7 +1095,7 @@ class _EvidenceRow extends StatelessWidget {
                   maxLines: 1,
                 ),
                 Text(
-                  _fmtDate(item.createdAt),
+                  _fmtDate(widget.item.createdAt),
                   style: AppTextStyles.caption.copyWith(fontSize: 10),
                 ),
               ],
@@ -937,21 +1109,30 @@ class _EvidenceRow extends StatelessWidget {
               color: AppColors.blue,
               onTap: () => _openViewer(context),
             ),
-          _EvidenceIconBtn(
-            icon: Icons.download_outlined,
-            tooltip: 'Download',
-            color: AppColors.success,
-            onTap: () async {
-              final uri = Uri.parse('$baseUrl/files/${item.fileId}/download');
-              if (await canLaunchUrl(uri)) await launchUrl(uri);
-            },
-          ),
-          _EvidenceIconBtn(
-            icon: Icons.delete_outline,
-            tooltip: 'Remove',
-            color: AppColors.danger,
-            onTap: onRemove,
-          ),
+          // Download button — uses dio so Bearer token is included
+          _downloading
+              ? const Padding(
+                  padding: EdgeInsets.all(5),
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.success),
+                  ),
+                )
+              : _EvidenceIconBtn(
+                  icon: Icons.download_outlined,
+                  tooltip: 'Download',
+                  color: AppColors.success,
+                  onTap: () => _download(context),
+                ),
+          if (!widget.readOnly)
+            _EvidenceIconBtn(
+              icon: Icons.delete_outline,
+              tooltip: 'Remove',
+              color: AppColors.danger,
+              onTap: widget.onRemove,
+            ),
         ],
       ),
     );

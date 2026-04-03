@@ -19,7 +19,6 @@ import '../../core/models/user.dart';
 import '../../core/models/workflow_task.dart';
 import '../../core/api/api_client.dart';
 import '../../l10n/app_localizations.dart';
-import 'task_detail_sheet.dart';
 import 'task_edit_dialog.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -379,6 +378,7 @@ class _TaskListBody extends ConsumerWidget {
         ),
       ),
       data: (allTasks) {
+        // Filter by search
         final tasks = search.isEmpty
             ? allTasks
             : allTasks
@@ -411,33 +411,147 @@ class _TaskListBody extends ConsumerWidget {
           );
         }
 
+        // Split into mine vs everyone else's
+        final myTasks = currentUserId == null
+            ? <WorkflowTask>[]
+            : tasks
+                .where((t) => t.assignedToUserId == currentUserId)
+                .toList();
+        final otherTasks = currentUserId == null
+            ? tasks
+            : tasks
+                .where((t) => t.assignedToUserId != currentUserId)
+                .toList();
+
+        void refresh() => ref.invalidate(_sessionTasksListProvider(sessionId));
+
+        SliverList _buildSliver(List<WorkflowTask> items, bool isMine) =>
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  final task = items[i];
+                  final canChangeStatus = isMine && currentUserId != null;
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: i < items.length - 1 ? 8 : 0,
+                    ),
+                    child: _TaskListTile(
+                      task: task,
+                      isItExecutor: isItExecutor,
+                      canChangeStatus: canChangeStatus,
+                      l10n: l10n,
+                      onRefresh: refresh,
+                    ),
+                  );
+                },
+                childCount: items.length,
+              ),
+            );
+
         return RefreshIndicator(
-          onRefresh: () async =>
-              ref.invalidate(_sessionTasksListProvider(sessionId)),
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            itemCount: tasks.length,
-            separatorBuilder: (_, __) => const Gap(8),
-            itemBuilder: (context, i) {
-              final task = tasks[i];
-              // it_executor always opens the edit dialog — canChangeStatus
-              // only applies to the detail sheet (client_admin / employee).
-              // Both status change and evidence upload are allowed only when
-              // the task is assigned to the current user.
-              final canChangeStatus = currentUserId != null &&
-                  task.assignedToUserId == currentUserId;
-              return _TaskListTile(
-                task: task,
-                isItExecutor: isItExecutor,
-                canChangeStatus: canChangeStatus,
-                l10n: l10n,
-                onRefresh: () =>
-                    ref.invalidate(_sessionTasksListProvider(sessionId)),
-              );
-            },
+          onRefresh: () async => refresh(),
+          child: CustomScrollView(
+            slivers: [
+              // ── My Tasks panel ──────────────────────────────────
+              if (myTasks.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: _SectionHeader(
+                    icon: Icons.person_pin_outlined,
+                    label: l10n.myTasks,
+                    count: myTasks.length,
+                    accent: AppColors.blue,
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  sliver: _buildSliver(myTasks, true),
+                ),
+              ],
+
+              // ── Other Tasks panel ───────────────────────────────
+              if (otherTasks.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: _SectionHeader(
+                    icon: Icons.group_outlined,
+                    label: l10n.otherTasks,
+                    count: otherTasks.length,
+                    accent: AppColors.muted,
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  sliver: _buildSliver(otherTasks, false),
+                ),
+              ],
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Section header (My Tasks / Other Tasks)
+// ─────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int count;
+  final Color accent;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.label,
+    required this.count,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 18,
+            decoration: BoxDecoration(
+              color: accent,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const Gap(8),
+          Icon(icon, size: 15, color: accent),
+          const Gap(6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: accent,
+              letterSpacing: 0.2,
+            ),
+          ),
+          const Gap(8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: accent,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -561,19 +675,19 @@ class _TaskListTile extends StatelessWidget {
     } else {
       // client_admin / employee: read-only detail sheet.
       // Status change is enabled only if this task is assigned to them.
-      showModalBottomSheet(
+      showDialog<bool>(
         context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (_) => TaskDetailSheet(
+        builder: (_) => TaskEditDialog(
           task: task,
+          l10n: l10n,
+          readOnly: true,
           canChangeStatus: canChangeStatus,
+          canUploadEvidence: canChangeStatus,
           onStatusChanged: onRefresh,
         ),
-      );
+      ).then((refreshed) {
+        if (refreshed == true) onRefresh();
+      });
     }
   }
 

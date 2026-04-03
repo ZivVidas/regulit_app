@@ -29,6 +29,7 @@ import '../features/workflows/workflow_quizzes_screen.dart';
 import '../features/workflows/workflows_screen.dart';
 import '../features/agents/agents_screen.dart';
 import '../features/users/users_screen.dart';
+import '../features/client_admin/client_users_screen.dart';
 import '../shared/widgets/app_shell.dart';
 
 part 'router.g.dart';
@@ -62,21 +63,17 @@ abstract class AppRoutes {
   static const selectCustomer = '/select-customer';
   // Step 14: flat task list (employee/itExecutor/clientAdmin)
   static const taskList = '/task-list';
+  // Client-admin user management
+  static const clientUsers = '/client-users';
 }
 
 @riverpod
 GoRouter router(RouterRef ref) {
-  // React to both auth state and customer context changes
+  // React to both auth state and customer context changes.
+  // NOTE: customerContextProvider already self-resets when the user identity
+  // changes (see CustomerContextNotifier), so no extra listener is needed here.
   final authState = ref.watch(authStateProvider);
   final customerContext = ref.watch(customerContextProvider);
-
-  // Clear customer context whenever the user logs out
-  ref.listen<AsyncValue<AppUser?>>(authStateProvider, (_, next) {
-    if (next.valueOrNull == null) {
-      Future.microtask(
-          () => ref.read(customerContextProvider.notifier).state = null);
-    }
-  });
 
   return GoRouter(
     initialLocation: AppRoutes.login,
@@ -124,6 +121,7 @@ GoRouter router(RouterRef ref) {
           AppRoutes.dashboard,
           AppRoutes.auditPack,
           AppRoutes.aiChat,
+          AppRoutes.clientUsers,
         ];
 
         if (ctxRole == UserRole.employee) {
@@ -300,6 +298,13 @@ GoRouter router(RouterRef ref) {
             path: AppRoutes.taskList,
             name: 'taskList',
             pageBuilder: (_, __) => _fadePage(const TaskListScreen()),
+          ),
+
+          // ── Client-admin user management ─────────────────────
+          GoRoute(
+            path: AppRoutes.clientUsers,
+            name: 'clientUsers',
+            pageBuilder: (_, __) => _fadePage(const ClientUsersScreen()),
           ),
 
           // ── Regulit Staff (CSM / Analyst) routes ─────────────

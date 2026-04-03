@@ -12,7 +12,6 @@ import '../../core/auth/auth_provider.dart';
 import '../../core/customer/customer_context_provider.dart';
 import '../../core/models/workflow_task.dart';
 import '../../l10n/app_localizations.dart';
-import 'task_detail_sheet.dart';
 import 'task_edit_dialog.dart';
 
 // CustomerUserItem and customerUsersProvider are now in task_edit_dialog.dart
@@ -434,17 +433,14 @@ class _BoardForSession extends ConsumerWidget {
                       final canChange =
                           currentUserId != null &&
                           task.assignedToUserId == currentUserId;
-                      await showModalBottomSheet(
+                      await showDialog<bool>(
                         context: context,
-                        isScrollControlled: true,
-                        useSafeArea: true,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(16)),
-                        ),
-                        builder: (_) => TaskDetailSheet(
+                        builder: (_) => TaskEditDialog(
                           task: task,
+                          l10n: l10n,
+                          readOnly: true,
                           canChangeStatus: canChange,
+                          canUploadEvidence: canChange,
                           onStatusChanged: () =>
                               ref.invalidate(sessionTasksProvider(sessionId)),
                         ),
@@ -1406,36 +1402,45 @@ class _CreateTaskDialogState extends ConsumerState<_CreateTaskDialog> {
                                     ],
                                     onChanged: (_) {},
                                   ),
-                                  data: (users) =>
-                                      DropdownButton<String?>(
-                                    value: _assignedToUserId,
-                                    isExpanded: true,
-                                    isDense: true,
-                                    style: AppTextStyles.body
-                                        .copyWith(color: AppColors.text),
-                                    items: [
-                                      DropdownMenuItem<String?>(
-                                        value: null,
-                                        child: Text(
-                                          l10n.unassigned,
-                                          style: AppTextStyles.body
-                                              .copyWith(
-                                                  color: AppColors.muted),
+                                  data: (users) {
+                                    // Guard: if the assigned user is no
+                                    // longer linked to this customer, show
+                                    // "Unassigned" instead of crashing.
+                                    final assigneeInList = users.any(
+                                        (u) => u.userId == _assignedToUserId);
+                                    final dropdownValue = assigneeInList
+                                        ? _assignedToUserId
+                                        : null;
+                                    return DropdownButton<String?>(
+                                      value: dropdownValue,
+                                      isExpanded: true,
+                                      isDense: true,
+                                      style: AppTextStyles.body
+                                          .copyWith(color: AppColors.text),
+                                      items: [
+                                        DropdownMenuItem<String?>(
+                                          value: null,
+                                          child: Text(
+                                            l10n.unassigned,
+                                            style: AppTextStyles.body
+                                                .copyWith(
+                                                    color: AppColors.muted),
+                                          ),
                                         ),
-                                      ),
-                                      ...users.map((u) =>
-                                          DropdownMenuItem<String?>(
-                                            value: u.userId,
-                                            child: Text(
-                                              u.displayName,
-                                              overflow:
-                                                  TextOverflow.ellipsis,
-                                            ),
-                                          )),
-                                    ],
-                                    onChanged: (v) => setState(
-                                        () => _assignedToUserId = v),
-                                  ),
+                                        ...users.map((u) =>
+                                            DropdownMenuItem<String?>(
+                                              value: u.userId,
+                                              child: Text(
+                                                u.displayName,
+                                                overflow:
+                                                    TextOverflow.ellipsis,
+                                              ),
+                                            )),
+                                      ],
+                                      onChanged: (v) => setState(
+                                          () => _assignedToUserId = v),
+                                    );
+                                  },
                                 ),
                               ),
                             ),

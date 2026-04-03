@@ -223,6 +223,46 @@ class ExecutiveDashboardScreen extends ConsumerStatefulWidget {
 class _ExecutiveDashboardScreenState
     extends ConsumerState<ExecutiveDashboardScreen> {
   String? _selectedSessionId;
+  bool _analyzing = false;
+
+  Future<void> _analyzeAgain(String customerId) async {
+    final sessionId = _selectedSessionId;
+    if (sessionId == null) return;
+    setState(() => _analyzing = true);
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.post<Map<String, dynamic>>(
+        '/workflow-answers/$sessionId/analyze',
+      );
+      final created = (res.data?['tasksCreated'] as num?)?.toInt() ?? 0;
+      if (!mounted) return;
+      // Refresh all session-dependent providers
+      ref.invalidate(_execSummaryProvider(sessionId));
+      ref.invalidate(_topRisksProvider(sessionId));
+      ref.invalidate(_categoryBreakdownProvider(sessionId));
+      ref.invalidate(_riskTrendProvider((customerId, 'monthly')));
+      ref.invalidate(_riskTrendProvider((customerId, 'weekly')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            created > 0
+                ? 'Analysis complete — $created new task${created == 1 ? '' : 's'} created.'
+                : 'Analysis complete — no new gaps found.',
+          ),
+          backgroundColor: AppColors.success,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Analysis failed: $e'),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _analyzing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -235,11 +275,22 @@ class _ExecutiveDashboardScreenState
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.download_outlined, size: 16),
-              label: const Text('Audit Pack'),
-              onPressed: () {},
-            ),
+            child: _selectedSessionId == null || customerId == null
+                ? const SizedBox.shrink()
+                : _analyzing
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : OutlinedButton.icon(
+                        icon: const Icon(Icons.auto_fix_high_outlined, size: 16),
+                        label: const Text('Analyze Again'),
+                        onPressed: () => _analyzeAgain(customerId),
+                      ),
           ),
         ],
       ),

@@ -211,6 +211,17 @@ class AppLocalizations {
   String get unassigned         => _t('unassigned');
   String get estimatedFineLabel => _t('estimatedFineLabel');
   String get editTask           => _t('editTask');
+  String get taskDetails        => _t('taskDetails');
+  String get myTasks            => _t('myTasks');
+  String get otherTasks         => _t('otherTasks');
+
+  // ── Client-admin user management ─────────────────────────────────────────
+  String get addUser        => _t('addUser');
+  String get newUser        => _t('newUser');
+  String get existingUser   => _t('existingUser');
+  String get firstName      => _t('firstName');
+  String get lastName       => _t('lastName');
+  String get createAndLink  => _t('createAndLink');
 
   // ── Language names (always shown in native script) ────────────────────────
   String get langEnglish => 'English';
@@ -390,6 +401,16 @@ class AppLocalizations {
       'unassigned': 'Unassigned',
       'estimatedFineLabel': 'Estimated Fine (₪)',
       'editTask': 'Edit Task',
+      'taskDetails': 'Task Details',
+      'myTasks': 'My Tasks',
+      'otherTasks': 'Other Tasks',
+      // Client-admin user management
+      'addUser': 'Add User',
+      'newUser': 'New User',
+      'existingUser': 'Existing User',
+      'firstName': 'First Name',
+      'lastName': 'Last Name',
+      'createAndLink': 'Create & Link',
     },
 
     // ── Hebrew (RTL) ─────────────────────────────────────────────────────────
@@ -559,6 +580,16 @@ class AppLocalizations {
       'unassigned': 'לא מוקצה',
       'estimatedFineLabel': 'קנס משוער (₪)',
       'editTask': 'ערוך משימה',
+      'taskDetails': 'פרטי משימה',
+      'myTasks': 'המשימות שלי',
+      'otherTasks': 'משימות אחרות',
+      // Client-admin user management
+      'addUser': 'הוסף משתמש',
+      'newUser': 'משתמש חדש',
+      'existingUser': 'משתמש קיים',
+      'firstName': 'שם פרטי',
+      'lastName': 'שם משפחה',
+      'createAndLink': 'צור וקשר',
     },
 
     // ── Spanish ──────────────────────────────────────────────────────────────
@@ -728,6 +759,16 @@ class AppLocalizations {
       'unassigned': 'Sin asignar',
       'estimatedFineLabel': 'Multa estimada (₪)',
       'editTask': 'Editar tarea',
+      'taskDetails': 'Detalles de tarea',
+      'myTasks': 'Mis tareas',
+      'otherTasks': 'Otras tareas',
+      // Client-admin user management
+      'addUser': 'Añadir usuario',
+      'newUser': 'Nuevo usuario',
+      'existingUser': 'Usuario existente',
+      'firstName': 'Nombre',
+      'lastName': 'Apellido',
+      'createAndLink': 'Crear y vincular',
     },
 
     // ── French ───────────────────────────────────────────────────────────────
@@ -897,6 +938,16 @@ class AppLocalizations {
       'unassigned': 'Non assigné',
       'estimatedFineLabel': 'Amende estimée (₪)',
       'editTask': 'Modifier la tâche',
+      'taskDetails': 'Détails de la tâche',
+      'myTasks': 'Mes tâches',
+      'otherTasks': 'Autres tâches',
+      // Client-admin user management
+      'addUser': 'Ajouter un utilisateur',
+      'newUser': 'Nouvel utilisateur',
+      'existingUser': 'Utilisateur existant',
+      'firstName': 'Prénom',
+      'lastName': 'Nom de famille',
+      'createAndLink': 'Créer et lier',
     },
 
     // ── Russian ──────────────────────────────────────────────────────────────
@@ -1066,6 +1117,16 @@ class AppLocalizations {
       'unassigned': 'Не назначено',
       'estimatedFineLabel': 'Штраф (₪)',
       'editTask': 'Редактировать задачу',
+      'taskDetails': 'Детали задачи',
+      'myTasks': 'Мои задачи',
+      'otherTasks': 'Другие задачи',
+      // Client-admin user management
+      'addUser': 'Добавить пользователя',
+      'newUser': 'Новый пользователь',
+      'existingUser': 'Существующий',
+      'firstName': 'Имя',
+      'lastName': 'Фамилия',
+      'createAndLink': 'Создать и привязать',
     },
   };
 }
