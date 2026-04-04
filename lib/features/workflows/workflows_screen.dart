@@ -1332,13 +1332,13 @@ class _WfFileViewerDialog extends StatelessWidget {
             ),
             // Body
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: isImage
-                    ? _WfImageDescView(
-                        description: item.imageDescription ?? '')
-                    : _WfDocumentView(fileText: item.fileText ?? ''),
-              ),
+              child: isImage
+                  ? SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: _WfImageDescView(
+                          description: item.imageDescription ?? ''),
+                    )
+                  : _WfDocumentView(fileText: item.fileText ?? ''),
             ),
           ],
         ),
@@ -1347,53 +1347,267 @@ class _WfFileViewerDialog extends StatelessWidget {
   }
 }
 
-class _WfDocumentView extends StatelessWidget {
+class _WfDocumentView extends StatefulWidget {
   final String fileText;
   const _WfDocumentView({required this.fileText});
 
   @override
+  State<_WfDocumentView> createState() => _WfDocumentViewState();
+}
+
+class _WfDocumentViewState extends State<_WfDocumentView> {
+  final _scrollController = ScrollController();
+  final _sectionKeys = <GlobalKey>[];
+  int _activeSection = 0;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollTo(int index) {
+    if (index < 0 || index >= _sectionKeys.length) return;
+    setState(() => _activeSection = index);
+    final ctx = _sectionKeys[index].currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+        alignment: 0.05,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (widget.fileText.isEmpty) {
+      return Center(
+        child: Text('No content available.',
+            style: AppTextStyles.body.copyWith(color: AppColors.muted)),
+      );
+    }
+
     try {
-      final data = jsonDecode(fileText) as Map<String, dynamic>;
+      final data = jsonDecode(widget.fileText) as Map<String, dynamic>;
       final title = data['title'] as String? ?? '';
       final sections = (data['content'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>();
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (title.isNotEmpty) ...[
-            Text(title,
-                style: AppTextStyles.h3
-                    .copyWith(color: AppColors.text)),
-            const Gap(16),
-          ],
-          ...sections.map((s) {
-            final sName = s['sectionName'] as String? ?? '';
-            final sContent = s['sectionContent'] as String? ?? '';
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
+      // Grow key list as needed
+      while (_sectionKeys.length < sections.length) {
+        _sectionKeys.add(GlobalKey());
+      }
+
+      final hasToc = sections.length >= 2 &&
+          sections.any((s) => (s['sectionName'] as String? ?? '').isNotEmpty);
+
+      if (hasToc) {
+        // ── Two-panel layout ──────────────────────────────────
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left TOC panel
+            Container(
+              width: 190,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF3F4F8),
+                border: Border(right: BorderSide(color: AppColors.border)),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (sName.isNotEmpty) ...[
-                    Text(sName,
-                        style: AppTextStyles.label.copyWith(
-                            color: AppColors.blue,
-                            fontWeight: FontWeight.w700)),
-                    const Gap(4),
-                  ],
-                  SelectableText(sContent,
-                      style: AppTextStyles.body
-                          .copyWith(height: 1.55)),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 16, 14, 8),
+                    child: Text(
+                      'CONTENTS',
+                      style: AppTextStyles.label.copyWith(
+                        color: AppColors.muted,
+                        fontSize: 11,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1, color: AppColors.border),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: sections.length,
+                      itemBuilder: (context, i) {
+                        final name =
+                            sections[i]['sectionName'] as String? ?? '';
+                        final isActive = i == _activeSection;
+                        return InkWell(
+                          onTap: () => _scrollTo(i),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 9),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? AppColors.blue.withOpacity(0.08)
+                                  : Colors.transparent,
+                              border: Border(
+                                left: BorderSide(
+                                  color: isActive
+                                      ? AppColors.blue
+                                      : Colors.transparent,
+                                  width: 3,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  '${i + 1}',
+                                  style: AppTextStyles.label.copyWith(
+                                    fontSize: 11,
+                                    color: isActive
+                                        ? AppColors.blue
+                                        : AppColors.muted,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Gap(8),
+                                Expanded(
+                                  child: Text(
+                                    name,
+                                    style: AppTextStyles.body.copyWith(
+                                      fontSize: 12,
+                                      color: isActive
+                                          ? AppColors.blue
+                                          : AppColors.text,
+                                      fontWeight: isActive
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ],
               ),
-            );
-          }),
-        ],
+            ),
+            // Right content panel
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (title.isNotEmpty) ...[
+                      Text(title,
+                          style: AppTextStyles.h3
+                              .copyWith(color: AppColors.text)),
+                      const Gap(12),
+                      const Divider(color: AppColors.border),
+                      const Gap(16),
+                    ],
+                    ...List.generate(sections.length, (i) {
+                      final s = sections[i];
+                      final sName = s['sectionName'] as String? ?? '';
+                      final sContent = s['sectionContent'] as String? ?? '';
+                      return Padding(
+                        key: _sectionKeys[i],
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (sName.isNotEmpty) ...[
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.blue,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const Gap(8),
+                                  Expanded(
+                                    child: Text(
+                                      sName,
+                                      style: AppTextStyles.label.copyWith(
+                                        color: AppColors.blue,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Gap(10),
+                            ],
+                            SelectableText(sContent,
+                                style:
+                                    AppTextStyles.body.copyWith(height: 1.7)),
+                          ],
+                        ),
+                      );
+                    }),
+                    const Gap(40),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+
+      // ── Single-column fallback ────────────────────────────
+      return SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title.isNotEmpty) ...[
+              Text(title,
+                  style: AppTextStyles.h3.copyWith(color: AppColors.text)),
+              const Gap(12),
+              const Divider(color: AppColors.border),
+              const Gap(16),
+            ],
+            ...sections.map((s) {
+              final sName = s['sectionName'] as String? ?? '';
+              final sContent = s['sectionContent'] as String? ?? '';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (sName.isNotEmpty) ...[
+                      Text(sName,
+                          style: AppTextStyles.label.copyWith(
+                              color: AppColors.blue,
+                              fontWeight: FontWeight.w700)),
+                      const Gap(4),
+                    ],
+                    SelectableText(sContent,
+                        style: AppTextStyles.body.copyWith(height: 1.55)),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
       );
     } catch (_) {
-      return SelectableText(fileText, style: AppTextStyles.body);
+      return SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(20),
+        child: SelectableText(widget.fileText, style: AppTextStyles.body),
+      );
     }
   }
 }

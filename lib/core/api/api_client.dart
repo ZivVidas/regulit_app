@@ -8,12 +8,12 @@ part 'api_client.g.dart';
 
 const _baseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://localhost:8001',
+  defaultValue: 'https://regulit-api.onrender.com',
 );
-
+//https://regulit-api.onrender.com
 const _tokenKey = 'auth_token';
 const _refreshTokenKey = 'refresh_token';
-
+//dpg-d74esf450q8c73dv55ag-a.frankfurt-postgres.render.com
 // ── Secure Storage Provider ─────────────────────────────────
 @riverpod
 FlutterSecureStorage secureStorage(SecureStorageRef ref) {

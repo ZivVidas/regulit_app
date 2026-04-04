@@ -1938,13 +1938,13 @@ class _EvidenceViewerDialog extends StatelessWidget {
             ),
             // ── Body ───────────────────────────────────────────
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: isImage
-                    ? _ImageDescriptionView(
-                        description: entry.imgDesc ?? '')
-                    : _DocumentView(fileText: entry.text ?? ''),
-              ),
+              child: isImage
+                  ? SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: _ImageDescriptionView(
+                          description: entry.imgDesc ?? ''),
+                    )
+                  : _DocumentView(fileText: entry.text ?? ''),
             ),
           ],
         ),
@@ -1956,74 +1956,289 @@ class _EvidenceViewerDialog extends StatelessWidget {
 // ── Structured document renderer ──────────────────────────────
 // Parses {"title":"…","content":[{"sectionName":"…","sectionContent":"…"}]}
 // Falls back to plain selectable text for any other format.
-class _DocumentView extends StatelessWidget {
+// When 2+ named sections exist, shows a left TOC panel with scroll-to on tap.
+class _DocumentView extends StatefulWidget {
   final String fileText;
   const _DocumentView({required this.fileText});
 
   @override
-  Widget build(BuildContext context) {
-    if (fileText.isEmpty) {
-      return Center(
-        child: Text('No content available.',
-            style: const TextStyle(
-                fontSize: 13, color: Color(0xFF9CA3AF))),
+  State<_DocumentView> createState() => _DocumentViewState();
+}
+
+class _DocumentViewState extends State<_DocumentView> {
+  final _scrollController = ScrollController();
+  final _sectionKeys = <GlobalKey>[];
+  int _activeSection = 0;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollTo(int index) {
+    if (index < 0 || index >= _sectionKeys.length) return;
+    setState(() => _activeSection = index);
+    final ctx = _sectionKeys[index].currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+        alignment: 0.05,
       );
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.fileText.isEmpty) {
+      return Center(
+        child: Text('No content available.',
+            style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+      );
+    }
+
     try {
-      final decoded = jsonDecode(fileText) as Map<String, dynamic>;
+      final decoded = jsonDecode(widget.fileText) as Map<String, dynamic>;
       final title = decoded['title'] as String? ?? '';
       final content =
-          (decoded['content'] as List?)?.cast<Map<String, dynamic>>() ??
-              [];
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (title.isNotEmpty) ...[
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A237E))),
-            const Gap(16),
-            const Divider(color: Color(0xFFE5E7EB)),
-            const Gap(16),
-          ],
-          ...content.map((section) {
-            final name = section['sectionName'] as String? ?? '';
-            final body = section['sectionContent'] as String? ?? '';
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 20),
+          (decoded['content'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+      // Build section key list (one per section)
+      while (_sectionKeys.length < content.length) {
+        _sectionKeys.add(GlobalKey());
+      }
+
+      final hasToc = content.length >= 2 &&
+          content.any((s) => (s['sectionName'] as String? ?? '').isNotEmpty);
+
+      if (hasToc) {
+        // ── Two-panel layout: TOC left, content right ──────────
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left TOC panel
+            Container(
+              width: 190,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF3F4F8),
+                border: Border(
+                  right: BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (name.isNotEmpty) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8EAF6),
-                        borderRadius: BorderRadius.circular(6),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(14, 16, 14, 8),
+                    child: Text(
+                      'CONTENTS',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF9CA3AF),
+                        letterSpacing: 0.8,
                       ),
-                      child: Text(name,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A237E))),
                     ),
-                    const Gap(8),
-                  ],
-                  Text(body,
-                      style: const TextStyle(fontSize: 13, height: 1.6)),
+                  ),
+                  const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: content.length,
+                      itemBuilder: (context, i) {
+                        final name =
+                            content[i]['sectionName'] as String? ?? '';
+                        final isActive = i == _activeSection;
+                        return InkWell(
+                          onTap: () => _scrollTo(i),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 9),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? const Color(0xFF1A237E).withOpacity(0.08)
+                                  : Colors.transparent,
+                              border: Border(
+                                left: BorderSide(
+                                  color: isActive
+                                      ? const Color(0xFF1A237E)
+                                      : Colors.transparent,
+                                  width: 3,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  '${i + 1}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: isActive
+                                        ? const Color(0xFF1A237E)
+                                        : const Color(0xFF9CA3AF),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    name,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isActive
+                                          ? const Color(0xFF1A237E)
+                                          : const Color(0xFF374151),
+                                      fontWeight: isActive
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ],
               ),
-            );
-          }),
-        ],
+            ),
+            // Right content panel
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (title.isNotEmpty) ...[
+                      Text(title,
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A237E))),
+                      const Gap(12),
+                      const Divider(color: Color(0xFFE5E7EB)),
+                      const Gap(16),
+                    ],
+                    ...List.generate(content.length, (i) {
+                      final section = content[i];
+                      final name = section['sectionName'] as String? ?? '';
+                      final body = section['sectionContent'] as String? ?? '';
+                      return Padding(
+                        key: _sectionKeys[i],
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (name.isNotEmpty) ...[
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1A237E),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      name,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF1A237E),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Gap(10),
+                            ],
+                            SelectableText(
+                              body,
+                              style:
+                                  const TextStyle(fontSize: 13, height: 1.7),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const Gap(40),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+
+      // ── Single-column fallback (0 or 1 sections) ───────────
+      return SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title.isNotEmpty) ...[
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A237E))),
+              const Gap(12),
+              const Divider(color: Color(0xFFE5E7EB)),
+              const Gap(16),
+            ],
+            ...content.map((section) {
+              final name = section['sectionName'] as String? ?? '';
+              final body = section['sectionContent'] as String? ?? '';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (name.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8EAF6),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(name,
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A237E))),
+                      ),
+                      const Gap(8),
+                    ],
+                    SelectableText(body,
+                        style: const TextStyle(fontSize: 13, height: 1.6)),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
       );
     } catch (_) {
       // Not structured JSON — show as plain selectable text
-      return SelectableText(fileText,
-          style: const TextStyle(fontSize: 13, height: 1.6));
+      return SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(20),
+        child: SelectableText(widget.fileText,
+            style: const TextStyle(fontSize: 13, height: 1.6)),
+      );
     }
   }
 }
