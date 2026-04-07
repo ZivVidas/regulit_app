@@ -260,18 +260,18 @@ class QuizResultEngineScreen extends ConsumerWidget {
       BuildContext context, String label, Future<void> Function() onConfirm) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Confirm delete'),
         content: Text('Delete $label?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dialogContext, false),
               child: const Text('Cancel')),
           FilledButton(
             style:
                 FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Delete'),
           ),
         ],
@@ -409,7 +409,7 @@ class _SignalCard extends StatefulWidget {
   final int index;
   final Map<String, String> optionLabels;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final Future<void> Function() onDelete;
 
   const _SignalCard({
     required this.signal,
@@ -527,16 +527,19 @@ class _SignalCardState extends State<_SignalCard> {
               ),
               Column(
                 children: [
-                  _ActionIcon(
-                    icon: Icons.edit_outlined,
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 16),
                     color: _kGrad2,
-                    onTap: widget.onEdit,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Edit',
+                    onPressed: widget.onEdit,
                   ),
-                  const Gap(2),
-                  _ActionIcon(
-                    icon: Icons.delete_outline_rounded,
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 16),
                     color: AppColors.danger,
-                    onTap: widget.onDelete,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Delete',
+                    onPressed: () => widget.onDelete(),
                   ),
                 ],
               ),
@@ -544,10 +547,7 @@ class _SignalCardState extends State<_SignalCard> {
           ),
         ),
       ),
-    )
-        .animate()
-        .fadeIn(duration: 300.ms, delay: (widget.index * 40).ms)
-        .slideX(begin: 0.08, end: 0, duration: 300.ms, delay: (widget.index * 40).ms);
+    );
   }
 }
 
@@ -556,7 +556,7 @@ class _RuleCard extends StatefulWidget {
   final Map<String, dynamic> rule;
   final int index;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final Future<void> Function() onDelete;
 
   const _RuleCard({
     required this.rule,
@@ -671,16 +671,19 @@ class _RuleCardState extends State<_RuleCard> {
               ),
               Column(
                 children: [
-                  _ActionIcon(
-                    icon: Icons.edit_outlined,
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 16),
                     color: _kGrad2,
-                    onTap: widget.onEdit,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Edit',
+                    onPressed: widget.onEdit,
                   ),
-                  const Gap(2),
-                  _ActionIcon(
-                    icon: Icons.delete_outline_rounded,
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 16),
                     color: AppColors.danger,
-                    onTap: widget.onDelete,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Delete',
+                    onPressed: () => widget.onDelete(),
                   ),
                 ],
               ),
@@ -688,10 +691,7 @@ class _RuleCardState extends State<_RuleCard> {
           ),
         ),
       ),
-    )
-        .animate()
-        .fadeIn(duration: 300.ms, delay: (widget.index * 40).ms)
-        .slideX(begin: 0.08, end: 0, duration: 300.ms, delay: (widget.index * 40).ms);
+    );
   }
 }
 
@@ -768,7 +768,7 @@ class _EmptyHint extends StatelessWidget {
 class _ActionIcon extends StatefulWidget {
   final IconData icon;
   final Color color;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
 
   const _ActionIcon(
       {required this.icon, required this.color, required this.onTap});
@@ -786,7 +786,8 @@ class _ActionIconState extends State<_ActionIcon> {
       onEnter: (_) => setState(() => _hov = true),
       onExit: (_) => setState(() => _hov = false),
       child: GestureDetector(
-        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        onTap: () => widget.onTap(),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           padding: const EdgeInsets.all(6),
