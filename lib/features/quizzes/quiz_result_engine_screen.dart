@@ -189,14 +189,14 @@ class QuizResultEngineScreen extends ConsumerWidget {
                     icon: Icons.rule_rounded,
                     color: const Color(0xFF7C3AED),
                     onAdd: () => _showRuleDialog(
-                        context, ref, dio, quizId, s.signals, null),
+                        context, ref, dio, quizId, s.signals, s.optionLabels, null),
                   ),
                   const Gap(8),
                   ...s.rules.asMap().entries.map((e) => _RuleCard(
                         rule: e.value,
                         index: e.key,
                         onEdit: () => _showRuleDialog(
-                            context, ref, dio, quizId, s.signals, e.value),
+                            context, ref, dio, quizId, s.signals, s.optionLabels, e.value),
                         onDelete: () => _confirmDelete(
                           context,
                           'rule priority ${e.value['priority']}',
@@ -239,6 +239,7 @@ class QuizResultEngineScreen extends ConsumerWidget {
 
   void _showRuleDialog(BuildContext context, WidgetRef ref, Dio dio,
       String quizId, List<Map<String, dynamic>> signals,
+      Map<String, String> optionLabels,
       Map<String, dynamic>? initial) {
     showDialog<void>(
       context: context,
@@ -247,6 +248,7 @@ class QuizResultEngineScreen extends ConsumerWidget {
         dio: dio,
         quizId: quizId,
         signals: signals,
+        optionLabels: optionLabels,
         initial: initial,
         onSaved: () =>
             ref.read(_engineProvider(quizId).notifier).load(),
@@ -1185,6 +1187,7 @@ class _RuleDialog extends StatefulWidget {
   final Dio dio;
   final String quizId;
   final List<Map<String, dynamic>> signals;
+  final Map<String, String> optionLabels;
   final Map<String, dynamic>? initial;
   final VoidCallback onSaved;
 
@@ -1192,6 +1195,7 @@ class _RuleDialog extends StatefulWidget {
     required this.dio,
     required this.quizId,
     required this.signals,
+    required this.optionLabels,
     this.initial,
     required this.onSaved,
   });
@@ -1208,6 +1212,7 @@ class _RuleDialogState extends State<_RuleDialog> {
   late final TextEditingController _conditionCtrl;
 
   bool _saving = false;
+  bool _jsonViewMode = true;
   String? _error;
 
   bool get _isEdit => widget.initial != null;
@@ -1403,29 +1408,77 @@ class _RuleDialogState extends State<_RuleDialog> {
                   ),
                   const Gap(8),
                 ],
-                const Text('Condition (JSON) *',
-                    style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600)),
-                const Gap(4),
-                TextFormField(
-                  controller: _conditionCtrl,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: '{ "signal": "is_public_body" }',
-                  ),
-                  style: const TextStyle(
-                      fontFamily: 'monospace', fontSize: 12),
-                  maxLines: 10,
-                  validator: (v) {
-                    if (v?.trim().isEmpty ?? true) return 'Required';
-                    try {
-                      json.decode(v!);
-                    } catch (_) {
-                      return 'Invalid JSON';
-                    }
-                    return null;
-                  },
+                Row(
+                  children: [
+                    const Text('Condition (JSON) *',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
+                    const Spacer(),
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.blue,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        textStyle: const TextStyle(fontSize: 12),
+                      ),
+                      icon: Icon(
+                        _jsonViewMode
+                            ? Icons.edit_outlined
+                            : Icons.account_tree_outlined,
+                        size: 14,
+                      ),
+                      label: Text(_jsonViewMode ? 'Edit JSON' : 'JSON View'),
+                      onPressed: () {
+                        if (!_jsonViewMode) {
+                          // switching TO view — validate first
+                          try {
+                            json.decode(_conditionCtrl.text);
+                            setState(() => _jsonViewMode = true);
+                          } catch (_) {
+                            setState(() => _error =
+                                'Fix JSON errors before switching to view.');
+                          }
+                        } else {
+                          setState(() => _jsonViewMode = false);
+                        }
+                      },
+                    ),
+                  ],
                 ),
+                const Gap(4),
+                if (_jsonViewMode)
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: _JsonTreeView(
+                      jsonText: _conditionCtrl.text,
+                      signals: widget.signals,
+                      optionLabels: widget.optionLabels,
+                    ),
+                  )
+                else
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: TextFormField(
+                      controller: _conditionCtrl,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: '{ "signal": "is_public_body" }',
+                      ),
+                      style: const TextStyle(
+                          fontFamily: 'monospace', fontSize: 12),
+                      maxLines: 10,
+                      validator: (v) {
+                        if (v?.trim().isEmpty ?? true) return 'Required';
+                        try {
+                          json.decode(v!);
+                        } catch (_) {
+                          return 'Invalid JSON';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
                 if (_error != null) ...[
                   const Gap(8),
                   Text(_error!,
@@ -1454,4 +1507,269 @@ class _RuleDialogState extends State<_RuleDialog> {
       ],
     );
   }
+}
+
+// ── JSON Tree View ─────────────────────────────────────────────
+class _JsonTreeView extends StatefulWidget {
+  final String jsonText;
+  final List<Map<String, dynamic>> signals;
+  final Map<String, String> optionLabels;
+
+  const _JsonTreeView({
+    required this.jsonText,
+    this.signals = const [],
+    this.optionLabels = const {},
+  });
+
+  @override
+  State<_JsonTreeView> createState() => _JsonTreeViewState();
+}
+
+class _JsonTreeViewState extends State<_JsonTreeView> {
+  late dynamic _parsed;
+  final Set<String> _expanded = {'root'};
+
+  @override
+  void initState() {
+    super.initState();
+    try {
+      _parsed = json.decode(widget.jsonText);
+    } catch (_) {
+      _parsed = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_parsed == null) {
+      return const Text('Invalid JSON',
+          style: TextStyle(color: AppColors.danger, fontSize: 12));
+    }
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 220),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FF),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(12),
+        child: _buildValue(_parsed, 'root', 0),
+      ),
+    );
+  }
+
+  Widget _buildValue(dynamic value, String path, int depth,
+      {String? parentKey}) {
+    if (value is Map<String, dynamic>) return _buildObject(value, path, depth);
+    if (value is List) return _buildArray(value, path, depth);
+    return _buildLeaf(value, parentKey: parentKey);
+  }
+
+  Widget _buildObject(Map<String, dynamic> obj, String path, int depth) {
+    if (obj.isEmpty) return _codeText('{}', const Color(0xFF6B7280));
+    final isExpanded = _expanded.contains(path);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(() {
+            if (isExpanded) _expanded.remove(path);
+            else _expanded.add(path);
+          }),
+          borderRadius: BorderRadius.circular(3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isExpanded ? Icons.arrow_drop_down : Icons.arrow_right,
+                size: 16,
+                color: const Color(0xFF6B7280),
+              ),
+              _codeText(
+                isExpanded
+                    ? '{'
+                    : '{ ${obj.length} key${obj.length != 1 ? 's' : ''} }',
+                const Color(0xFF6B7280),
+              ),
+            ],
+          ),
+        ),
+        if (isExpanded)
+          Padding(
+            padding: const EdgeInsets.only(left: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...obj.entries.map((e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 3),
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.start,
+                        children: [
+                          _codeText('"${e.key}": ', const Color(0xFF1A3C6B),
+                              bold: true),
+                          _buildValue(e.value, '$path.${e.key}', depth + 1,
+                              parentKey: e.key),
+                        ],
+                      ),
+                    )),
+                _codeText('}', const Color(0xFF6B7280)),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildArray(List<dynamic> arr, String path, int depth) {
+    if (arr.isEmpty) return _codeText('[]', const Color(0xFF6B7280));
+    final isExpanded = _expanded.contains(path);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(() {
+            if (isExpanded) _expanded.remove(path);
+            else _expanded.add(path);
+          }),
+          borderRadius: BorderRadius.circular(3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isExpanded ? Icons.arrow_drop_down : Icons.arrow_right,
+                size: 16,
+                color: const Color(0xFF6B7280),
+              ),
+              _codeText(
+                isExpanded
+                    ? '['
+                    : '[ ${arr.length} item${arr.length != 1 ? 's' : ''} ]',
+                const Color(0xFF6B7280),
+              ),
+            ],
+          ),
+        ),
+        if (isExpanded)
+          Padding(
+            padding: const EdgeInsets.only(left: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...arr.asMap().entries.map((e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 3),
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.start,
+                        children: [
+                          _codeText('${e.key}: ', const Color(0xFF6B7280)),
+                          _buildValue(e.value, '$path[${e.key}]', depth + 1),
+                        ],
+                      ),
+                    )),
+                _codeText(']', const Color(0xFF6B7280)),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildLeaf(dynamic value, {String? parentKey}) {
+    if (value == null) {
+      return _codeText('null', const Color(0xFF9CA3AF), italic: true);
+    } else if (value is bool) {
+      return _codeText('$value', const Color(0xFF7C3AED));
+    } else if (value is num) {
+      return _codeText('$value', const Color(0xFF2563EB));
+    }
+
+    // String leaf
+    final strVal = '$value';
+
+    // If this is a signal value, show tooltip with required/excluded options
+    if (parentKey == 'signal' && widget.signals.isNotEmpty) {
+      final sig = widget.signals.cast<Map<String, dynamic>?>().firstWhere(
+            (s) => s?['signalName'] == strVal,
+            orElse: () => null,
+          );
+      if (sig != null) {
+        final required = (sig['requiredOptionIds'] as List? ?? [])
+            .cast<String>()
+            .map((id) => widget.optionLabels[id] ?? id)
+            .toList();
+        final excluded = (sig['excludedOptionIds'] as List? ?? [])
+            .cast<String>()
+            .map((id) => widget.optionLabels[id] ?? id)
+            .toList();
+
+        final tooltipLines = <String>[];
+        if (required.isNotEmpty) {
+          tooltipLines.add('Required:');
+          tooltipLines.add('─────────────');
+          for (var i = 0; i < required.length; i++) {
+            tooltipLines.add('${i + 1}. ${required[i]}');
+          }
+        }
+        if (excluded.isNotEmpty) {
+          if (tooltipLines.isNotEmpty) tooltipLines.add('');
+          tooltipLines.add('Excluded:');
+          for (var i = 0; i < excluded.length; i++) {
+            tooltipLines.add('${i + 1}. ${excluded[i]}');
+          }
+        }
+        if (tooltipLines.isEmpty) {
+          tooltipLines.add('No required or excluded options defined.');
+        }
+
+        return Tooltip(
+          message: tooltipLines.join('\n'),
+          preferBelow: false,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A3C6B),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          textStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontFamily: 'monospace',
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: const Color(0xFF16A34A).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(
+                  color: const Color(0xFF16A34A).withOpacity(0.4), width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _codeText('"$strVal"', const Color(0xFF16A34A)),
+                const SizedBox(width: 4),
+                const Icon(Icons.info_outline_rounded,
+                    size: 11, color: Color(0xFF16A34A)),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
+    return _codeText('"$strVal"', const Color(0xFF16A34A));
+  }
+
+  Widget _codeText(String text, Color color,
+      {bool bold = false, bool italic = false}) =>
+      Text(
+        text,
+        style: TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 12,
+          color: color,
+          fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
+          fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+        ),
+      );
 }

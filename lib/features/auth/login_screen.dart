@@ -5,7 +5,6 @@ import 'package:gap/gap.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/auth/auth_provider.dart';
-import '../../core/models/user.dart';
 import '../../l10n/app_localizations.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -214,82 +213,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       .copyWith(color: AppColors.white),
                                 ),
                         ),
-                        const Gap(AppSpacing.md),
-
-                        // ── Divider ───────────────────────────────────────────
-                        Row(children: [
-                          const Expanded(child: Divider()),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm),
-                            child: Text(l10n.orContinueWith,
-                                style: AppTextStyles.caption),
-                          ),
-                          const Expanded(child: Divider()),
-                        ]),
-                        const Gap(AppSpacing.md),
-
-                        // ── Microsoft SSO ─────────────────────────────────────
-                        OutlinedButton.icon(
-                          onPressed: isLoading
-                              ? null
-                              : () => ref
-                                  .read(authStateProvider.notifier)
-                                  .loginWithSSO('microsoft'),
-                          icon: const Icon(Icons.key_outlined, size: 16),
-                          label: Text(l10n.microsoftSso),
-                          style: OutlinedButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-
-                        const Gap(AppSpacing.xxl),
-
-                        // ── Demo Quick-Login ──────────────────────────────────
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.md),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(children: [
-                                const Icon(Icons.science_outlined,
-                                    size: 14, color: AppColors.orange),
-                                const Gap(AppSpacing.xs),
-                                Text(l10n.demoLabel,
-                                    style: AppTextStyles.label),
-                              ]),
-                              const Gap(AppSpacing.sm),
-                              Row(
-                                children: [
-                                  _DemoChip(
-                                    label: 'CSM View',
-                                    icon: Icons.supervised_user_circle_outlined,
-                                    role: UserRole.csm,
-                                  ),
-                                  const Gap(AppSpacing.xs),
-                                  _DemoChip(
-                                    label: 'CEO View',
-                                    icon: Icons.dashboard_outlined,
-                                    role: UserRole.clientAdmin,
-                                  ),
-                                  const Gap(AppSpacing.xs),
-                                  _DemoChip(
-                                    label: 'IT View',
-                                    icon: Icons.task_alt_outlined,
-                                    role: UserRole.itExecutor,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
                         const Gap(AppSpacing.lg),
 
                         // ── Footer ────────────────────────────────────────────
@@ -314,50 +237,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     showDialog(
       context: context,
       builder: (_) => const _ForgotPasswordDialog(),
-    );
-  }
-}
-
-// ── Demo Role Chip ────────────────────────────────────────────────────────────
-class _DemoChip extends ConsumerWidget {
-  final String label;
-  final IconData icon;
-  final UserRole role;
-
-  const _DemoChip({
-    required this.label,
-    required this.icon,
-    required this.role,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isLoading = ref.watch(authStateProvider).isLoading;
-
-    return Expanded(
-      child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.blue,
-          side: const BorderSide(color: AppColors.border),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-        ),
-        onPressed: isLoading
-            ? null
-            : () => ref
-                .read(authStateProvider.notifier)
-                .loginAsMock(role),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: AppColors.orange),
-            const Gap(2),
-            Text(label, style: AppTextStyles.tag),
-          ],
-        ),
-      ),
     );
   }
 }

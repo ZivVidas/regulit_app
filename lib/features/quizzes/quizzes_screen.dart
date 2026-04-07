@@ -172,6 +172,9 @@ class _QuizzesScreenState extends ConsumerState<QuizzesScreen> {
                                 onSteps: () => context.push(
                                   '/admin/quizzes/${q['id']}/steps?name=${Uri.encodeComponent(q['name'] as String? ?? '')}',
                                 ),
+                                onResultEngine: () => context.push(
+                                  '/admin/quizzes/${q['id']}/result-engine?name=${Uri.encodeComponent(q['name'] as String? ?? '')}',
+                                ),
                                 onEdit: () => _showQuizForm(context, q),
                                 onDeactivate: q['isActive'] == true
                                     ? () => _confirmDeactivate(
@@ -458,6 +461,7 @@ class _QuizCard extends StatefulWidget {
   final int index;
   final VoidCallback onEdit;
   final VoidCallback onSteps;
+  final VoidCallback onResultEngine;
   final VoidCallback? onDeactivate;
 
   const _QuizCard({
@@ -465,6 +469,7 @@ class _QuizCard extends StatefulWidget {
     required this.index,
     required this.onEdit,
     required this.onSteps,
+    required this.onResultEngine,
     this.onDeactivate,
   });
 
@@ -623,6 +628,13 @@ class _QuizCardState extends State<_QuizCard> {
               ),
 
               // Actions
+              _ActionIcon(
+                icon: Icons.account_tree_rounded,
+                color: const Color(0xFF7C3AED),
+                tooltip: 'Result Engine',
+                onTap: widget.onResultEngine,
+              ),
+              const Gap(4),
               _ActionIcon(
                 icon: Icons.list_alt_rounded,
                 color: const Color(0xFF059669),

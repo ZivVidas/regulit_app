@@ -412,6 +412,18 @@ class _BoardForSession extends ConsumerWidget {
                   done: done,
                   overdue: overdue,
                   l10n: l10n,
+                  isItExecutor: isItExecutor,
+                  currentUserId: currentUserId,
+                  // Drag-and-drop status change — PATCH the task then refresh.
+                  onStatusChange: (task, newStatus) async {
+                    try {
+                      await ref.read(dioProvider).patch<void>(
+                        '/workflow-tasks/${task.id}/status',
+                        data: {'statusId': newStatus.id},
+                      );
+                    } catch (_) {}
+                    ref.invalidate(sessionTasksProvider(sessionId));
+                  },
                   // it_executor  → full edit dialog on tap.
                   // client_admin → read-only detail sheet; status change only
                   //                if task is assigned to the current user.
@@ -658,6 +670,9 @@ class _KanbanBoard extends StatelessWidget {
   final List<WorkflowTask> done;
   final List<WorkflowTask> overdue;
   final AppLocalizations l10n;
+  final bool isItExecutor;
+  final String? currentUserId;
+  final Future<void> Function(WorkflowTask, WorkflowTaskStatus)? onStatusChange;
   final void Function(WorkflowTask)? onTaskTap;
 
   const _KanbanBoard({
@@ -667,6 +682,9 @@ class _KanbanBoard extends StatelessWidget {
     required this.done,
     required this.overdue,
     required this.l10n,
+    this.isItExecutor = false,
+    this.currentUserId,
+    this.onStatusChange,
     this.onTaskTap,
   });
 
@@ -676,9 +694,6 @@ class _KanbanBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const cols = 5;
-    // Outer vertical scroll lets columns grow to their natural (tallest) height.
-    // IntrinsicHeight makes every column the same height as the tallest one.
-    // Inner horizontal scroll handles narrow viewports.
     return SingleChildScrollView(
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -690,47 +705,67 @@ class _KanbanBoard extends StatelessWidget {
               children: [
                 _KanbanCol(
                   title: l10n.taskToDo,
+                  status: WorkflowTaskStatus.todo,
                   tasks: todo,
                   headerColor: AppColors.muted,
                   headerBg: AppColors.surface,
                   l10n: l10n,
+                  isItExecutor: isItExecutor,
+                  currentUserId: currentUserId,
+                  onStatusChange: onStatusChange,
                   onTaskTap: onTaskTap,
                 ),
                 const Gap(_gap),
                 _KanbanCol(
                   title: l10n.taskInProgress,
+                  status: WorkflowTaskStatus.inProgress,
                   tasks: inProgress,
                   headerColor: AppColors.warning,
                   headerBg: AppColors.warningLight,
                   l10n: l10n,
+                  isItExecutor: isItExecutor,
+                  currentUserId: currentUserId,
+                  onStatusChange: onStatusChange,
                   onTaskTap: onTaskTap,
                 ),
                 const Gap(_gap),
                 _KanbanCol(
                   title: l10n.taskPendingReview,
+                  status: WorkflowTaskStatus.pendingReview,
                   tasks: pendingReview,
                   headerColor: AppColors.orange,
                   headerBg: AppColors.orangeLight,
                   l10n: l10n,
+                  isItExecutor: isItExecutor,
+                  currentUserId: currentUserId,
+                  onStatusChange: onStatusChange,
                   onTaskTap: onTaskTap,
                 ),
                 const Gap(_gap),
                 _KanbanCol(
                   title: l10n.taskDone,
+                  status: WorkflowTaskStatus.approved,
                   tasks: done,
                   headerColor: AppColors.success,
                   headerBg: AppColors.successLight,
                   dimmed: true,
                   l10n: l10n,
+                  isItExecutor: isItExecutor,
+                  currentUserId: currentUserId,
+                  onStatusChange: onStatusChange,
                   onTaskTap: onTaskTap,
                 ),
                 const Gap(_gap),
                 _KanbanCol(
                   title: l10n.taskOverdue,
+                  status: WorkflowTaskStatus.overdue,
                   tasks: overdue,
                   headerColor: AppColors.danger,
                   headerBg: AppColors.dangerLight,
                   l10n: l10n,
+                  isItExecutor: isItExecutor,
+                  currentUserId: currentUserId,
+                  onStatusChange: onStatusChange,
                   onTaskTap: onTaskTap,
                 ),
               ],
@@ -744,100 +779,146 @@ class _KanbanBoard extends StatelessWidget {
 
 // ── Kanban Column ──────────────────────────────────────────────────────────────
 
-class _KanbanCol extends StatelessWidget {
+class _KanbanCol extends StatefulWidget {
   final String title;
+  final WorkflowTaskStatus status;
   final List<WorkflowTask> tasks;
   final Color headerColor;
   final Color headerBg;
   final bool dimmed;
   final AppLocalizations l10n;
+  final bool isItExecutor;
+  final String? currentUserId;
+  final Future<void> Function(WorkflowTask, WorkflowTaskStatus)? onStatusChange;
   final void Function(WorkflowTask)? onTaskTap;
 
   const _KanbanCol({
     required this.title,
+    required this.status,
     required this.tasks,
     required this.headerColor,
     required this.headerBg,
     this.dimmed = false,
     required this.l10n,
+    this.isItExecutor = false,
+    this.currentUserId,
+    this.onStatusChange,
     this.onTaskTap,
   });
 
   @override
+  State<_KanbanCol> createState() => _KanbanColState();
+}
+
+class _KanbanColState extends State<_KanbanCol> {
+  bool _isDragOver = false;
+
+  bool _canDrag(WorkflowTask task) =>
+      widget.isItExecutor ||
+      (widget.currentUserId != null &&
+          task.assignedToUserId == widget.currentUserId);
+
+  @override
   Widget build(BuildContext context) {
-    // Single Container wraps header + cards so the background/border fills
-    // the full column height (determined by IntrinsicHeight on the Row).
-    // No Flexible/Expanded needed — vertical scroll handles overflow.
-    return SizedBox(
-      width: _KanbanBoard._colW,
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F7FA),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: headerColor.withOpacity(0.3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-              decoration: BoxDecoration(
-                color: headerBg,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(10)),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    title.toUpperCase(),
-                    style: AppTextStyles.label
-                        .copyWith(color: headerColor, fontSize: 11),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: headerColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text('${tasks.length}',
-                        style:
-                            AppTextStyles.tag.copyWith(color: headerColor)),
-                  ),
-                ],
+    return DragTarget<WorkflowTask>(
+      onWillAcceptWithDetails: (details) =>
+          details.data.status != widget.status,
+      onAcceptWithDetails: (details) {
+        setState(() => _isDragOver = false);
+        widget.onStatusChange?.call(details.data, widget.status);
+      },
+      onMove: (_) => setState(() => _isDragOver = true),
+      onLeave: (_) => setState(() => _isDragOver = false),
+      builder: (context, candidateData, _) {
+        final isHovering = candidateData.isNotEmpty;
+        return SizedBox(
+          width: _KanbanBoard._colW,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: isHovering
+                  ? widget.headerColor.withOpacity(0.06)
+                  : const Color(0xFFF5F7FA),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isHovering
+                    ? widget.headerColor.withOpacity(0.65)
+                    : widget.headerColor.withOpacity(0.3),
+                width: isHovering ? 2 : 1,
               ),
             ),
-
-            // Cards — plain Column so every task is always visible.
-            // IntrinsicHeight + outer vertical scroll handle equal height
-            // and overflow respectively; no shrinkWrap/NeverScrollable needed.
-            if (tasks.isEmpty)
-              _EmptyCol(label: l10n.taskNoItems)
-            else
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  children: [
-                    for (int i = 0; i < tasks.length; i++) ...[
-                      _TaskCard(
-                        task: tasks[i],
-                        dimmed: dimmed,
-                        l10n: l10n,
-                        onTap: onTaskTap == null
-                            ? null
-                            : () => onTaskTap!(tasks[i]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: isHovering
+                        ? widget.headerColor.withOpacity(0.12)
+                        : widget.headerBg,
+                    borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(10)),
+                  ),
+                  child: Row(
+                    children: [
+                      if (isHovering)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: Icon(Icons.move_down_rounded,
+                              size: 13, color: widget.headerColor),
+                        ),
+                      Text(
+                        widget.title.toUpperCase(),
+                        style: AppTextStyles.label.copyWith(
+                            color: widget.headerColor, fontSize: 11),
                       ),
-                      if (i < tasks.length - 1) const Gap(6),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: widget.headerColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text('${widget.tasks.length}',
+                            style: AppTextStyles.tag
+                                .copyWith(color: widget.headerColor)),
+                      ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-          ],
-        ),
-      ),
+
+                // Cards
+                if (widget.tasks.isEmpty)
+                  _EmptyCol(label: widget.l10n.taskNoItems)
+                else
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Column(
+                      children: [
+                        for (int i = 0; i < widget.tasks.length; i++) ...[
+                          _TaskCard(
+                            task: widget.tasks[i],
+                            dimmed: widget.dimmed,
+                            l10n: widget.l10n,
+                            canDrag: _canDrag(widget.tasks[i]),
+                            onTap: widget.onTaskTap == null
+                                ? null
+                                : () => widget.onTaskTap!(widget.tasks[i]),
+                          ),
+                          if (i < widget.tasks.length - 1) const Gap(6),
+                        ],
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -864,12 +945,15 @@ class _TaskCard extends ConsumerStatefulWidget {
   final bool dimmed;
   final AppLocalizations l10n;
   final VoidCallback? onTap;
+  /// Whether this user is allowed to drag the card to a new column.
+  final bool canDrag;
 
   const _TaskCard({
     required this.task,
     required this.dimmed,
     required this.l10n,
     this.onTap,
+    this.canDrag = false,
   });
 
   @override
@@ -878,6 +962,7 @@ class _TaskCard extends ConsumerStatefulWidget {
 
 class _TaskCardState extends ConsumerState<_TaskCard> {
   bool _hovered = false;
+  bool _dragging = false;
 
   Color get _accent => switch (widget.task.status) {
         WorkflowTaskStatus.todo => AppColors.muted,
@@ -887,144 +972,207 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
         WorkflowTaskStatus.overdue => AppColors.danger,
       };
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildCard({bool dragging = false}) {
     final task = widget.task;
     final isOverdue = task.status == WorkflowTaskStatus.overdue;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 2),
-        padding: const EdgeInsets.all(11),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFDDE3EC)),
-        ),
-        child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Task name
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: widget.canDrag
+          ? SystemMouseCursors.grab
+          : SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          margin: const EdgeInsets.only(bottom: 2),
+          padding: const EdgeInsets.all(11),
+          decoration: BoxDecoration(
+            color: dragging
+                ? Colors.white.withOpacity(0.6)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _hovered && !dragging
+                  ? _accent.withOpacity(0.5)
+                  : const Color(0xFFDDE3EC),
+            ),
+            boxShadow: _hovered && !dragging
+                ? [
+                    BoxShadow(
+                      color: _accent.withOpacity(0.12),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Task name row — drag handle on the right when permitted
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      task.taskName.isEmpty ? '(no name)' : task.taskName,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A2E)),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (widget.canDrag) ...[
+                    const Gap(4),
+                    Tooltip(
+                      message: 'Drag to change status',
+                      child: Icon(
+                        Icons.drag_indicator_rounded,
+                        size: 15,
+                        color: _hovered
+                            ? _accent
+                            : AppColors.muted.withOpacity(0.5),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (task.whatToDo != null && task.whatToDo!.isNotEmpty) ...[
+                const Gap(4),
                 Text(
-                  task.taskName.isEmpty ? '(no name)' : task.taskName,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A2E)),
+                  task.whatToDo!,
+                  style: AppTextStyles.caption,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (task.whatToDo != null && task.whatToDo!.isNotEmpty) ...[
-                  const Gap(4),
-                  Text(
-                    task.whatToDo!,
-                    style: AppTextStyles.caption,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                if (task.risk != null && task.risk!.isNotEmpty) ...[
-                  const Gap(4),
-                  Row(
-                    children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          size: 11, color: AppColors.orange),
-                      const Gap(3),
-                      Expanded(
-                        child: Text(
-                          task.risk!,
-                          style: AppTextStyles.caption.copyWith(
-                              color: AppColors.orange,
-                              fontStyle: FontStyle.italic),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                const Gap(8),
-                // Due date row
-                if (task.dueDate != null)
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today_outlined,
-                          size: 11,
-                          color: isOverdue
-                              ? AppColors.danger
-                              : AppColors.muted),
-                      const Gap(3),
-                      Expanded(
-                        child: Text(
-                          '${widget.l10n.taskDueLabel} ${_fmtDate(task.dueDate!)}',
-                          style: AppTextStyles.caption.copyWith(
-                            color: isOverdue
-                                ? AppColors.danger
-                                : AppColors.muted,
-                            fontWeight: isOverdue
-                                ? FontWeight.w700
-                                : FontWeight.w400,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                // Assignee row
-                if (task.assignedToUserName != null &&
-                    task.assignedToUserName!.isNotEmpty) ...[
-                  const Gap(4),
-                  Row(
-                    children: [
-                      const Icon(Icons.person_outline,
-                          size: 11, color: AppColors.muted),
-                      const Gap(3),
-                      Expanded(
-                        child: Text(
-                          task.assignedToUserName!,
-                          style: AppTextStyles.caption,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                // Footer: required badge + evidence count
-                const Gap(6),
+              ],
+              if (task.risk != null && task.risk!.isNotEmpty) ...[
+                const Gap(4),
                 Row(
                   children: [
-                    if (task.isRequired)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: AppColors.dangerLight,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          widget.l10n.taskRequired,
-                          style: AppTextStyles.caption.copyWith(
-                              color: AppColors.danger, fontSize: 9),
-                        ),
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 11, color: AppColors.orange),
+                    const Gap(3),
+                    Expanded(
+                      child: Text(
+                        task.risk!,
+                        style: AppTextStyles.caption.copyWith(
+                            color: AppColors.orange,
+                            fontStyle: FontStyle.italic),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    const Spacer(),
-                    if (task.evidenceCount > 0) ...[
-                      Icon(Icons.attach_file_rounded,
-                          size: 11, color: AppColors.muted),
-                      Text('${task.evidenceCount}',
-                          style: AppTextStyles.caption),
-                    ],
-                    if (_hovered && widget.onTap != null)
-                      Icon(Icons.edit_outlined,
-                          size: 11,
-                          color: _accent.withOpacity(0.7)),
+                    ),
                   ],
                 ),
-
               ],
-            ),
+              const Gap(8),
+              // Due date row
+              if (task.dueDate != null)
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today_outlined,
+                        size: 11,
+                        color:
+                            isOverdue ? AppColors.danger : AppColors.muted),
+                    const Gap(3),
+                    Expanded(
+                      child: Text(
+                        '${widget.l10n.taskDueLabel} ${_fmtDate(task.dueDate!)}',
+                        style: AppTextStyles.caption.copyWith(
+                          color:
+                              isOverdue ? AppColors.danger : AppColors.muted,
+                          fontWeight: isOverdue
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              // Assignee row
+              if (task.assignedToUserName != null &&
+                  task.assignedToUserName!.isNotEmpty) ...[
+                const Gap(4),
+                Row(
+                  children: [
+                    const Icon(Icons.person_outline,
+                        size: 11, color: AppColors.muted),
+                    const Gap(3),
+                    Expanded(
+                      child: Text(
+                        task.assignedToUserName!,
+                        style: AppTextStyles.caption,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              // Footer: required badge + evidence count
+              const Gap(6),
+              Row(
+                children: [
+                  if (task.isRequired)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppColors.dangerLight,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        widget.l10n.taskRequired,
+                        style: AppTextStyles.caption.copyWith(
+                            color: AppColors.danger, fontSize: 9),
+                      ),
+                    ),
+                  const Spacer(),
+                  if (task.evidenceCount > 0) ...[
+                    Icon(Icons.attach_file_rounded,
+                        size: 11, color: AppColors.muted),
+                    Text('${task.evidenceCount}',
+                        style: AppTextStyles.caption),
+                  ],
+                  if (_hovered && widget.onTap != null && !widget.canDrag)
+                    Icon(Icons.edit_outlined,
+                        size: 11, color: _accent.withOpacity(0.7)),
+                ],
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.canDrag) return _buildCard();
+
+    return Draggable<WorkflowTask>(
+      data: widget.task,
+      onDragStarted: () => setState(() => _dragging = true),
+      onDragEnd: (_) => setState(() => _dragging = false),
+      feedback: Material(
+        elevation: 8,
+        borderRadius: BorderRadius.circular(8),
+        shadowColor: _accent.withOpacity(0.4),
+        child: SizedBox(
+          width: _KanbanBoard._colW - 16,
+          child: _buildCard(),
+        ),
+      ),
+      childWhenDragging: Opacity(
+        opacity: 0.35,
+        child: _buildCard(dragging: true),
+      ),
+      child: _buildCard(),
     );
   }
 
