@@ -93,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         // ── Logo ─────────────────────────────────────────────
                         Center(
                           child: Image.asset(
-                            'assets/images/logo_with_name.png',
+                            'assets/images/newlogo.png',
                             width: 160,
                             filterQuality: FilterQuality.high,
                           ),

@@ -77,7 +77,7 @@ class CustomerSelectScreen extends ConsumerWidget {
                       Row(
                         children: [
                           Image.asset(
-                            'assets/images/logo_without_name.png',
+                            'assets/images/newlogo.png',
                             width: 36,
                             height: 36,
                             filterQuality: FilterQuality.high,

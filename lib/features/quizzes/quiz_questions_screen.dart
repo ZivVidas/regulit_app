@@ -10,7 +10,7 @@ import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 
 // ── Palette ───────────────────────────────────────────────────
-const _kGrad1 = Color(0xFF1A3C6B);
+const _kGrad1 = AppColors.blue;
 const _kGrad2 = Color(0xFF2D6BB0);
 
 // ── QType helpers ─────────────────────────────────────────────
@@ -31,7 +31,7 @@ Color _qtypeColor(String? v) => switch (v) {
       'one_pick'      => const Color(0xFF2563EB),
       'multiple_pick' => const Color(0xFF7C3AED),
       'text'          => const Color(0xFFEA580C),
-      _               => const Color(0xFF6B7280),
+      _               => AppColors.muted,
     };
 
 // ── State ─────────────────────────────────────────────────────
@@ -1217,7 +1217,7 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
                             const Text(
                               'Leave empty to always show. Add result labels (e.g. HIGH, MEDIUM) — question is shown only when any quiz result in this session matches one of these labels.',
                               style: TextStyle(
-                                  fontSize: 11, color: Color(0xFF6B7280)),
+                                  fontSize: 11, color: AppColors.muted),
                             ),
                             const Gap(8),
                             // Chip list of current labels

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <!-- Gradient flows top-right (light blue) → bottom-left (dark navy), matching reference -->
+    <linearGradient id="rg" gradientUnits="userSpaceOnUse"
+                    x1="74" y1="10" x2="26" y2="90">
+      <stop offset="0%"   stop-color="#58C2F0"/>
+      <stop offset="48%"  stop-color="#2878D8"/>
+      <stop offset="100%" stop-color="#132E7A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── Left stem (full height of R body) ── -->
+  <path d="M 30,14 L 30,60"
+        fill="none" stroke="url(#rg)"
+        stroke-width="10" stroke-linecap="round"/>
+
+  <!-- ── Outer bowl arc: from stem-top, sweeps RIGHT, returns to stem-bottom ── -->
+  <!-- arc: rx=44 ry=23, height=46 so ry=23 → perfect semicircle, rightmost=(74,37) -->
+  <path d="M 30,14 A 44,23 0 0 1 30,60"
+        fill="none" stroke="url(#rg)"
+        stroke-width="10" stroke-linecap="round"/>
+
+  <!-- ── Inner bowl arc: starts mid-stem, smaller sweep, ends same junction ── -->
+  <!-- arc: rx=25 ry=13, height=26 → rightmost=(55,47) ; gap from outer ≈ 8px -->
+  <path d="M 30,34 A 25,13 0 0 1 30,60"
+        fill="none" stroke="url(#rg)"
+        stroke-width="10" stroke-linecap="round"/>
+
+  <!-- ── Leg: diagonal from junction to lower-right ── -->
+  <path d="M 30,60 L 68,86"
+        fill="none" stroke="url(#rg)"
+        stroke-width="10" stroke-linecap="round"/>
+</svg>

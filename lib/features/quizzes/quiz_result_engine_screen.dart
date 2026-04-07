@@ -11,14 +11,14 @@ import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 
 // ── Palette ───────────────────────────────────────────────────
-const _kGrad1 = Color(0xFF1A3C6B);
+const _kGrad1 = AppColors.blue;
 const _kGrad2 = Color(0xFF2D6BB0);
 
 // ── Result label colors ───────────────────────────────────────
 Color _labelColor(String label) => switch (label.toUpperCase()) {
       'HIGH'       => const Color(0xFFDC2626),
       'MEDIUM'     => const Color(0xFFD97706),
-      'BASIC'      => const Color(0xFF6B7280),
+      'BASIC'      => AppColors.muted,
       'INDIVIDUAL' => const Color(0xFF2563EB),
       _            => const Color(0xFF7C3AED),
     };
@@ -389,7 +389,7 @@ class _SectionHeader extends StatelessWidget {
                   )),
               Text(subtitle,
                   style: const TextStyle(
-                      fontSize: 11, color: Color(0xFF6B7280))),
+                      fontSize: 11, color: AppColors.muted)),
             ],
           ),
         ),
@@ -478,7 +478,7 @@ class _SignalCardState extends State<_SignalCard> {
                       const Gap(2),
                       Text(s['description'] as String,
                           style: const TextStyle(
-                              fontSize: 11, color: Color(0xFF6B7280))),
+                              fontSize: 11, color: AppColors.muted)),
                     ],
                     const Gap(6),
                     // Required chips
@@ -648,7 +648,7 @@ class _RuleCardState extends State<_RuleCard> {
                           Expanded(
                             child: Text(r['description'] as String,
                                 style: const TextStyle(
-                                    fontSize: 11, color: Color(0xFF6B7280)),
+                                    fontSize: 11, color: AppColors.muted),
                                 overflow: TextOverflow.ellipsis),
                           ),
                         ],
@@ -1055,7 +1055,7 @@ class _SignalDialogState extends State<_SignalDialog> {
   Widget _buildLegend() {
     return Row(
       children: [
-        _legendDot(const Color(0xFF6B7280), 'Neutral'),
+        _legendDot(AppColors.muted, 'Neutral'),
         const Gap(12),
         _legendDot(const Color(0xFF2563EB), 'Required (tap once)'),
         const Gap(12),
@@ -1103,7 +1103,7 @@ class _SignalDialogState extends State<_SignalDialog> {
             ? const Color(0xFF2563EB)
             : isExc
                 ? const Color(0xFFDC2626)
-                : const Color(0xFF6B7280);
+                : AppColors.muted;
         final bg = isReq
             ? const Color(0xFFDBEAFE)
             : isExc
@@ -1569,7 +1569,7 @@ class _JsonTreeViewState extends State<_JsonTreeView> {
   }
 
   Widget _buildObject(Map<String, dynamic> obj, String path, int depth) {
-    if (obj.isEmpty) return _codeText('{}', const Color(0xFF6B7280));
+    if (obj.isEmpty) return _codeText('{}', AppColors.muted);
     final isExpanded = _expanded.contains(path);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1586,13 +1586,13 @@ class _JsonTreeViewState extends State<_JsonTreeView> {
               Icon(
                 isExpanded ? Icons.arrow_drop_down : Icons.arrow_right,
                 size: 16,
-                color: const Color(0xFF6B7280),
+                color: AppColors.muted,
               ),
               _codeText(
                 isExpanded
                     ? '{'
                     : '{ ${obj.length} key${obj.length != 1 ? 's' : ''} }',
-                const Color(0xFF6B7280),
+                AppColors.muted,
               ),
             ],
           ),
@@ -1608,14 +1608,14 @@ class _JsonTreeViewState extends State<_JsonTreeView> {
                       child: Wrap(
                         crossAxisAlignment: WrapCrossAlignment.start,
                         children: [
-                          _codeText('"${e.key}": ', const Color(0xFF1A3C6B),
+                          _codeText('"${e.key}": ', AppColors.blue,
                               bold: true),
                           _buildValue(e.value, '$path.${e.key}', depth + 1,
                               parentKey: e.key),
                         ],
                       ),
                     )),
-                _codeText('}', const Color(0xFF6B7280)),
+                _codeText('}', AppColors.muted),
               ],
             ),
           ),
@@ -1624,7 +1624,7 @@ class _JsonTreeViewState extends State<_JsonTreeView> {
   }
 
   Widget _buildArray(List<dynamic> arr, String path, int depth) {
-    if (arr.isEmpty) return _codeText('[]', const Color(0xFF6B7280));
+    if (arr.isEmpty) return _codeText('[]', AppColors.muted);
     final isExpanded = _expanded.contains(path);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1641,13 +1641,13 @@ class _JsonTreeViewState extends State<_JsonTreeView> {
               Icon(
                 isExpanded ? Icons.arrow_drop_down : Icons.arrow_right,
                 size: 16,
-                color: const Color(0xFF6B7280),
+                color: AppColors.muted,
               ),
               _codeText(
                 isExpanded
                     ? '['
                     : '[ ${arr.length} item${arr.length != 1 ? 's' : ''} ]',
-                const Color(0xFF6B7280),
+                AppColors.muted,
               ),
             ],
           ),
@@ -1663,12 +1663,12 @@ class _JsonTreeViewState extends State<_JsonTreeView> {
                       child: Wrap(
                         crossAxisAlignment: WrapCrossAlignment.start,
                         children: [
-                          _codeText('${e.key}: ', const Color(0xFF6B7280)),
+                          _codeText('${e.key}: ', AppColors.muted),
                           _buildValue(e.value, '$path[${e.key}]', depth + 1),
                         ],
                       ),
                     )),
-                _codeText(']', const Color(0xFF6B7280)),
+                _codeText(']', AppColors.muted),
               ],
             ),
           ),
@@ -1728,7 +1728,7 @@ class _JsonTreeViewState extends State<_JsonTreeView> {
           preferBelow: false,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A3C6B),
+            color: AppColors.blue,
             borderRadius: BorderRadius.circular(6),
           ),
           textStyle: const TextStyle(

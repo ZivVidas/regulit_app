@@ -15,18 +15,18 @@ import '../../core/api/api_client.dart';
 import '../../core/customer/customer_context_provider.dart';
 import '../../l10n/app_localizations.dart';
 
-// ── Palette ───────────────────────────────────────────────────
-const _kGrad1    = Color(0xFF1B4D3E);
-const _kGrad2    = Color(0xFF2E7D5C);
-const _kAccent   = Color(0xFF16A34A);
-const _kAccentBg = Color(0xFFDCFCE7);
-const _kBg       = Color(0xFFF0F4F8);
-const _kCardBg   = Colors.white;
-const _kMuted    = Color(0xFF94A3B8);
-const _kSub      = Color(0xFF6B7280);
-const _kText     = Color(0xFF0F172A);
-const _kEditClr  = Color(0xFF0EA5E9);
-const _kEditBg   = Color(0xFFE0F2FE);
+// ── Palette — Kinetic Corporate tokens ────────────────────────
+const _kGrad1    = AppColors.blueDark;    // #005A9E deep azure
+const _kGrad2    = AppColors.blue;        // #0078D4 azure blue
+const _kAccent   = AppColors.success;     // #107C10 active green
+const _kAccentBg = AppColors.successLight;// #DFF6DD
+const _kBg       = AppColors.background; // #F3F2F1 Office Gray
+const _kCardBg   = AppColors.white;
+const _kMuted    = AppColors.muted;       // #605E5C
+const _kSub      = AppColors.muted;
+const _kText     = AppColors.text;        // #201F1E Onyx Black
+const _kEditClr  = AppColors.blue;        // #0078D4
+const _kEditBg   = AppColors.infoLight;  // #DEECF9
 
 // ── Session summary model ──────────────────────────────────────
 class _Session {
@@ -222,7 +222,7 @@ class AuditPackScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: _kBg,
       body: RefreshIndicator(
-        color: _kGrad2,
+        color: AppColors.blue,
         onRefresh: not.load,
         child: CustomScrollView(
           slivers: [
@@ -334,7 +334,7 @@ class _SliverHeader extends StatelessWidget {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF143D30), _kGrad1, _kGrad2],
+                colors: [AppColors.blueDark, AppColors.blue, AppColors.blueLight],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -618,8 +618,8 @@ class _WorkflowCardState extends State<_WorkflowCard> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: _hovered
-                ? _kGrad2.withOpacity(0.3)
-                : const Color(0xFFE2E8F0),
+                ? AppColors.blue.withOpacity(0.3)
+                : AppColors.border,
             width: _hovered ? 1.5 : 1,
           ),
           boxShadow: [
@@ -736,9 +736,9 @@ class _TopStripe extends StatelessWidget {
       height: 5,
       decoration: BoxDecoration(
         gradient: isActive
-            ? const LinearGradient(colors: [_kGrad1, _kGrad2, Color(0xFF4ADE80)])
+            ? const LinearGradient(colors: [AppColors.blueDark, AppColors.blue, AppColors.blueLight])
             : const LinearGradient(
-                colors: [Color(0xFFCBD5E1), Color(0xFFE2E8F0)]),
+                colors: [AppColors.border, AppColors.surface]),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
     );
@@ -758,12 +758,12 @@ class _WorkflowIcon extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: isActive
             ? const LinearGradient(
-                colors: [Color(0xFFDCFCE7), Color(0xFFBBF7D0)],
+                colors: [AppColors.infoLight, Color(0xFFBFDFF7)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
             : const LinearGradient(
-                colors: [Color(0xFFF1F5F9), Color(0xFFE2E8F0)]),
+                colors: [AppColors.surface, AppColors.border]),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Icon(
@@ -922,7 +922,7 @@ class _ActionButtons extends StatelessWidget {
           child: OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               foregroundColor: _kSub,
-              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              side: const BorderSide(color: AppColors.border),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(vertical: 13),
@@ -949,7 +949,7 @@ class _InactiveButton extends StatelessWidget {
       child: OutlinedButton.icon(
         style: OutlinedButton.styleFrom(
           foregroundColor: _kMuted,
-          side: const BorderSide(color: Color(0xFFE2E8F0)),
+          side: const BorderSide(color: AppColors.border),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(vertical: 13),
@@ -980,13 +980,13 @@ class _StartButton extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: starting
               ? null
-              : const LinearGradient(colors: [_kGrad1, _kGrad2]),
+              : const LinearGradient(colors: [AppColors.blueDark, AppColors.blue]),
           borderRadius: BorderRadius.circular(12),
           boxShadow: starting
               ? []
               : [
                   BoxShadow(
-                    color: _kGrad1.withOpacity(0.3),
+                    color: AppColors.blueDark.withOpacity(0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   )
@@ -1135,7 +1135,7 @@ class _EmptyView extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.inventory_2_outlined,
-                size: 56, color: Color(0xFFCBD5E1)),
+                size: 56, color: AppColors.border),
           )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(
@@ -1278,7 +1278,7 @@ class _AnswerHistorySheet extends StatelessWidget {
                     child: Container(
                       width: 40, height: 4,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE2E8F0),
+                        color: AppColors.border,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),

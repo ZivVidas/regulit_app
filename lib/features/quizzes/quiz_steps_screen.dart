@@ -10,7 +10,7 @@ import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 
 // ── Palette ───────────────────────────────────────────────────
-const _kGrad1 = Color(0xFF1A3C6B);
+const _kGrad1 = AppColors.blue;
 const _kGrad2 = Color(0xFF2D6BB0);
 
 // ── State ─────────────────────────────────────────────────────

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+  <!-- Option C: R Monogram -->
+
+  <defs>
+    <clipPath id="squareClip">
+      <rect x="30" y="10" width="140" height="140" rx="24" ry="24"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background square with rounded corners -->
+  <rect x="30" y="10" width="140" height="140" rx="24" ry="24" fill="#0078D4"/>
+
+  <!-- All R parts + accent bar clipped to the square -->
+  <g clip-path="url(#squareClip)">
+    <!-- Bold geometric R — vertical stem -->
+    <rect x="55" y="32" width="22" height="92" rx="3" fill="white"/>
+
+    <!-- R — top bowl filled -->
+    <path d="M77 32 L106 32 A29 29 0 0 1 106 84 L77 84 Z" fill="white"/>
+
+    <!-- R — bowl inner cutout -->
+    <path d="M82 46 L102 46 A17 17 0 0 1 102 70 L82 70 Z" fill="#0078D4"/>
+
+    <!-- R — diagonal leg -->
+    <path d="M81 84 L136 150 L114 150 L63 84 Z" fill="white"/>
+
+    <!-- Yellow accent bar cutting across bottom of R -->
+    <rect x="30" y="110" width="140" height="14" fill="#FFB900"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="100" y="178" font-family="'Segoe UI', Arial, sans-serif"
+        font-size="22" font-weight="700" fill="#201F1E"
+        text-anchor="middle" letter-spacing="1">
+    Regul<tspan fill="#0078D4">it</tspan>
+  </text>
+</svg>

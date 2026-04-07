@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+  <!-- Option D: Scale + Shield Badge -->
+
+  <defs>
+    <clipPath id="badgeClip">
+      <rect x="25" y="10" width="150" height="150" rx="28" ry="28"/>
+    </clipPath>
+  </defs>
+
+  <!-- Badge background -->
+  <rect x="25" y="10" width="150" height="150" rx="28" ry="28" fill="#0078D4"/>
+
+  <!-- Subtle inner gloss -->
+  <rect x="25" y="10" width="150" height="50" rx="28" ry="28" fill="white" opacity="0.07"/>
+
+  <g clip-path="url(#badgeClip)">
+    <!-- Yellow accent baseline bar -->
+    <rect x="25" y="130" width="150" height="30" fill="#FFB900"/>
+  </g>
+
+  <!-- Balance scale — center pole -->
+  <rect x="97" y="42" width="6" height="72" rx="3" fill="white"/>
+
+  <!-- Balance scale — horizontal beam -->
+  <rect x="52" y="53" width="96" height="6" rx="3" fill="white"/>
+
+  <!-- Left pan rope -->
+  <line x1="65" y1="59" x2="58" y2="85" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <line x1="78" y1="59" x2="85" y2="85" stroke="white" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Right pan rope -->
+  <line x1="120" y1="59" x2="114" y2="85" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <line x1="133" y1="59" x2="139" y2="85" stroke="white" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Left pan (slightly raised — in balance / slightly up) -->
+  <path d="M55 84 Q71 80 87 84" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Right pan (level) -->
+  <path d="M112 86 Q126 82 142 86" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Scale base -->
+  <path d="M84 114 L116 114 L112 118 L88 118 Z" fill="white" opacity="0.7"/>
+  <rect x="86" y="110" width="28" height="5" rx="2" fill="white"/>
+
+  <!-- Wordmark -->
+  <text x="100" y="185" font-family="'Segoe UI', Arial, sans-serif"
+        font-size="22" font-weight="700" fill="#201F1E"
+        text-anchor="middle" letter-spacing="1">
+    Regul<tspan fill="#0078D4">it</tspan>
+  </text>
+</svg>

@@ -839,7 +839,7 @@ class _KanbanColState extends State<_KanbanCol> {
             decoration: BoxDecoration(
               color: isHovering
                   ? widget.headerColor.withOpacity(0.06)
-                  : const Color(0xFFF5F7FA),
+                  : AppColors.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isHovering
@@ -996,7 +996,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
             border: Border.all(
               color: _hovered && !dragging
                   ? _accent.withOpacity(0.5)
-                  : const Color(0xFFDDE3EC),
+                  : AppColors.border,
             ),
             boxShadow: _hovered && !dragging
                 ? [
@@ -1021,7 +1021,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A2E)),
+                          color: AppColors.text),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

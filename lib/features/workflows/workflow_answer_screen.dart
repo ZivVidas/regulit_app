@@ -24,7 +24,7 @@ const _kBg      = Color(0xFFF1F5F9);
 const _kCard    = Colors.white;
 const _kMuted   = Color(0xFF94A3B8);
 const _kText    = Color(0xFF111827);
-const _kSub     = Color(0xFF6B7280);
+const _kSub     = AppColors.muted;
 
 // ── Helper: does the evidence condition apply for the current answer? ─────────
 // Returns true when evidence upload is actually required right now.
@@ -990,7 +990,7 @@ class _StepperBar extends StatelessWidget {
       case 'MEDIUM':   return const Color(0xFFD97706);
       case 'BASIC':    return const Color(0xFF2563EB);
       case 'COMPLETE': return const Color(0xFF16A34A);
-      default:         return const Color(0xFF6B7280);
+      default:         return AppColors.muted;
     }
   }
 
@@ -1594,7 +1594,7 @@ class _EvidencePanelState extends State<_EvidencePanel> {
             // ── Header: label + sufficiency badge ─────────────────
             Row(children: [
               const Icon(Icons.attach_file_rounded,
-                  size: 14, color: Color(0xFF6B7280)),
+                  size: 14, color: AppColors.muted),
               const Gap(6),
               Expanded(
                 child: Text(
@@ -1675,7 +1675,7 @@ class _EvidencePanelState extends State<_EvidencePanel> {
                   child: LinearProgressIndicator(
                     value: _uploadProgress > 0 ? _uploadProgress : null,
                     backgroundColor: const Color(0xFFE5E7EB),
-                    color: const Color(0xFF1A3C6B),
+                    color: AppColors.blue,
                     minHeight: 4,
                   ),
                 ),
@@ -1683,7 +1683,7 @@ class _EvidencePanelState extends State<_EvidencePanel> {
                 Text(
                   'Uploading… ${(_uploadProgress * 100).toInt()}%',
                   style: const TextStyle(
-                      fontSize: 10, color: Color(0xFF6B7280)),
+                      fontSize: 10, color: AppColors.muted),
                 ),
               ],
               const Gap(8),
@@ -1726,8 +1726,8 @@ class _EvidencePanelState extends State<_EvidencePanel> {
                 label: Text(hasFiles ? 'הוסף ראיה' : 'הוסף ראיה',
                     style: const TextStyle(fontSize: 12)),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF1A3C6B),
-                  side: const BorderSide(color: Color(0xFF1A3C6B)),
+                  foregroundColor: AppColors.blue,
+                  side: const BorderSide(color: AppColors.blue),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
@@ -1840,7 +1840,7 @@ class _EvidenceFileEntryRow extends StatelessWidget {
             GestureDetector(
               onTap: () => onView(entry),
               child: const Icon(Icons.visibility_outlined,
-                  size: 16, color: Color(0xFF1A3C6B)),
+                  size: 16, color: AppColors.blue),
             ),
             const Gap(8),
           ],
@@ -1901,7 +1901,7 @@ class _EvidenceViewerDialog extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isImage
                     ? const Color(0xFF0EA5E9).withOpacity(0.08)
-                    : const Color(0xFF1A3C6B).withOpacity(0.08),
+                    : AppColors.blue.withOpacity(0.08),
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(16)),
                 border: const Border(
@@ -1915,7 +1915,7 @@ class _EvidenceViewerDialog extends StatelessWidget {
                         : Icons.article_outlined,
                     color: isImage
                         ? const Color(0xFF0EA5E9)
-                        : const Color(0xFF1A3C6B),
+                        : AppColors.blue,
                     size: 20,
                   ),
                   const Gap(10),
@@ -1929,7 +1929,7 @@ class _EvidenceViewerDialog extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 18),
-                    color: const Color(0xFF6B7280),
+                    color: AppColors.muted,
                     visualDensity: VisualDensity.compact,
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -2725,7 +2725,7 @@ class _NavBar extends StatelessWidget {
                   // Back
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF6B7280),
+                      foregroundColor: AppColors.muted,
                       side: const BorderSide(color: Color(0xFFE2E8F0)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
@@ -2894,7 +2894,7 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
       case 'MEDIUM':   return const Color(0xFFD97706);
       case 'BASIC':    return const Color(0xFF2563EB);
       case 'COMPLETE': return const Color(0xFF16A34A);
-      default:         return const Color(0xFF6B7280);
+      default:         return AppColors.muted;
     }
   }
 

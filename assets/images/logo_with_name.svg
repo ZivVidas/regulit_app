@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 130" width="200" height="130">
+  <defs>
+    <!-- Same gradient, in the local coordinate space of the mark group -->
+    <linearGradient id="rgH" gradientUnits="userSpaceOnUse"
+                    x1="74" y1="10" x2="26" y2="90">
+      <stop offset="0%"   stop-color="#58C2F0"/>
+      <stop offset="48%"  stop-color="#2878D8"/>
+      <stop offset="100%" stop-color="#132E7A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── R mark, centered horizontally, top-aligned ── -->
+  <!-- Original mark: x≈20–79, y≈9–91 in a 100×100 space.
+       Scale 0.78, then shift so the mark is visually centered at x=100 in 200px wide SVG.
+       Mark center-x ≈ 50 → at scale 0.78 → 39. Target center = 100 → translateX = 61.
+       Mark top ≈ 9 → at scale 0.78 → 7. Add 4px top padding → translateY = -3. -->
+  <g transform="translate(61, -3) scale(0.78)">
+    <path d="M 30,14 L 30,60"
+          fill="none" stroke="url(#rgH)"
+          stroke-width="10" stroke-linecap="round"/>
+    <path d="M 30,14 A 44,23 0 0 1 30,60"
+          fill="none" stroke="url(#rgH)"
+          stroke-width="10" stroke-linecap="round"/>
+    <path d="M 30,34 A 25,13 0 0 1 30,60"
+          fill="none" stroke="url(#rgH)"
+          stroke-width="10" stroke-linecap="round"/>
+    <path d="M 30,60 L 68,86"
+          fill="none" stroke="url(#rgH)"
+          stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <!-- ── "REGULIT" wordmark, centered, dark navy ── -->
+  <text x="100" y="122"
+        font-family="'Segoe UI', 'Arial', sans-serif"
+        font-size="20" font-weight="800"
+        fill="#132E7A"
+        text-anchor="middle"
+        letter-spacing="5">REGULIT</text>
+</svg>

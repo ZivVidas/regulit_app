@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+  <!-- Option A: Shield Evolved -->
+
+  <!-- Shield body -->
+  <path d="M100 12 L172 40 L172 110 C172 155 138 188 100 202 C62 188 28 155 28 110 L28 40 Z"
+        fill="#0078D4"/>
+
+  <!-- Inner shield highlight -->
+  <path d="M100 22 L162 47 L162 110 C162 150 132 180 100 193 C68 180 38 150 38 110 L38 47 Z"
+        fill="#1A8CE0" opacity="0.4"/>
+
+  <!-- Yellow accent stripe at bottom of shield -->
+  <path d="M42 148 C52 175 74 192 100 202 C126 192 148 175 158 148 Z"
+        fill="#FFB900"/>
+
+  <!-- Circuit line horizontal -->
+  <line x1="55" y1="105" x2="78" y2="105" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="55" cy="105" r="4" fill="white"/>
+  <line x1="55" y1="105" x2="55" y2="88" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="55" cy="85" r="4" fill="white"/>
+
+  <!-- Circuit line right -->
+  <line x1="122" y1="105" x2="145" y2="105" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="145" cy="105" r="4" fill="white"/>
+  <line x1="145" y1="105" x2="145" y2="88" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="145" cy="85" r="4" fill="white"/>
+
+  <!-- Checkmark -->
+  <polyline points="72,105 90,124 128,82"
+            fill="none" stroke="white" stroke-width="9"
+            stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Wordmark -->
+  <text x="100" y="218" font-family="'Segoe UI', Arial, sans-serif"
+        font-size="22" font-weight="700" fill="#201F1E"
+        text-anchor="middle" letter-spacing="1">
+    Regul<tspan fill="#0078D4">it</tspan>
+  </text>
+</svg>
