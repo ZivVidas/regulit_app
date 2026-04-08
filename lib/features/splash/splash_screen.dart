@@ -7,9 +7,9 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const _SplashView(),
+      home: _SplashView(),
     );
   }
 }
@@ -17,48 +17,51 @@ class SplashScreen extends StatelessWidget {
 class _SplashView extends StatelessWidget {
   const _SplashView();
 
-  static const _grad1 = Color(0xFF0D3328);
-  static const _grad2 = Color(0xFF1B4D3E);
-  static const _grad3 = Color(0xFF2E7D5C);
-  static const _green = Color(0xFF4ADE80);
+  // Deep navy palette — matches the blue logo tones
+  static const _bg      = Color(0xFF04091A);
+  static const _grad1   = Color(0xFF06102A);
+  static const _grad2   = Color(0xFF0A1840);
+  static const _accent  = Color(0xFF0078D4); // Azure Blue (Kinetic Corporate)
+  static const _accentL = Color(0xFF58C2F0); // Light blue
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _bg,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [_grad1, _grad2, _grad3],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [_bg, _grad1, _grad2],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
         child: Stack(
           children: [
-            // ── Decorative background circles ───────────────────
+            // ── Decorative glow circles ─────────────────────────
             Positioned(
-              top: -80, right: -80,
-              child: _GlowCircle(size: 300, opacity: 0.06)
-                  .animate().scale(
-                    begin: const Offset(0.6, 0.6),
-                    end: const Offset(1.0, 1.0),
-                    duration: 1200.ms,
-                    curve: Curves.easeOut,
-                  ),
-            ),
-            Positioned(
-              bottom: -60, left: -60,
-              child: _GlowCircle(size: 240, opacity: 0.05)
+              top: -100, right: -100,
+              child: _GlowCircle(size: 320, color: _accent, opacity: 0.07)
                   .animate().scale(
                     begin: const Offset(0.5, 0.5),
-                    end: const Offset(1.0, 1.0),
+                    end:   const Offset(1.0, 1.0),
                     duration: 1400.ms,
                     curve: Curves.easeOut,
                   ),
             ),
             Positioned(
-              top: 140, left: -30,
-              child: _GlowCircle(size: 120, opacity: 0.04),
+              bottom: -80, left: -80,
+              child: _GlowCircle(size: 260, color: _accentL, opacity: 0.05)
+                  .animate().scale(
+                    begin: const Offset(0.4, 0.4),
+                    end:   const Offset(1.0, 1.0),
+                    duration: 1600.ms,
+                    curve: Curves.easeOut,
+                  ),
+            ),
+            Positioned(
+              top: 160, left: -40,
+              child: _GlowCircle(size: 140, color: _accent, opacity: 0.04),
             ),
 
             // ── Centre content ──────────────────────────────────
@@ -66,47 +69,30 @@ class _SplashView extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Shield icon with glow
-                  _LogoBadge()
+                  // GIF logo with outer glow ring
+                  _GifLogo()
                       .animate()
                       .scale(
-                        begin: const Offset(0.4, 0.4),
-                        end: const Offset(1.0, 1.0),
+                        begin: const Offset(0.5, 0.5),
+                        end:   const Offset(1.0, 1.0),
                         duration: 700.ms,
                         curve: Curves.easeOutBack,
                       )
-                      .fadeIn(duration: 400.ms),
+                      .fadeIn(duration: 500.ms),
 
-                  const SizedBox(height: 32),
-
-                  // App name
-                  const Text(
-                    'Regulit',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 42,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -1.5,
-                      height: 1,
-                    ),
-                  )
-                      .animate(delay: 250.ms)
-                      .fadeIn(duration: 500.ms)
-                      .slideY(begin: 0.25, end: 0, duration: 500.ms, curve: Curves.easeOut),
-
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 36),
 
                   // Tagline
                   Text(
                     'Compliance that protects.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.55),
+                      color: Colors.white.withOpacity(0.45),
                       fontSize: 15,
                       fontWeight: FontWeight.w400,
-                      letterSpacing: 0.2,
+                      letterSpacing: 0.4,
                     ),
                   )
-                      .animate(delay: 400.ms)
+                      .animate(delay: 450.ms)
                       .fadeIn(duration: 500.ms)
                       .slideY(begin: 0.2, end: 0, duration: 400.ms),
 
@@ -114,28 +100,26 @@ class _SplashView extends StatelessWidget {
 
                   // Progress bar
                   _ProgressBar()
-                      .animate(delay: 500.ms)
+                      .animate(delay: 600.ms)
                       .fadeIn(duration: 400.ms)
                       .slideY(begin: 0.3, end: 0, duration: 400.ms),
                 ],
               ),
             ),
 
-            // ── Bottom version/brand line ───────────────────────
+            // ── Bottom brand line ───────────────────────────────
             Positioned(
-              bottom: 36,
-              left: 0,
-              right: 0,
+              bottom: 36, left: 0, right: 0,
               child: Text(
                 '© 2025 Regulit · Privacy by design',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.25),
+                  color: Colors.white.withOpacity(0.2),
                   fontSize: 11,
                   letterSpacing: 0.3,
                 ),
               )
-                  .animate(delay: 700.ms)
+                  .animate(delay: 800.ms)
                   .fadeIn(duration: 600.ms),
             ),
           ],
@@ -145,66 +129,55 @@ class _SplashView extends StatelessWidget {
   }
 }
 
-// ── Logo badge with layered glow ────────────────────────────────
-class _LogoBadge extends StatelessWidget {
+// ── GIF logo with soft blue glow ────────────────────────────────
+class _GifLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Outer glow ring
+        // Outer glow halo
         Container(
-          width: 130,
-          height: 130,
+          width: 220,
+          height: 220,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF4ADE80).withOpacity(0.08),
-          ),
-        ),
-        // Middle ring
-        Container(
-          width: 108,
-          height: 108,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.08),
-            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
-          ),
-        ),
-        // Inner badge
-        Container(
-          width: 86,
-          height: 86,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(26),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF2E7D5C), Color(0xFF16A34A)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+            gradient: RadialGradient(
+              colors: [
+                const Color(0xFF0078D4).withOpacity(0.18),
+                const Color(0xFF0078D4).withOpacity(0.0),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF16A34A).withOpacity(0.45),
-                blurRadius: 32,
-                spreadRadius: 2,
-                offset: const Offset(0, 8),
-              ),
-            ],
           ),
-          child: const Icon(
-            Icons.shield_rounded,
-            color: Colors.white,
-            size: 44,
+        ),
+        // Subtle ring border
+        Container(
+          width: 168,
+          height: 168,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFF58C2F0).withOpacity(0.14),
+              width: 1.5,
+            ),
           ),
+        ),
+        // GIF
+        Image.asset(
+          'assets/images/regulit_shine.gif',
+          width: 148,
+          height: 148,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
         ),
       ],
     )
         .animate(onPlay: (c) => c.repeat(reverse: true))
         .custom(
-          duration: 2400.ms,
+          duration: 2800.ms,
           curve: Curves.easeInOut,
           builder: (_, v, child) => Transform.scale(
-            scale: 1.0 + v * 0.04,
+            scale: 1.0 + v * 0.03,
             child: child,
           ),
         );
@@ -221,15 +194,17 @@ class _ProgressBar extends StatelessWidget {
         children: [
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 2200),
+            duration: const Duration(milliseconds: 2400),
             curve: Curves.easeInOut,
             builder: (_, v, __) => ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
                 value: v,
                 minHeight: 4,
-                backgroundColor: Colors.white.withOpacity(0.12),
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4ADE80)),
+                backgroundColor: Colors.white.withOpacity(0.10),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  Color(0xFF0078D4),
+                ),
               ),
             ),
           ),
@@ -237,7 +212,7 @@ class _ProgressBar extends StatelessWidget {
           Text(
             'Loading…',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
+              color: Colors.white.withOpacity(0.35),
               fontSize: 11,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w500,
@@ -253,11 +228,16 @@ class _ProgressBar extends StatelessWidget {
   }
 }
 
-// ── Decorative circle ───────────────────────────────────────────
+// ── Decorative glow circle ──────────────────────────────────────
 class _GlowCircle extends StatelessWidget {
   final double size;
+  final Color color;
   final double opacity;
-  const _GlowCircle({required this.size, required this.opacity});
+  const _GlowCircle({
+    required this.size,
+    required this.color,
+    required this.opacity,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -266,7 +246,7 @@ class _GlowCircle extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(opacity),
+        color: color.withOpacity(opacity),
       ),
     );
   }

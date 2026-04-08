@@ -91,8 +91,16 @@ class _QNotifier extends StateNotifier<_QState> {
   }
 
   Future<void> deleteQuestion(String qId) async {
-    await _dio.delete<dynamic>(
-        '/quizzes/$quizId/steps/$stepId/questions/$qId');
+    final base = '/quizzes/$quizId/steps/$stepId/questions';
+    // Delete all options first before removing the question
+    try {
+      final res = await _dio.get<dynamic>('$base/$qId/options');
+      final opts = ((res.data as List?) ?? []).cast<Map<String, dynamic>>();
+      for (final opt in opts) {
+        await _dio.delete<dynamic>('$base/$qId/options/${opt['id']}');
+      }
+    } catch (_) {}
+    await _dio.delete<dynamic>('$base/$qId');
     await load();
   }
 }
@@ -194,17 +202,17 @@ class QuizQuestionsScreen extends ConsumerWidget {
       (String, String) ids, String qId, String num) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Delete question'),
         content: Text('Question #$num will be permanently deleted.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dialogContext, false),
               child: const Text('Cancel')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Delete'),
           ),
         ],
