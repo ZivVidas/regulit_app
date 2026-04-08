@@ -90,16 +90,15 @@ class _QNotifier extends StateNotifier<_QState> {
     }
   }
 
-  Future<void> deleteQuestion(String qId) async {
+  Future<void> deleteQuestion(
+      String qId, List<Map<String, dynamic>> options) async {
     final base = '/quizzes/$quizId/steps/$stepId/questions';
-    // Delete all options first before removing the question
-    try {
-      final res = await _dio.get<dynamic>('$base/$qId/options');
-      final opts = ((res.data as List?) ?? []).cast<Map<String, dynamic>>();
-      for (final opt in opts) {
+    // Delete each option (embedded in the already-loaded question object)
+    for (final opt in options) {
+      try {
         await _dio.delete<dynamic>('$base/$qId/options/${opt['id']}');
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
     await _dio.delete<dynamic>('$base/$qId');
     await load();
   }
@@ -172,7 +171,10 @@ class QuizQuestionsScreen extends ConsumerWidget {
                                 onDelete: () => _confirmDelete(
                                     context, ref, ids,
                                     q['id'] as String,
-                                    q['questionNumber'].toString()),
+                                    q['questionNumber'].toString(),
+                                    (q['options'] as List?)
+                                            ?.cast<Map<String, dynamic>>() ??
+                                        []),
                               );
                             },
                           ),
@@ -199,7 +201,8 @@ class QuizQuestionsScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref,
-      (String, String) ids, String qId, String num) async {
+      (String, String) ids, String qId, String num,
+      List<Map<String, dynamic>> options) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -220,7 +223,7 @@ class QuizQuestionsScreen extends ConsumerWidget {
     );
     if (ok == true) {
       try {
-        await ref.read(_qProviderFamily(ids).notifier).deleteQuestion(qId);
+        await ref.read(_qProviderFamily(ids).notifier).deleteQuestion(qId, options);
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
