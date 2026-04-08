@@ -31,11 +31,24 @@ Color _labelBg(String label) => switch (label.toUpperCase()) {
       _            => const Color(0xFFF3E8FF),
     };
 
+// ── Question group (options grouped by their parent question) ──
+class _QuestionGroup {
+  final int questionNumber;
+  final String questionText;
+  final List<String> optionIds;
+  const _QuestionGroup({
+    required this.questionNumber,
+    required this.questionText,
+    required this.optionIds,
+  });
+}
+
 // ── State ─────────────────────────────────────────────────────
 class _EngineState {
   final List<Map<String, dynamic>> signals;
   final List<Map<String, dynamic>> rules;
   final Map<String, String> optionLabels;
+  final List<_QuestionGroup> optionGroups;
   final bool isLoading;
   final String? error;
 
@@ -43,6 +56,7 @@ class _EngineState {
     this.signals = const [],
     this.rules = const [],
     this.optionLabels = const {},
+    this.optionGroups = const [],
     this.isLoading = true,
     this.error,
   });
@@ -51,6 +65,7 @@ class _EngineState {
     List<Map<String, dynamic>>? signals,
     List<Map<String, dynamic>>? rules,
     Map<String, String>? optionLabels,
+    List<_QuestionGroup>? optionGroups,
     bool? isLoading,
     String? error,
   }) =>
@@ -58,6 +73,7 @@ class _EngineState {
         signals: signals ?? this.signals,
         rules: rules ?? this.rules,
         optionLabels: optionLabels ?? this.optionLabels,
+        optionGroups: optionGroups ?? this.optionGroups,
         isLoading: isLoading ?? this.isLoading,
         error: error,
       );
@@ -75,17 +91,66 @@ class _EngineNotifier extends StateNotifier<_EngineState> {
   Future<void> load() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
+      // Phase 1: signals, rules, option-labels, steps — all parallel
       final results = await Future.wait([
         _dio.get<List<dynamic>>('/quizzes/$quizId/signals'),
         _dio.get<List<dynamic>>('/quizzes/$quizId/result-rules'),
         _dio.get<Map<String, dynamic>>('/quizzes/$quizId/signals/option-labels'),
+        _dio.get<Map<String, dynamic>>(
+          '/quizzes/$quizId/steps',
+          queryParameters: {'page': 1, 'page_size': 100},
+        ),
       ]);
+
+      final optionLabels = (results[2].data as Map<String, dynamic>)
+          .map((k, v) => MapEntry(k, v as String));
+
+      // Phase 2: fetch questions for each step in parallel, build groups
+      final stepsData = results[3].data as Map<String, dynamic>;
+      final steps = (stepsData['items'] as List? ?? [])
+          .cast<Map<String, dynamic>>();
+
+      final groupLists = await Future.wait(steps.map((step) async {
+        final stepId = step['id'] as String;
+        try {
+          final qRes = await _dio.get<Map<String, dynamic>>(
+            '/quizzes/$quizId/steps/$stepId/questions',
+            queryParameters: {'page': 1, 'page_size': 200},
+          );
+          final qs = (qRes.data!['items'] as List)
+              .cast<Map<String, dynamic>>();
+          return qs
+              .map((q) {
+                final opts =
+                    (q['options'] as List?)?.cast<Map<String, dynamic>>() ??
+                        [];
+                final ids = opts
+                    .map((o) => o['id'] as String)
+                    .where((id) => optionLabels.containsKey(id))
+                    .toList();
+                if (ids.isEmpty) return null;
+                return _QuestionGroup(
+                  questionNumber: q['questionNumber'] as int? ?? 0,
+                  questionText: q['questionText'] as String? ?? '',
+                  optionIds: ids,
+                );
+              })
+              .whereType<_QuestionGroup>()
+              .toList();
+        } catch (_) {
+          return <_QuestionGroup>[];
+        }
+      }));
+
+      final optionGroups = groupLists.expand((g) => g).toList()
+        ..sort((a, b) => a.questionNumber.compareTo(b.questionNumber));
+
       state = state.copyWith(
         isLoading: false,
         signals: (results[0].data as List).cast<Map<String, dynamic>>(),
         rules: (results[1].data as List).cast<Map<String, dynamic>>(),
-        optionLabels: (results[2].data as Map<String, dynamic>)
-            .map((k, v) => MapEntry(k, v as String)),
+        optionLabels: optionLabels,
+        optionGroups: optionGroups,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -160,7 +225,8 @@ class QuizResultEngineScreen extends ConsumerWidget {
                     icon: Icons.sensors_rounded,
                     color: _kGrad1,
                     onAdd: () => _showSignalDialog(
-                        context, ref, dio, quizId, s.optionLabels, null),
+                        context, ref, dio, quizId, s.optionLabels,
+                        s.optionGroups, null),
                   ),
                   const Gap(8),
                   ...s.signals.asMap().entries.map((e) => _SignalCard(
@@ -168,7 +234,8 @@ class QuizResultEngineScreen extends ConsumerWidget {
                         index: e.key,
                         optionLabels: s.optionLabels,
                         onEdit: () => _showSignalDialog(
-                            context, ref, dio, quizId, s.optionLabels, e.value),
+                            context, ref, dio, quizId, s.optionLabels,
+                            s.optionGroups, e.value),
                         onDelete: () => _confirmDelete(
                           context,
                           'signal "${e.value['signalName']}"',
@@ -221,6 +288,7 @@ class QuizResultEngineScreen extends ConsumerWidget {
     Dio dio,
     String quizId,
     Map<String, String> optionLabels,
+    List<_QuestionGroup> optionGroups,
     Map<String, dynamic>? initial,
   ) {
     showDialog<void>(
@@ -230,6 +298,7 @@ class QuizResultEngineScreen extends ConsumerWidget {
         dio: dio,
         quizId: quizId,
         optionLabels: optionLabels,
+        optionGroups: optionGroups,
         initial: initial,
         onSaved: () =>
             ref.read(_engineProvider(quizId).notifier).load(),
@@ -814,6 +883,7 @@ class _SignalDialog extends StatefulWidget {
   final Dio dio;
   final String quizId;
   final Map<String, String> optionLabels;
+  final List<_QuestionGroup> optionGroups;
   final Map<String, dynamic>? initial;
   final VoidCallback onSaved;
 
@@ -821,6 +891,7 @@ class _SignalDialog extends StatefulWidget {
     required this.dio,
     required this.quizId,
     required this.optionLabels,
+    required this.optionGroups,
     this.initial,
     required this.onSaved,
   });
@@ -1080,77 +1151,156 @@ class _SignalDialogState extends State<_SignalDialog> {
   }
 
   Widget _buildOptionChips() {
-    final entries = widget.optionLabels.entries
-        .where((e) =>
-            _search.isEmpty ||
-            e.value.toLowerCase().contains(_search) ||
-            e.key.toLowerCase().contains(_search))
-        .toList()
-      ..sort((a, b) => a.value.compareTo(b.value));
+    // If no group data, fall back to flat alphabetical list
+    if (widget.optionGroups.isEmpty) {
+      final entries = widget.optionLabels.entries
+          .where((e) =>
+              _search.isEmpty ||
+              e.value.toLowerCase().contains(_search) ||
+              e.key.toLowerCase().contains(_search))
+          .toList()
+        ..sort((a, b) => a.value.compareTo(b.value));
+      if (entries.isEmpty) {
+        return const Text('No options match.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)));
+      }
+      return Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: entries.map((e) => _buildChip(e.key, e.value)).toList(),
+      );
+    }
 
-    if (entries.isEmpty) {
+    // Grouped display — one section per question
+    final sections = <Widget>[];
+    for (final group in widget.optionGroups) {
+      final filteredIds = group.optionIds.where((id) {
+        if (_search.isEmpty) return true;
+        final label = widget.optionLabels[id] ?? '';
+        return label.toLowerCase().contains(_search) ||
+            id.toLowerCase().contains(_search);
+      }).toList();
+      if (filteredIds.isEmpty) continue;
+
+      sections.addAll([
+        // ── Group header ─────────────────────────────────
+        Container(
+          margin: const EdgeInsets.only(top: 12, bottom: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: AppColors.infoLight,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.blue.withOpacity(0.15)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.blue,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Text(
+                  'Q${group.questionNumber}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+              const Gap(8),
+              Expanded(
+                child: Text(
+                  group.questionText,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E3A5F),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // ── Chips for this question ───────────────────────
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: filteredIds
+              .map((id) =>
+                  _buildChip(id, widget.optionLabels[id] ?? id.substring(0, 8)))
+              .toList(),
+        ),
+      ]);
+    }
+
+    if (sections.isEmpty) {
       return const Text('No options match.',
           style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)));
     }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: sections,
+    );
+  }
 
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: entries.map((e) {
-        final isReq = _required.contains(e.key);
-        final isExc = _excluded.contains(e.key);
-        final color = isReq
-            ? const Color(0xFF2563EB)
-            : isExc
-                ? const Color(0xFFDC2626)
-                : AppColors.muted;
-        final bg = isReq
-            ? const Color(0xFFDBEAFE)
-            : isExc
-                ? const Color(0xFFFEE2E2)
-                : const Color(0xFFF3F4F6);
-
-        return Tooltip(
-          message: e.key,
-          waitDuration: const Duration(milliseconds: 400),
-          child: GestureDetector(
-            onTap: () => _toggleOption(e.key),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 140),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withOpacity(0.4)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isReq || isExc) ...[
-                    Icon(
-                      isReq ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                      size: 12,
-                      color: color,
-                    ),
-                    const Gap(4),
-                  ],
-                  Text(
-                    e.value,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: color,
-                      fontWeight: (isReq || isExc)
-                          ? FontWeight.w700
-                          : FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+  Widget _buildChip(String id, String label) {
+    final isReq = _required.contains(id);
+    final isExc = _excluded.contains(id);
+    final color = isReq
+        ? const Color(0xFF2563EB)
+        : isExc
+            ? const Color(0xFFDC2626)
+            : AppColors.muted;
+    final bg = isReq
+        ? const Color(0xFFDBEAFE)
+        : isExc
+            ? const Color(0xFFFEE2E2)
+            : const Color(0xFFF3F4F6);
+    return Tooltip(
+      message: id,
+      waitDuration: const Duration(milliseconds: 400),
+      child: GestureDetector(
+        onTap: () => _toggleOption(id),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color.withOpacity(0.4)),
           ),
-        );
-      }).toList(),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isReq || isExc) ...[
+                Icon(
+                  isReq
+                      ? Icons.check_circle_rounded
+                      : Icons.cancel_rounded,
+                  size: 12,
+                  color: color,
+                ),
+                const Gap(4),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: color,
+                  fontWeight:
+                      (isReq || isExc) ? FontWeight.w700 : FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
