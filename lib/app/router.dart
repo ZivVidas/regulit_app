@@ -26,6 +26,7 @@ import '../features/quizzes/quiz_steps_screen.dart';
 import '../features/quizzes/quizzes_screen.dart';
 import '../features/workflows/workflow_answer_screen.dart';
 import '../features/workflows/workflow_quizzes_screen.dart';
+import '../features/workflows/workflow_rule_engine_screen.dart';
 import '../features/workflows/workflows_screen.dart';
 import '../features/agents/agents_screen.dart';
 import '../features/users/users_screen.dart';
@@ -54,6 +55,7 @@ abstract class AppRoutes {
   static const quizResultEngine = '/admin/quizzes/:quizId/result-engine';
   static const workflows = '/admin/workflows';
   static const workflowQuizzes = '/admin/workflows/:workflowId/quizzes';
+  static const workflowRuleEngine = '/admin/workflows/:workflowId/rule-engine';
   static const workflowAnswer = '/workflow-answer/:sessionId';
   static const agents = '/admin/agents';
   // Step 2: new admin routes
@@ -228,6 +230,19 @@ GoRouter router(RouterRef ref) {
               final workflowName =
                   state.uri.queryParameters['name'] ?? 'Workflow';
               return _fadePage(WorkflowQuizzesScreen(
+                workflowId: workflowId,
+                workflowName: workflowName,
+              ));
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.workflowRuleEngine,
+            name: 'workflowRuleEngine',
+            pageBuilder: (context, state) {
+              final workflowId = state.pathParameters['workflowId']!;
+              final workflowName =
+                  state.uri.queryParameters['name'] ?? 'Workflow';
+              return _fadePage(WorkflowRuleEngineScreen(
                 workflowId: workflowId,
                 workflowName: workflowName,
               ));

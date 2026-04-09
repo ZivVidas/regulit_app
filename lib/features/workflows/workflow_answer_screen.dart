@@ -169,9 +169,10 @@ class _AnsState {
   int get totalQuestionsInQuiz => currentQuestions.length;
 
   /// Returns true if this question should be shown to the user.
-  /// A question is visible when conditionToShowQuestion is null/empty
-  /// OR any quiz result label in the session appears in that list.
+  /// A question is hidden when is_active == false, or when
+  /// conditionToShowQuestion is set and no matching quiz result exists.
   bool isQuestionVisible(Map<String, dynamic> q) {
+    if (q['isActive'] == false) return false;
     final condition =
         (q['conditionToShowQuestion'] as List?)?.cast<String>();
     if (condition == null || condition.isEmpty) return true;
@@ -325,7 +326,8 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
       final qs = (quizzes[qi] as Map)['questions'] as List? ?? [];
       for (var qqi = 0; qqi < qs.length; qqi++) {
         final qMap = qs[qqi] as Map<String, dynamic>;
-        // Skip invisible questions
+        // Skip inactive and invisible questions
+        if (qMap['isActive'] == false) continue;
         final condition =
             (qMap['conditionToShowQuestion'] as List?)?.cast<String>();
         if (condition != null &&

@@ -172,6 +172,9 @@ class _WorkflowsScreenState extends ConsumerState<WorkflowsScreen> {
                                   onQuizzes: () => context.push(
                                     '/admin/workflows/${wf['id']}/quizzes?name=${Uri.encodeComponent(wf['name'] as String? ?? '')}',
                                   ),
+                                  onRuleEngine: () => context.push(
+                                    '/admin/workflows/${wf['id']}/rule-engine?name=${Uri.encodeComponent(wf['name'] as String? ?? '')}',
+                                  ),
                                   onEdit: () => _showForm(context, wf),
                                   onDeactivate: () => _confirmDeactivate(
                                       context, wf['id'] as String,
@@ -398,6 +401,7 @@ class _WorkflowCard extends StatefulWidget {
   final Map<String, dynamic> workflow;
   final int index;
   final VoidCallback onQuizzes;
+  final VoidCallback onRuleEngine;
   final VoidCallback onEdit;
   final VoidCallback onDeactivate;
 
@@ -405,6 +409,7 @@ class _WorkflowCard extends StatefulWidget {
     required this.workflow,
     required this.index,
     required this.onQuizzes,
+    required this.onRuleEngine,
     required this.onEdit,
     required this.onDeactivate,
   });
@@ -534,6 +539,13 @@ class _WorkflowCardState extends State<_WorkflowCard> {
                     color: const Color(0xFF059669),
                     tooltip: 'Manage Quizzes',
                     onTap: widget.onQuizzes,
+                  ),
+                  const Gap(2),
+                  _ActionIcon(
+                    icon: Icons.rule_folder_rounded,
+                    color: const Color(0xFF7C3AED),
+                    tooltip: 'Rule Engine',
+                    onTap: widget.onRuleEngine,
                   ),
                   const Gap(2),
                   _ActionIcon(

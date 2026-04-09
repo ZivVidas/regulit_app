@@ -158,13 +158,23 @@ class _EngineNotifier extends StateNotifier<_EngineState> {
   }
 
   Future<void> deleteSignal(String id) async {
-    await _dio.delete<dynamic>('/quizzes/$quizId/signals/$id');
-    await load();
+    try {
+      await _dio.delete<dynamic>('/quizzes/$quizId/signals/$id');
+      await load();
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow;
+    }
   }
 
   Future<void> deleteRule(String id) async {
-    await _dio.delete<dynamic>('/quizzes/$quizId/result-rules/$id');
-    await load();
+    try {
+      await _dio.delete<dynamic>('/quizzes/$quizId/result-rules/$id');
+      await load();
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      rethrow; // let _confirmDelete show the SnackBar
+    }
   }
 }
 
@@ -346,7 +356,23 @@ class QuizResultEngineScreen extends ConsumerWidget {
         ],
       ),
     );
-    if (ok == true) await onConfirm();
+    if (ok != true) return;
+    try {
+      await onConfirm();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.danger,
+            content: Text(
+              e.toString().replaceFirst('Exception: ', ''),
+              style: const TextStyle(color: Colors.white),
+            ),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    }
   }
 }
 

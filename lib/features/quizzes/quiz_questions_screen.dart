@@ -102,6 +102,14 @@ class _QNotifier extends StateNotifier<_QState> {
     await _dio.delete<dynamic>('$base/$qId');
     await load();
   }
+
+  Future<void> toggleActive(String qId, bool currentlyActive) async {
+    await _dio.patch<dynamic>(
+      '/quizzes/$quizId/steps/$stepId/questions/$qId',
+      data: {'is_active': !currentlyActive},
+    );
+    await load();
+  }
 }
 
 // Provider keyed by (quizId, stepId)
@@ -169,12 +177,18 @@ class QuizQuestionsScreen extends ConsumerWidget {
                                 onEdit: () => _showForm(
                                     context, ref, dio, ids, i + 1, q),
                                 onDelete: () => _confirmDelete(
-                                    context, ref, ids,
+                                    context, ref, dio, ids,
                                     q['id'] as String,
                                     q['questionNumber'].toString(),
                                     (q['options'] as List?)
                                             ?.cast<Map<String, dynamic>>() ??
                                         []),
+                                onToggleActive: () => ref
+                                    .read(_qProviderFamily(ids).notifier)
+                                    .toggleActive(
+                                      q['id'] as String,
+                                      q['isActive'] as bool? ?? true,
+                                    ),
                               );
                             },
                           ),
@@ -200,9 +214,64 @@ class QuizQuestionsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref,
-      (String, String) ids, String qId, String num,
-      List<Map<String, dynamic>> options) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Dio dio,
+    (String, String) ids,
+    String qId,
+    String num,
+    List<Map<String, dynamic>> options,
+  ) async {
+    // ── 1. Check if any answers exist for this question ──────────
+    bool hasAnswers = false;
+    try {
+      final res = await dio.get<Map<String, dynamic>>(
+        '/answers',
+        queryParameters: {
+          'quiz_id': quizId,
+          'question_id': qId,
+          'page_size': 1,
+        },
+      );
+      final total = res.data?['total'] as int? ?? 0;
+      hasAnswers = total > 0;
+    } catch (_) {
+      // If the check fails, fall through to the normal confirmation.
+    }
+
+    if (!context.mounted) return;
+
+    // ── 2a. Answers exist — block deletion ───────────────────────
+    if (hasAnswers) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(children: [
+            Icon(Icons.lock_outline_rounded,
+                color: AppColors.danger, size: 20),
+            const SizedBox(width: 8),
+            const Text('Cannot delete'),
+          ]),
+          content: Text(
+            'Question #$num has recorded answers from customers '
+            'and cannot be deleted.\n\n'
+            'You can deactivate it instead to hide it from future audits.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // ── 2b. No answers — show regular confirmation ───────────────
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -223,7 +292,9 @@ class QuizQuestionsScreen extends ConsumerWidget {
     );
     if (ok == true) {
       try {
-        await ref.read(_qProviderFamily(ids).notifier).deleteQuestion(qId, options);
+        await ref
+            .read(_qProviderFamily(ids).notifier)
+            .deleteQuestion(qId, options);
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -378,12 +449,14 @@ class _QuestionCard extends StatefulWidget {
   final int index;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onToggleActive;
 
   const _QuestionCard({
     required this.question,
     required this.index,
     required this.onEdit,
     required this.onDelete,
+    required this.onToggleActive,
   });
 
   @override
@@ -396,8 +469,9 @@ class _QuestionCardState extends State<_QuestionCard> {
   @override
   Widget build(BuildContext context) {
     final q = widget.question;
+    final isActive = q['isActive'] as bool? ?? true;
     final qtype = q['qType'] as String? ?? '';
-    final color = _qtypeColor(qtype);
+    final color = isActive ? _qtypeColor(qtype) : AppColors.muted;
     final hasEvidence = (q['evidenceCondition'] as String?)?.isNotEmpty ?? false;
     final requiresEvidence = q['requiresEvidence'] as bool? ?? false;
     final evidencePrompt = q['evidencePrompt'] as String?;
@@ -413,7 +487,7 @@ class _QuestionCardState extends State<_QuestionCard> {
         duration: const Duration(milliseconds: 180),
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isActive ? Colors.white : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(14),
           border: Border(left: BorderSide(color: color, width: 4)),
           boxShadow: [
@@ -491,6 +565,15 @@ class _QuestionCardState extends State<_QuestionCard> {
                           color: color,
                           icon: null,
                         ),
+                        // Inactive badge
+                        if (!isActive)
+                          _Badge(
+                            label: 'INACTIVE',
+                            color: AppColors.muted,
+                            bgColor: const Color(0xFFF1F5F9),
+                            borderColor: const Color(0xFFCBD5E1),
+                            icon: Icons.pause_circle_outline_rounded,
+                          ),
                         // Evidence condition badge
                         if (hasEvidence)
                           _Badge(
@@ -592,6 +675,17 @@ class _QuestionCardState extends State<_QuestionCard> {
                     color: _kGrad2,
                     tooltip: 'Edit',
                     onTap: widget.onEdit,
+                  ),
+                  const Gap(2),
+                  _ActionIcon(
+                    icon: isActive
+                        ? Icons.pause_circle_outline_rounded
+                        : Icons.play_circle_outline_rounded,
+                    color: isActive
+                        ? const Color(0xFFD97706)
+                        : const Color(0xFF16A34A),
+                    tooltip: isActive ? 'Deactivate' : 'Activate',
+                    onTap: widget.onToggleActive,
                   ),
                   const Gap(2),
                   _ActionIcon(
