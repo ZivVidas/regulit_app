@@ -19,6 +19,7 @@ const _kQTypes = [
   ('one_pick',      'One Pick'),
   ('multiple_pick', 'Multiple Pick'),
   ('text',          'Free Text'),
+  ('numeric',       'Numeric'),
 ];
 
 bool _isPickType(String? t) => t == 'one_pick' || t == 'multiple_pick';
@@ -31,6 +32,7 @@ Color _qtypeColor(String? v) => switch (v) {
       'one_pick'      => const Color(0xFF2563EB),
       'multiple_pick' => const Color(0xFF7C3AED),
       'text'          => const Color(0xFFEA580C),
+      'numeric'       => const Color(0xFF0891B2), // cyan
       _               => AppColors.muted,
     };
 

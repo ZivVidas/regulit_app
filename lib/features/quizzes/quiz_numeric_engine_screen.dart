@@ -251,10 +251,13 @@ class QuizNumericEngineScreen extends ConsumerWidget {
     List<Map<String, dynamic>> signals,
     Map<String, dynamic>? rule,
   ) {
+    final dio = ref.read(dioProvider);
     showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _RuleDialog(
+        quizId: quizId,
+        dio: dio,
         stepId: step['id'] as String,
         stepType: step['stepType'] as String? ?? 'add',
         signals: signals,
@@ -665,7 +668,7 @@ class _RuleRow extends StatelessWidget {
   String _valueLabel(double value) {
     return switch (stepType) {
       'discount_pct' => '-${value.toStringAsFixed(1)}%',
-      'cap_pct'      => 'cap ${value.toStringAsFixed(1)}%',
+      'cap_pct'      => 'cap ${value.toStringAsFixed(1)}% of Q',
       'multiply'     => '× ${value.toStringAsFixed(2)}',
       _              => '+${value.toStringAsFixed(2)}',
     };
@@ -1060,8 +1063,17 @@ class _StepDialogState extends State<_StepDialog> {
   }
 }
 
+// ── Simple data class for a numeric question option ───────────
+class _NumericQ {
+  final String id;
+  final String label; // "Q{number}: {text}"
+  const _NumericQ({required this.id, required this.label});
+}
+
 // ── Rule Dialog ───────────────────────────────────────────────
 class _RuleDialog extends StatefulWidget {
+  final String quizId;
+  final Dio dio;
   final String stepId;
   final String stepType;
   final List<Map<String, dynamic>> signals;
@@ -1069,6 +1081,8 @@ class _RuleDialog extends StatefulWidget {
   final Future<void> Function(Map<String, dynamic>) onSave;
 
   const _RuleDialog({
+    required this.quizId,
+    required this.dio,
     required this.stepId,
     required this.stepType,
     required this.signals,
@@ -1089,6 +1103,12 @@ class _RuleDialogState extends State<_RuleDialog> {
   bool _saving = false;
   String? _error;
 
+  // cap_pct: reference question picker
+  List<_NumericQ> _numericQuestions = [];
+  bool _loadingQuestions = false;
+  String? _selectedRefQuestionId;
+
+  bool get _isCapPct => widget.stepType == 'cap_pct';
   bool get _isEdit => widget.initialRule != null;
 
   @override
@@ -1102,8 +1122,64 @@ class _RuleDialogState extends State<_RuleDialog> {
     _valueCtrl =
         TextEditingController(text: r?['value']?.toString() ?? '');
     _root = r != null
-        ? _TermNode.fromJson(r['condition'] as Map<String, dynamic>? ?? {'always': true})
+        ? _TermNode.fromJson(
+            r['condition'] as Map<String, dynamic>? ?? {'always': true})
         : _TermNode.always();
+    _selectedRefQuestionId = r?['refQuestionId'] as String?;
+
+    if (_isCapPct) _loadNumericQuestions();
+  }
+
+  /// Fetch all steps for this quiz, then all questions per step in parallel,
+  /// and keep only those with qType == 'numeric'.
+  Future<void> _loadNumericQuestions() async {
+    setState(() => _loadingQuestions = true);
+    try {
+      final stepsRes = await widget.dio.get<Map<String, dynamic>>(
+        '/quizzes/${widget.quizId}/steps',
+        queryParameters: {'page': 1, 'page_size': 100},
+      );
+      final steps = ((stepsRes.data!['items'] as List?) ?? [])
+          .cast<Map<String, dynamic>>();
+
+      final questionLists = await Future.wait(steps.map((step) async {
+        try {
+          final qRes = await widget.dio.get<Map<String, dynamic>>(
+            '/quizzes/${widget.quizId}/steps/${step['id']}/questions',
+            queryParameters: {'page': 1, 'page_size': 200},
+          );
+          return ((qRes.data!['items'] as List?) ?? [])
+              .cast<Map<String, dynamic>>();
+        } catch (_) {
+          return <Map<String, dynamic>>[];
+        }
+      }));
+
+      final numeric = questionLists
+          .expand((qs) => qs)
+          .where((q) => q['qType'] == 'numeric')
+          .map((q) => _NumericQ(
+                id: q['id'] as String,
+                label:
+                    'Q${q['questionNumber']}: ${q['questionText'] as String? ?? ''}',
+              ))
+          .toList()
+        ..sort((a, b) => a.label.compareTo(b.label));
+
+      if (mounted) {
+        setState(() {
+          _numericQuestions = numeric;
+          _loadingQuestions = false;
+          // If the saved refQuestionId no longer exists in the list, clear it
+          if (_selectedRefQuestionId != null &&
+              !numeric.any((q) => q.id == _selectedRefQuestionId)) {
+            _selectedRefQuestionId = null;
+          }
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingQuestions = false);
+    }
   }
 
   @override
@@ -1116,13 +1192,18 @@ class _RuleDialogState extends State<_RuleDialog> {
 
   String _valueSuffix() => switch (widget.stepType) {
         'discount_pct' => '% discount',
-        'cap_pct'      => '% of base',
+        'cap_pct'      => '% of question answer',
         'multiply'     => '× multiplier',
         _              => 'amount',
       };
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    // For cap_pct a reference question is required
+    if (_isCapPct && _selectedRefQuestionId == null) {
+      setState(() => _error = 'Please select the reference numeric question.');
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
@@ -1132,6 +1213,7 @@ class _RuleDialogState extends State<_RuleDialog> {
       'label': _labelCtrl.text.trim(),
       'condition': _root.toJson(),
       'value': double.parse(_valueCtrl.text.trim()),
+      if (_isCapPct) 'refQuestionId': _selectedRefQuestionId,
     };
     try {
       await widget.onSave(body);
@@ -1242,6 +1324,96 @@ class _RuleDialogState extends State<_RuleDialog> {
                             ),
                           ),
                         ]),
+
+                        // ── Reference question (cap_pct only) ─
+                        if (_isCapPct) ...[
+                          const Gap(16),
+                          Text('Cap reference question',
+                              style: AppTextStyles.label),
+                          const Gap(4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: _loadingQuestions
+                                ? const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 10),
+                                    child: Center(
+                                        child: SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    )),
+                                  )
+                                : _numericQuestions.isEmpty
+                                    ? Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 10),
+                                        child: Row(children: [
+                                          Icon(Icons.info_outline_rounded,
+                                              size: 14,
+                                              color: Colors.amber[700]),
+                                          const Gap(6),
+                                          const Expanded(
+                                            child: Text(
+                                              'No numeric questions found in this quiz. '
+                                              'Add a question with type "Numeric" first.',
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Color(0xFF92400E)),
+                                            ),
+                                          ),
+                                        ]),
+                                      )
+                                    : DropdownButton<String>(
+                                        value: _selectedRefQuestionId,
+                                        isExpanded: true,
+                                        underline: const SizedBox.shrink(),
+                                        hint: const Text(
+                                          'Select the numeric question…',
+                                          style: TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xFF94A3B8)),
+                                        ),
+                                        items: _numericQuestions
+                                            .map((q) => DropdownMenuItem(
+                                                  value: q.id,
+                                                  child: Text(
+                                                    q.label,
+                                                    style: const TextStyle(
+                                                        fontSize: 13),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ))
+                                            .toList(),
+                                        onChanged: (v) => setState(
+                                            () => _selectedRefQuestionId = v),
+                                      ),
+                          ),
+                          // Explanatory note
+                          const Gap(4),
+                          Row(children: [
+                            Icon(Icons.info_outline_rounded,
+                                size: 12, color: _kGrad1.withOpacity(0.7)),
+                            const Gap(4),
+                            Expanded(
+                              child: Text(
+                                'The result will be capped at ${_valueCtrl.text.isEmpty ? 'N' : _valueCtrl.text}% of '
+                                'the answer the user gave to the selected question.',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: _kGrad1.withOpacity(0.8)),
+                              ),
+                            ),
+                          ]),
+                        ],
 
                         const Gap(16),
                         Text('Condition',

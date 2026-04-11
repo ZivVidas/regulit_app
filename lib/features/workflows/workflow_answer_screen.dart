@@ -666,7 +666,7 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
     if (q == null) return;
     final qId   = q['id'] as String;
     final qType = q['qType'] as String;
-    if (qType == 'text' && qId != _lastTextQuestionId) {
+    if ((qType == 'text' || qType == 'numeric') && qId != _lastTextQuestionId) {
       _lastTextQuestionId = qId;
       _textCtrl.text = s.answers[qId]?.answerText ?? '';
     }
@@ -699,7 +699,8 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
     _autoAdvanceTimer?.cancel();
     final s = ref.read(_ansProvider(widget.sessionId));
     final q = s.currentQuestion;
-    if (q != null && (q['qType'] as String) == 'text') {
+    final _qt = q?['qType'] as String?;
+    if (q != null && (_qt == 'text' || _qt == 'numeric')) {
       ref.read(_ansProvider(widget.sessionId).notifier)
           .setAnswerText(q['id'] as String, _textCtrl.text);
     }
@@ -1310,6 +1311,11 @@ class _QuestionView extends StatelessWidget {
                                 options: options,
                                 selected: localAns.pickedOptionIds,
                                 onToggle: (id) => notifier.toggleOption(qId, id),
+                              )
+                            else if (qType == 'numeric')
+                              _NumericInput(
+                                controller: textCtrl,
+                                onChanged:  onTextChanged,
                               )
                             else
                               _TextInput(
@@ -2661,6 +2667,82 @@ class _TextInput extends StatelessWidget {
         ),
         contentPadding: const EdgeInsets.all(16),
       ),
+    );
+  }
+}
+
+// ── Numeric Input ─────────────────────────────────────────────
+class _NumericInput extends StatelessWidget {
+  final TextEditingController controller;
+  final void Function(String) onChanged;
+
+  const _NumericInput({required this.controller, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: controller,
+          onChanged:  onChanged,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          ],
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: _kText,
+            letterSpacing: -0.3,
+          ),
+          textAlign: TextAlign.center,
+          decoration: InputDecoration(
+            hintText: '0',
+            hintStyle: TextStyle(
+              color: _kMuted.withOpacity(0.5),
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _kGrad2, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            suffixIcon: controller.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    onPressed: () {
+                      controller.clear();
+                      onChanged('');
+                    },
+                  )
+                : null,
+          ),
+        ),
+        const Gap(8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline_rounded, size: 13, color: _kMuted.withOpacity(0.7)),
+            const Gap(4),
+            Text(
+              'Enter a number',
+              style: TextStyle(fontSize: 12, color: _kMuted.withOpacity(0.7)),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
