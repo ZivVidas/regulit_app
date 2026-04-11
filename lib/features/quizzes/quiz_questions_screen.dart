@@ -954,8 +954,9 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
   late final List<String> _conditionLabels;
   final TextEditingController _conditionInputCtrl = TextEditingController();
 
-  // Pick options — list of mutable text controllers, one per option
+  // Pick options — parallel lists: controller + existing server ID (null = new)
   final List<TextEditingController> _optionCtrls = [];
+  final List<String?> _optionIds = [];
 
   bool _saving = false;
   String? _error;
@@ -987,6 +988,7 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
     for (final opt in existingOptions) {
       _optionCtrls.add(
           TextEditingController(text: opt['optionText'] as String? ?? ''));
+      _optionIds.add(opt['id'] as String?);
     }
   }
 
@@ -1017,12 +1019,34 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
   }
 
   void _addOption() {
-    setState(() => _optionCtrls.add(TextEditingController()));
+    setState(() {
+      _optionCtrls.add(TextEditingController());
+      _optionIds.add(null);
+    });
   }
 
-  void _removeOption(int index) {
+  Future<void> _removeOption(int index) async {
+    final existingId = _optionIds[index];
+
+    // If the option is already saved on the server, delete it via API first
+    if (existingId != null && _isEdit) {
+      final qId = widget.initialQuestion!['id'] as String;
+      final optionsBase =
+          '/quizzes/${widget.quizId}/steps/${widget.stepId}/questions/$qId/options';
+      try {
+        await widget.dio.delete<dynamic>('$optionsBase/$existingId');
+      } catch (e) {
+        if (mounted) {
+          setState(() =>
+              _error = e.toString().replaceFirst('Exception: ', ''));
+        }
+        return; // abort removal — option is in use
+      }
+    }
+
     final ctrl = _optionCtrls.removeAt(index);
     ctrl.dispose();
+    _optionIds.removeAt(index);
     setState(() {});
   }
 
@@ -1072,30 +1096,29 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
         questionId = res.data!['id'] as String;
       }
 
-      // 2. Sync pick options
+      // 2. Sync pick options — PUT existing, POST new (no delete-all)
       final optionsBase = '$_baseUrl/$questionId/options';
 
-      // Delete all existing options first (simplest sync strategy)
-      final existingOptions =
-          (widget.initialQuestion?['options'] as List?)
-                  ?.cast<Map<String, dynamic>>() ??
-              [];
-      for (final opt in existingOptions) {
-        await widget.dio
-            .delete<dynamic>('$optionsBase/${opt['id'] as String}');
-      }
-
-      // Create new options (only for pick types, skip empty)
       if (_isPickType(_qtype)) {
-        final validOptions = _optionCtrls
-            .map((c) => c.text.trim())
-            .where((t) => t.isNotEmpty)
-            .toList();
-        for (int i = 0; i < validOptions.length; i++) {
-          await widget.dio.post<dynamic>(optionsBase, data: {
-            'optionText': validOptions[i],
-            'optionOrder': i,
-          });
+        int order = 0;
+        for (int i = 0; i < _optionCtrls.length; i++) {
+          final text = _optionCtrls[i].text.trim();
+          if (text.isEmpty) continue;
+          final id = i < _optionIds.length ? _optionIds[i] : null;
+          if (id != null) {
+            // Update existing option
+            await widget.dio.put<dynamic>('$optionsBase/$id', data: {
+              'optionText': text,
+              'optionOrder': order,
+            });
+          } else {
+            // Create new option
+            await widget.dio.post<dynamic>(optionsBase, data: {
+              'optionText': text,
+              'optionOrder': order,
+            });
+          }
+          order++;
         }
       }
 

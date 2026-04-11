@@ -20,6 +20,7 @@ import '../features/classifier/classifier_wizard_screen.dart';
 import '../features/audit_pack/audit_pack_screen.dart';
 import '../features/evidence/evidence_queue_screen.dart';
 import '../features/ai_chat/ai_chat_screen.dart';
+import '../features/quizzes/quiz_numeric_engine_screen.dart';
 import '../features/quizzes/quiz_questions_screen.dart';
 import '../features/quizzes/quiz_result_engine_screen.dart';
 import '../features/quizzes/quiz_steps_screen.dart';
@@ -53,6 +54,7 @@ abstract class AppRoutes {
   static const quizSteps = '/admin/quizzes/:quizId/steps';
   static const quizQuestions = '/admin/quizzes/:quizId/steps/:stepId/questions';
   static const quizResultEngine = '/admin/quizzes/:quizId/result-engine';
+  static const quizNumericEngine = '/admin/quizzes/:quizId/numeric-engine';
   static const workflows = '/admin/workflows';
   static const workflowQuizzes = '/admin/workflows/:workflowId/quizzes';
   static const workflowRuleEngine = '/admin/workflows/:workflowId/rule-engine';
@@ -215,6 +217,17 @@ GoRouter router(RouterRef ref) {
                   state.uri.queryParameters['name'] ?? 'Quiz';
               return _fadePage(
                   QuizResultEngineScreen(quizId: quizId, quizName: quizName));
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.quizNumericEngine,
+            name: 'quizNumericEngine',
+            pageBuilder: (context, state) {
+              final quizId = state.pathParameters['quizId']!;
+              final quizName =
+                  state.uri.queryParameters['name'] ?? 'Quiz';
+              return _fadePage(QuizNumericEngineScreen(
+                  quizId: quizId, quizName: quizName));
             },
           ),
           GoRoute(

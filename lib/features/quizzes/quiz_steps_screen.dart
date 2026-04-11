@@ -119,6 +119,10 @@ class QuizStepsScreen extends ConsumerWidget {
               final name = Uri.encodeComponent(quizName);
               context.push('/admin/quizzes/$quizId/result-engine?name=$name');
             },
+            onNumericEngine: () {
+              final name = Uri.encodeComponent(quizName);
+              context.push('/admin/quizzes/$quizId/numeric-engine?name=$name');
+            },
           ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.06, end: 0),
 
           // ── Body ─────────────────────────────────────────────
@@ -233,6 +237,7 @@ class _Header extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onAdd;
   final VoidCallback onResultEngine;
+  final VoidCallback onNumericEngine;
 
   const _Header({
     required this.quizName,
@@ -240,6 +245,7 @@ class _Header extends StatelessWidget {
     required this.onBack,
     required this.onAdd,
     required this.onResultEngine,
+    required this.onNumericEngine,
   });
 
   @override
@@ -317,7 +323,14 @@ class _Header extends StatelessWidget {
                 onPressed: onResultEngine,
                 icon: const Icon(Icons.account_tree_rounded,
                     color: Colors.white, size: 20),
-                tooltip: 'Result Engine',
+                tooltip: 'Label Result Engine',
+              ),
+              // Numeric Engine button
+              IconButton(
+                onPressed: onNumericEngine,
+                icon: const Icon(Icons.calculate_rounded,
+                    color: Colors.white, size: 20),
+                tooltip: 'Numeric Engine',
               ),
               // Add button
               _AddButton(onTap: onAdd),
