@@ -19,24 +19,27 @@ const _stepTypes = [
   'multiply',
   'discount_pct',
   'cap_pct',
+  'ref_quiz_result',
 ];
 
 String _stepTypeLabel(String t) => switch (t) {
-      'set_base'     => 'Set Base',
-      'add'          => 'Add',
-      'multiply'     => 'Multiply',
-      'discount_pct' => 'Discount %',
-      'cap_pct'      => 'Cap %',
-      _              => t,
+      'set_base'        => 'Set Base',
+      'add'             => 'Add',
+      'multiply'        => 'Multiply',
+      'discount_pct'    => 'Discount %',
+      'cap_pct'         => 'Cap %',
+      'ref_quiz_result' => 'From Other Quiz',
+      _                 => t,
     };
 
 Color _stepTypeColor(String t) => switch (t) {
-      'set_base'     => const Color(0xFF2563EB),
-      'add'          => const Color(0xFF059669),
-      'multiply'     => const Color(0xFF7C3AED),
-      'discount_pct' => const Color(0xFFD97706),
-      'cap_pct'      => const Color(0xFFDC2626),
-      _              => AppColors.muted,
+      'set_base'        => const Color(0xFF2563EB),
+      'add'             => const Color(0xFF059669),
+      'multiply'        => const Color(0xFF7C3AED),
+      'discount_pct'    => const Color(0xFFD97706),
+      'cap_pct'         => const Color(0xFFDC2626),
+      'ref_quiz_result' => const Color(0xFF0891B2), // cyan
+      _                 => AppColors.muted,
     };
 
 // ── State ─────────────────────────────────────────────────────
@@ -667,10 +670,11 @@ class _RuleRow extends StatelessWidget {
 
   String _valueLabel(double value) {
     return switch (stepType) {
-      'discount_pct' => '-${value.toStringAsFixed(1)}%',
-      'cap_pct'      => 'cap ${value.toStringAsFixed(1)}% of Q',
-      'multiply'     => '× ${value.toStringAsFixed(2)}',
-      _              => '+${value.toStringAsFixed(2)}',
+      'discount_pct'    => '-${value.toStringAsFixed(1)}%',
+      'cap_pct'         => 'cap ${value.toStringAsFixed(1)}% of Q',
+      'multiply'        => '× ${value.toStringAsFixed(2)}',
+      'ref_quiz_result' => '× ${value.toStringAsFixed(2)} other quiz',
+      _                 => '+${value.toStringAsFixed(2)}',
     };
   }
 
@@ -1108,7 +1112,13 @@ class _RuleDialogState extends State<_RuleDialog> {
   bool _loadingQuestions = false;
   String? _selectedRefQuestionId;
 
+  // ref_quiz_result: reference quiz picker
+  List<Map<String, dynamic>> _quizList = [];
+  bool _loadingQuizzes = false;
+  String? _selectedRefQuizId;
+
   bool get _isCapPct => widget.stepType == 'cap_pct';
+  bool get _isRefQuiz => widget.stepType == 'ref_quiz_result';
   bool get _isEdit => widget.initialRule != null;
 
   @override
@@ -1126,8 +1136,10 @@ class _RuleDialogState extends State<_RuleDialog> {
             r['condition'] as Map<String, dynamic>? ?? {'always': true})
         : _TermNode.always();
     _selectedRefQuestionId = r?['refQuestionId'] as String?;
+    _selectedRefQuizId = r?['refQuizId'] as String?;
 
     if (_isCapPct) _loadNumericQuestions();
+    if (_isRefQuiz) _loadQuizzes();
   }
 
   /// Fetch all steps for this quiz, then all questions per step in parallel,
@@ -1182,6 +1194,34 @@ class _RuleDialogState extends State<_RuleDialog> {
     }
   }
 
+  /// Fetch all quizzes to populate the "reference quiz" dropdown.
+  Future<void> _loadQuizzes() async {
+    setState(() => _loadingQuizzes = true);
+    try {
+      final res = await widget.dio.get<Map<String, dynamic>>(
+        '/quizzes',
+        queryParameters: {'page': 1, 'page_size': 200},
+      );
+      final quizzes = ((res.data!['items'] as List?) ?? [])
+          .cast<Map<String, dynamic>>()
+          // Exclude the current quiz from the list
+          .where((q) => q['id'] != widget.quizId)
+          .toList();
+      if (mounted) {
+        setState(() {
+          _quizList = quizzes;
+          _loadingQuizzes = false;
+          if (_selectedRefQuizId != null &&
+              !quizzes.any((q) => q['id'] == _selectedRefQuizId)) {
+            _selectedRefQuizId = null;
+          }
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingQuizzes = false);
+    }
+  }
+
   @override
   void dispose() {
     _orderCtrl.dispose();
@@ -1191,17 +1231,22 @@ class _RuleDialogState extends State<_RuleDialog> {
   }
 
   String _valueSuffix() => switch (widget.stepType) {
-        'discount_pct' => '% discount',
-        'cap_pct'      => '% of question answer',
-        'multiply'     => '× multiplier',
-        _              => 'amount',
+        'discount_pct'    => '% discount',
+        'cap_pct'         => '% of question answer',
+        'multiply'        => '× multiplier',
+        'ref_quiz_result' => '× multiplier',
+        _                 => 'amount',
       };
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    // For cap_pct a reference question is required
+    // Validate type-specific required fields
     if (_isCapPct && _selectedRefQuestionId == null) {
       setState(() => _error = 'Please select the reference numeric question.');
+      return;
+    }
+    if (_isRefQuiz && _selectedRefQuizId == null) {
+      setState(() => _error = 'Please select the reference quiz.');
       return;
     }
     setState(() {
@@ -1214,6 +1259,7 @@ class _RuleDialogState extends State<_RuleDialog> {
       'condition': _root.toJson(),
       'value': double.parse(_valueCtrl.text.trim()),
       if (_isCapPct) 'refQuestionId': _selectedRefQuestionId,
+      if (_isRefQuiz) 'refQuizId': _selectedRefQuizId,
     };
     try {
       await widget.onSave(body);
@@ -1410,6 +1456,98 @@ class _RuleDialogState extends State<_RuleDialog> {
                                 style: TextStyle(
                                     fontSize: 11,
                                     color: _kGrad1.withOpacity(0.8)),
+                              ),
+                            ),
+                          ]),
+                        ],
+
+                        // ── Reference quiz (ref_quiz_result only) ─
+                        if (_isRefQuiz) ...[
+                          const Gap(16),
+                          Text('Reference quiz',
+                              style: AppTextStyles.label),
+                          const Gap(4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: _loadingQuizzes
+                                ? const Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(vertical: 10),
+                                    child: Center(
+                                        child: SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    )),
+                                  )
+                                : _quizList.isEmpty
+                                    ? Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 10),
+                                        child: Row(children: [
+                                          Icon(Icons.info_outline_rounded,
+                                              size: 14,
+                                              color: Colors.amber[700]),
+                                          const Gap(6),
+                                          const Expanded(
+                                            child: Text(
+                                              'No other quizzes found.',
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Color(0xFF92400E)),
+                                            ),
+                                          ),
+                                        ]),
+                                      )
+                                    : DropdownButton<String>(
+                                        value: _selectedRefQuizId,
+                                        isExpanded: true,
+                                        underline: const SizedBox.shrink(),
+                                        hint: const Text(
+                                          'Select quiz…',
+                                          style: TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xFF94A3B8)),
+                                        ),
+                                        items: _quizList
+                                            .map((q) => DropdownMenuItem(
+                                                  value: q['id'] as String,
+                                                  child: Text(
+                                                    q['name'] as String? ??
+                                                        '—',
+                                                    style: const TextStyle(
+                                                        fontSize: 13),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ))
+                                            .toList(),
+                                        onChanged: (v) => setState(
+                                            () => _selectedRefQuizId = v),
+                                      ),
+                          ),
+                          const Gap(4),
+                          Row(children: [
+                            Icon(Icons.info_outline_rounded,
+                                size: 12,
+                                color: const Color(0xFF0891B2).withOpacity(0.8)),
+                            const Gap(4),
+                            Expanded(
+                              child: Text(
+                                'Adds (selected quiz numeric result × multiplier) '
+                                'to the running total. Use multiplier 1.0 to add the full amount.',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: const Color(0xFF0891B2)
+                                        .withOpacity(0.8)),
                               ),
                             ),
                           ]),
