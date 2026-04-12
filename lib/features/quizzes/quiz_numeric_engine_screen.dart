@@ -527,90 +527,97 @@ class _StepCardState extends State<_StepCard> {
       child: Column(
         children: [
           // ── Step header ──────────────────────────────────
-          InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(children: [
-                // Step order badge
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${step['stepOrder'] ?? widget.index + 1}',
-                      style: TextStyle(
-                          color: color,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ),
-                const Gap(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        step['stepName'] as String? ?? '—',
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF111827)),
+          // Action buttons are OUTSIDE the InkWell to avoid gesture conflicts.
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(children: [
+              // Left clickable area → expand/collapse
+              Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => setState(() => _expanded = !_expanded),
+                  child: Row(children: [
+                    // Step order badge
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const Gap(2),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                      child: Center(
                         child: Text(
-                          _stepTypeLabel(stepType),
+                          '${step['stepOrder'] ?? widget.index + 1}',
                           style: TextStyle(
                               color: color,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const Gap(12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            step['stepName'] as String? ?? '—',
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111827)),
+                          ),
+                          const Gap(2),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              _stepTypeLabel(stepType),
+                              style: TextStyle(
+                                  color: color,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      _expanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      color: Colors.grey[400],
+                      size: 20,
+                    ),
+                  ]),
                 ),
-                // Add rule
-                _ActionIcon(
-                  icon: Icons.add_rounded,
-                  color: _kGrad1,
-                  tooltip: 'Add Rule',
-                  onTap: widget.onAddRule,
-                ),
-                _ActionIcon(
-                  icon: Icons.edit_outlined,
-                  color: _kGrad2,
-                  tooltip: 'Edit Step',
-                  onTap: widget.onEdit,
-                ),
-                _ActionIcon(
-                  icon: Icons.delete_outline_rounded,
-                  color: AppColors.danger,
-                  tooltip: 'Delete Step',
-                  onTap: widget.onDelete,
-                ),
-                Icon(
-                  _expanded
-                      ? Icons.expand_less_rounded
-                      : Icons.expand_more_rounded,
-                  color: Colors.grey[400],
-                  size: 20,
-                ),
-              ]),
-            ),
+              ),
+              // Right side — action buttons (outside InkWell)
+              const Gap(4),
+              _ActionIcon(
+                icon: Icons.add_rounded,
+                color: _kGrad1,
+                tooltip: 'Add Rule',
+                onTap: widget.onAddRule,
+              ),
+              _ActionIcon(
+                icon: Icons.edit_outlined,
+                color: _kGrad2,
+                tooltip: 'Edit Step',
+                onTap: widget.onEdit,
+              ),
+              _ActionIcon(
+                icon: Icons.delete_outline_rounded,
+                color: AppColors.danger,
+                tooltip: 'Delete Step',
+                onTap: widget.onDelete,
+              ),
+            ]),
           ),
           // ── Rules list ───────────────────────────────────
           if (_expanded) ...[
