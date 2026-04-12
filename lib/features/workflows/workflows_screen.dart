@@ -809,6 +809,12 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
   bool _saving = false;
   String? _error;
 
+  // ── Fine source state ────────────────────────────────────────
+  String _fineSource = 'llm';
+  String? _fineQuizId;
+  List<Map<String, String>> _quizzes = []; // [{id, name}]
+  bool _quizzesLoading = false;
+
   // ── File evidence state ──────────────────────────────────────
   bool _uploading = false;
   double _uploadProgress = 0.0;
@@ -824,8 +830,12 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
         TextEditingController(text: widget.initial?['name'] as String? ?? '');
     _descCtrl = TextEditingController(
         text: widget.initial?['description'] as String? ?? '');
+    _fineSource =
+        (widget.initial?['fineSource'] as String?) ?? 'llm';
+    _fineQuizId = widget.initial?['fineQuizId'] as String?;
     if (_isEdit && _workflowId != null) {
       _loadFiles();
+      _loadQuizzes();
     }
   }
 
@@ -834,6 +844,28 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
     _nameCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadQuizzes() async {
+    if (_workflowId == null) return;
+    setState(() => _quizzesLoading = true);
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio
+          .get<List<dynamic>>('/workflows/$_workflowId/quizzes');
+      if (!mounted) return;
+      setState(() {
+        _quizzes = (res.data ?? [])
+            .map((e) => {
+                  'id': (e as Map<String, dynamic>)['quizId'] as String,
+                  'name': e['quizName'] as String,
+                })
+            .toList();
+        _quizzesLoading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _quizzesLoading = false);
+    }
   }
 
   Future<void> _loadFiles() async {
@@ -913,6 +945,13 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    // Validate: if quiz_numeric selected, a quiz must be chosen
+    if (_fineSource == 'quiz_numeric' && _fineQuizId == null) {
+      setState(() {
+        _error = 'Please select a quiz for the fine calculation.';
+      });
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
@@ -923,6 +962,8 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
         'description': _descCtrl.text.trim().isEmpty
             ? null
             : _descCtrl.text.trim(),
+        'fineSource': _fineSource,
+        'fineQuizId': _fineSource == 'quiz_numeric' ? _fineQuizId : null,
       });
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -940,7 +981,7 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 680),
+          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 780),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1009,6 +1050,122 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
                           label: 'Description (optional)',
                           ctrl: _descCtrl,
                           maxLines: 3),
+                      if (_isEdit) ...[
+                      const Gap(16),
+                      // ── Fine Source Picker ────────────────────────
+                      const Text(
+                        'Estimated Fine Source',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                      const Gap(6),
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                            value: 'llm',
+                            icon: Icon(Icons.auto_awesome_rounded, size: 14),
+                            label: Text('AI (LLM)'),
+                          ),
+                          ButtonSegment(
+                            value: 'quiz_numeric',
+                            icon: Icon(Icons.calculate_rounded, size: 14),
+                            label: Text('Quiz Result'),
+                          ),
+                        ],
+                        selected: {_fineSource},
+                        onSelectionChanged: (s) => setState(() {
+                          _fineSource = s.first;
+                          if (_fineSource == 'llm') _fineQuizId = null;
+                        }),
+                        style: ButtonStyle(
+                          textStyle: WidgetStateProperty.all(
+                            const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                      if (_fineSource == 'quiz_numeric') ...[
+                        const Gap(10),
+                        if (_quizzesLoading)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          )
+                        else if (_quizzes.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.warning.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color:
+                                      AppColors.warning.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: const [
+                                Icon(Icons.info_outline_rounded,
+                                    size: 14, color: AppColors.warning),
+                                Gap(6),
+                                Expanded(
+                                  child: Text(
+                                    'No quizzes linked to this workflow yet.',
+                                    style: TextStyle(
+                                        fontSize: 11, color: AppColors.warning),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          DropdownButtonFormField<String>(
+                            value: _fineQuizId,
+                            decoration: InputDecoration(
+                              labelText: 'Quiz',
+                              labelStyle:
+                                  const TextStyle(fontSize: 12),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide:
+                                    const BorderSide(color: AppColors.border),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide:
+                                    const BorderSide(color: AppColors.border),
+                              ),
+                            ),
+                            hint: const Text('Select quiz',
+                                style: TextStyle(fontSize: 12)),
+                            items: _quizzes
+                                .map((q) => DropdownMenuItem(
+                                      value: q['id'],
+                                      child: Text(q['name'] ?? '',
+                                          style:
+                                              const TextStyle(fontSize: 12)),
+                                    ))
+                                .toList(),
+                            onChanged: (v) =>
+                                setState(() => _fineQuizId = v),
+                          ),
+                        const Gap(4),
+                        const Text(
+                          'The numeric result of the selected quiz will be used as the estimated fine for all AI-created tasks.',
+                          style:
+                              TextStyle(fontSize: 11, color: AppColors.muted),
+                        ),
+                      ],   // closes if (_fineSource == 'quiz_numeric')
+                      ],   // closes if (_isEdit)
                     ],
                   ),
                 ),
