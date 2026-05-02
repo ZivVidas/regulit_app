@@ -414,19 +414,17 @@ List<_NavItem> _navItemsForRole(UserRole? role, AppLocalizations l10n) {
         _NavItem(icon: Icons.bar_chart_outlined,     label: l10n.navReports,       route: '/reports'),
       ];
     case UserRole.clientAdmin:
-      // Step 15: dashboard (default) → kanban → task list → audit pack → users
       return [
-        _NavItem(icon: Icons.dashboard_outlined,   label: l10n.navDashboard,  route: AppRoutes.dashboard),
-        _NavItem(icon: Icons.view_kanban_outlined,  label: l10n.navKanban,    route: AppRoutes.tasks),
-        _NavItem(icon: Icons.list_alt_outlined,     label: l10n.navMyTasks,   route: AppRoutes.taskList),
-        _NavItem(icon: Icons.inventory_2_outlined,  label: l10n.navAuditPack, route: AppRoutes.auditPack),
-        _NavItem(icon: Icons.group_outlined,        label: l10n.navUsers,     route: AppRoutes.clientUsers),
+        _NavItem(icon: Icons.dashboard_outlined,    label: l10n.navDashboard,     route: AppRoutes.dashboard),
+        _NavItem(icon: Icons.view_kanban_outlined,  label: l10n.navKanban,        route: AppRoutes.tasks),
+        _NavItem(icon: Icons.inventory_2_outlined,  label: l10n.navAuditPack,     route: AppRoutes.auditPack),
+        _NavItem(icon: Icons.folder_copy_outlined,  label: l10n.navSessionFiles,  route: AppRoutes.sessionFilesNav),
+        _NavItem(icon: Icons.group_outlined,        label: l10n.navUsers,         route: AppRoutes.clientUsers),
       ];
     case UserRole.itExecutor:
-      // Step 15: kanban (default) → task list
       return [
-        _NavItem(icon: Icons.view_kanban_outlined, label: l10n.navKanban,  route: AppRoutes.tasks),
-        _NavItem(icon: Icons.list_alt_outlined,    label: l10n.navMyTasks, route: AppRoutes.taskList),
+        _NavItem(icon: Icons.view_kanban_outlined,  label: l10n.navKanban,       route: AppRoutes.tasks),
+        _NavItem(icon: Icons.folder_copy_outlined,  label: l10n.navSessionFiles, route: AppRoutes.sessionFilesNav),
       ];
     case UserRole.employee:
       // Step 15: task list only (default screen)

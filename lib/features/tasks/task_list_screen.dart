@@ -99,6 +99,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final customerId =
         ref.watch(customerContextProvider)?['customerId'] as String?;
     final user = ref.watch(currentUserProvider);
@@ -119,10 +120,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       return user?.role ?? UserRole.employee;
     })();
 
-    // it_executor: can create / edit / delete tasks; tapping always opens edit.
-    // client_admin & employee: view all tasks; status change only on assigned.
-    final isItExecutor = ctxRole == UserRole.itExecutor;
-    final isEmployee   = ctxRole == UserRole.employee;
+    // it_executor & client_admin: can fully edit tasks.
+    // employee: view-only; status change only on assigned tasks.
+    final isItExecutor  = ctxRole == UserRole.itExecutor;
+    final isClientAdmin = ctxRole == UserRole.clientAdmin;
+    final isEmployee    = ctxRole == UserRole.employee;
+    // Both it_executor and client_admin get full edit access
+    final canEditTasks = isItExecutor || isClientAdmin;
 
     // Logged-in user ID — for task-assignment status-change check.
     final currentUserId = ref.watch(currentUserProvider)?.id;
@@ -130,13 +134,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('All Tasks'),
+        title: Text(l10n.allTasks),
         actions: [
           // Refresh — always visible
           IconButton(
             icon: const Icon(Icons.refresh_outlined, size: 20),
             color: AppColors.muted,
-            tooltip: 'Refresh',
+            tooltip: l10n.retry,
             onPressed: () {
               if (customerId != null) {
                 ref.invalidate(_listSessionsProvider(customerId));
@@ -150,7 +154,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           // Switch to Kanban — hidden for employee (router also blocks them)
           if (!isEmployee)
             Tooltip(
-              message: 'Switch to Kanban View',
+              message: l10n.switchToKanban,
               child: Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: IconButton(
@@ -168,9 +172,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         ],
       ),
       body: customerId == null
-          ? const Center(
-              child: Text('No customer selected.',
-                  style: TextStyle(color: AppColors.muted)))
+          ? Center(
+              child: Text(l10n.noCustomerSelected,
+                  style: const TextStyle(color: AppColors.muted)))
           : Column(
               children: [
                 // ── Session picker ─────────────────────────────
@@ -193,7 +197,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                     controller: _searchCtrl,
                     onChanged: (v) => setState(() => _search = v.trim()),
                     decoration: InputDecoration(
-                      hintText: 'Search tasks…',
+                      hintText: l10n.searchTasksHint,
                       prefixIcon:
                           const Icon(Icons.search, size: 18, color: AppColors.muted),
                       suffixIcon: _search.isNotEmpty
@@ -224,12 +228,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                 // ── Task list ──────────────────────────────────
                 Expanded(
                   child: _selectedSessionId == null
-                      ? const Center(
-                          child: Text('Select an assessment session above.',
-                              style: TextStyle(color: AppColors.muted)))
+                      ? Center(
+                          child: Text(l10n.selectSessionAbove,
+                              style: const TextStyle(color: AppColors.muted)))
                       : _TaskListBody(
                           sessionId: _selectedSessionId!,
-                          isItExecutor: isItExecutor,
+                          isItExecutor: canEditTasks,
                           currentUserId: currentUserId,
                           search: _search,
                         ),
@@ -259,6 +263,7 @@ class _SessionBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final sessionsAsync = ref.watch(_listSessionsProvider(customerId));
 
     return Container(
@@ -266,12 +271,12 @@ class _SessionBar extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: sessionsAsync.when(
         loading: () => const LinearProgressIndicator(),
-        error: (e, _) => Text('Failed to load sessions',
-            style: TextStyle(color: AppColors.danger, fontSize: 12)),
+        error: (e, _) => Text(l10n.failedToLoadSessions,
+            style: const TextStyle(color: AppColors.danger, fontSize: 12)),
         data: (sessions) {
           if (sessions.isEmpty) {
-            return const Text('No active sessions',
-                style: TextStyle(color: AppColors.muted, fontSize: 13));
+            return Text(l10n.noActiveSessions,
+                style: const TextStyle(color: AppColors.muted, fontSize: 13));
           }
 
           // Auto-select first session
@@ -290,8 +295,8 @@ class _SessionBar extends ConsumerWidget {
               const Icon(Icons.assignment_outlined,
                   size: 16, color: AppColors.muted),
               const Gap(8),
-              const Text('Session:',
-                  style: TextStyle(
+              Text(l10n.sessionLabel,
+                  style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: AppColors.muted)),
@@ -372,7 +377,7 @@ class _TaskListBody extends ConsumerWidget {
             OutlinedButton(
               onPressed: () =>
                   ref.invalidate(_sessionTasksListProvider(sessionId)),
-              child: const Text('Retry'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -401,8 +406,8 @@ class _TaskListBody extends ConsumerWidget {
                 const Gap(12),
                 Text(
                   search.isNotEmpty
-                      ? 'No tasks match "$search"'
-                      : 'No tasks found for this session.',
+                      ? l10n.noTasksMatch(search)
+                      : l10n.noTasksForSession,
                   style: const TextStyle(color: AppColors.muted, fontSize: 14),
                   textAlign: TextAlign.center,
                 ),

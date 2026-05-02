@@ -104,7 +104,9 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
     final ctxRoleStr  = customerCtx?['role'] as String?;
     final isItExecutor = ctxRoleStr == 'it_executor' ||
                          ref.watch(isItExecutorProvider); // fallback for demo users
-    final canEdit = isItExecutor;
+    final isClientAdmin = ctxRoleStr == 'client_admin';
+    // Both it_executor and client_admin can fully edit tasks
+    final canEdit = isItExecutor || isClientAdmin;
 
     // Current user ID — used to check task assignment for status-change permission.
     final currentUserId = ref.watch(currentUserProvider)?.id;
@@ -314,7 +316,7 @@ class _SessionDropdown extends StatelessWidget {
           isDense: true,
           icon: const Icon(Icons.expand_more, size: 18, color: AppColors.muted),
           style: AppTextStyles.body.copyWith(color: AppColors.text),
-          hint: Text('Select a session…',
+          hint: Text(AppLocalizations.of(context).selectSession,
               style: AppTextStyles.bodySmall
                   .copyWith(color: AppColors.muted)),
           items: sessions

@@ -84,6 +84,7 @@ class AppLocalizations {
   String get navQuizzes       => _t('navQuizzes');
   String get navWorkflows     => _t('navWorkflows');
   String get navAgents        => _t('navAgents');
+  String get navSessionFiles  => _t('navSessionFiles');
 
   // ── Agents screen ─────────────────────────────────────────────────────────
   String get agentsSubtitle  => _t('agentsSubtitle');
@@ -179,7 +180,12 @@ class AppLocalizations {
   String get back                  => _t('back');
   String get next                  => _t('next');
   String get finish                => _t('finish');
+  String get yes                   => _t('yes');
+  String get no                    => _t('no');
+  String get pressY                => _t('pressY');
+  String get pressN                => _t('pressN');
   String get allDone               => _t('allDone');
+  String get goToDashboard         => _t('goToDashboard');
   String youCompleted(String name) => _t('youCompleted').replaceFirst('{name}', name);
   String questionsAnsweredPct(int pct) => _t('questionsAnsweredPct').replaceFirst('{pct}', '$pct');
   String viewAnswers(int n)            => _t('viewAnswers').replaceFirst('{n}', '$n');
@@ -222,6 +228,49 @@ class AppLocalizations {
   String get firstName      => _t('firstName');
   String get lastName       => _t('lastName');
   String get createAndLink  => _t('createAndLink');
+
+  // ── Task list screen ──────────────────────────────────────────────────────
+  String get allTasks               => _t('allTasks');
+  String get noCustomerSelected     => _t('noCustomerSelected');
+  String get selectSessionAbove     => _t('selectSessionAbove');
+  String get failedToLoadSessions   => _t('failedToLoadSessions');
+  String get noActiveSessions       => _t('noActiveSessions');
+  String get sessionLabel           => _t('sessionLabel');
+  String get searchTasksHint        => _t('searchTasksHint');
+  String get switchToKanban         => _t('switchToKanban');
+  String noTasksMatch(String q)     => _t('noTasksMatch').replaceFirst('{q}', q);
+  String get noTasksForSession      => _t('noTasksForSession');
+
+  // ── Workflow answer screen ────────────────────────────────────────────────
+  String get fillingWorkflow        => _t('fillingWorkflow');
+  String get aiAnalyzingDocument    => _t('aiAnalyzingDocument');
+  String get noDescriptionAvailable => _t('noDescriptionAvailable');
+  String get aiGeneratedDescription => _t('aiGeneratedDescription');
+  String get loadingQuestions       => _t('loadingQuestions');
+
+  // ── Executive dashboard ───────────────────────────────────────────────────
+  String get complianceDashboard         => _t('complianceDashboard');
+  String get analyzeAgain                => _t('analyzeAgain');
+  String get noCustomerContextSelected   => _t('noCustomerContextSelected');
+  String get noActiveAssessmentSessions  => _t('noActiveAssessmentSessions');
+  String get assessmentLabel             => _t('assessmentLabel');
+  String get riskExposureTrend           => _t('riskExposureTrend');
+  String get monthly                     => _t('monthly');
+  String get weekly                      => _t('weekly');
+  String get reviewNow                   => _t('reviewNow');
+  String get seeAll                      => _t('seeAll');
+  String get noOpenRisks                 => _t('noOpenRisks');
+  String get selectSession               => _t('selectSession');
+
+  // ── Session files screen ──────────────────────────────────────────────────
+  String get sessionFilesTitle  => _t('sessionFilesTitle');
+  String get noFilesUploaded    => _t('noFilesUploaded');
+  String get failedToLoadFiles  => _t('failedToLoadFiles');
+  String get sourceTask         => _t('sourceTask');
+  String get sourceAnswer       => _t('sourceAnswer');
+  String get viewText           => _t('viewText');
+  String get downloadFile       => _t('downloadFile');
+  String get noTextAvailable    => _t('noTextAvailable');
 
   // ── Language names (always shown in native script) ────────────────────────
   String get langEnglish => 'English';
@@ -283,6 +332,7 @@ class AppLocalizations {
       'navQuizzes': 'Quizzes',
       'navWorkflows': 'Workflows',
       'navAgents': 'AI Agents',
+      'navSessionFiles': 'Evidence Files',
       // Agents
       'agentsSubtitle': 'Manage the AI agents that automate compliance tasks.',
       'addAgent': 'Add Agent',
@@ -370,7 +420,12 @@ class AppLocalizations {
       'back': 'Back',
       'next': 'Next',
       'finish': 'Finish',
+      'yes': 'Yes',
+      'no': 'No',
+      'pressY': 'Press Y',
+      'pressN': 'Press N',
       'allDone': 'All Done! 🎉',
+      'goToDashboard': 'Go to Dashboard',
       'youCompleted': 'You completed "{name}"',
       'questionsAnsweredPct': 'questions answered: {pct}%',
       'viewAnswers': 'Answers ({n})',
@@ -411,6 +466,45 @@ class AppLocalizations {
       'firstName': 'First Name',
       'lastName': 'Last Name',
       'createAndLink': 'Create & Link',
+      // Task list
+      'allTasks': 'All Tasks',
+      'noCustomerSelected': 'No customer selected.',
+      'selectSessionAbove': 'Select an assessment session above.',
+      'failedToLoadSessions': 'Failed to load sessions',
+      'noActiveSessions': 'No active sessions',
+      'sessionLabel': 'Session:',
+      'searchTasksHint': 'Search tasks…',
+      'switchToKanban': 'Switch to Kanban View',
+      'noTasksMatch': 'No tasks match "{q}"',
+      'noTasksForSession': 'No tasks found for this session.',
+      // Workflow answer
+      'fillingWorkflow': 'Filling Workflow',
+      'aiAnalyzingDocument': 'AI analyzing document…',
+      'noDescriptionAvailable': 'No description available.',
+      'aiGeneratedDescription': 'AI-Generated Description',
+      'loadingQuestions': 'Loading questions…',
+      // Executive dashboard
+      'complianceDashboard': 'Compliance Dashboard',
+      'analyzeAgain': 'Analyze Again',
+      'noCustomerContextSelected': 'No customer context selected.',
+      'noActiveAssessmentSessions': 'No active assessment sessions.',
+      'assessmentLabel': 'Assessment:',
+      'riskExposureTrend': 'Risk Exposure Trend (₪)',
+      'monthly': 'Monthly',
+      'weekly': 'Weekly',
+      'reviewNow': 'Review now →',
+      'seeAll': 'See all →',
+      'noOpenRisks': 'No open risks — great compliance!',
+      'selectSession': 'Select a session…',
+      // Session files
+      'sessionFilesTitle': 'Session Files',
+      'noFilesUploaded': 'No files uploaded yet.',
+      'failedToLoadFiles': 'Failed to load files',
+      'sourceTask': 'Task',
+      'sourceAnswer': 'Answer',
+      'viewText': 'View Text',
+      'downloadFile': 'Download',
+      'noTextAvailable': 'No text content available.',
     },
 
     // ── Hebrew (RTL) ─────────────────────────────────────────────────────────
@@ -462,6 +556,7 @@ class AppLocalizations {
       'navQuizzes': 'שאלונים',
       'navWorkflows': 'תהליכי עבודה',
       'navAgents': 'סוכני AI',
+      'navSessionFiles': 'קבצי ראיות',
       // Agents
       'agentsSubtitle': 'נהל את סוכני ה-AI שמייעלים את משימות הציות.',
       'addAgent': 'הוסף סוכן',
@@ -549,7 +644,12 @@ class AppLocalizations {
       'back': 'חזור',
       'next': 'הבא',
       'finish': 'סיום',
+      'yes': 'כן',
+      'no': 'לא',
+      'pressY': 'לחץ K',
+      'pressN': 'לחץ L',
       'allDone': 'הכל הושלם! 🎉',
+      'goToDashboard': 'עבור ללוח הבקרה',
       'youCompleted': 'סיימת את "{name}"',
       'questionsAnsweredPct': 'שאלות שנענו: {pct}%',
       'viewAnswers': 'תשובות ({n})',
@@ -590,6 +690,45 @@ class AppLocalizations {
       'firstName': 'שם פרטי',
       'lastName': 'שם משפחה',
       'createAndLink': 'צור וקשר',
+      // Task list
+      'allTasks': 'כל המשימות',
+      'noCustomerSelected': 'לא נבחר לקוח.',
+      'selectSessionAbove': 'בחר פגישת הערכה למעלה.',
+      'failedToLoadSessions': 'טעינת פגישות נכשלה',
+      'noActiveSessions': 'אין פגישות פעילות',
+      'sessionLabel': 'פגישה:',
+      'searchTasksHint': 'חיפוש משימות…',
+      'switchToKanban': 'מעבר לתצוגת קנבן',
+      'noTasksMatch': 'אין משימות התואמות לחיפוש "{q}"',
+      'noTasksForSession': 'לא נמצאו משימות לפגישה זו.',
+      // Workflow answer
+      'fillingWorkflow': 'ממלא תהליך עבודה',
+      'aiAnalyzingDocument': 'AI מנתח מסמך…',
+      'noDescriptionAvailable': 'אין תיאור זמין.',
+      'aiGeneratedDescription': 'תיאור שנוצר ע"י AI',
+      'loadingQuestions': 'טוען שאלות…',
+      // Executive dashboard
+      'complianceDashboard': 'לוח בקרת ציות',
+      'analyzeAgain': 'נתח שוב',
+      'noCustomerContextSelected': 'לא נבחר לקוח.',
+      'noActiveAssessmentSessions': 'אין פגישות הערכה פעילות.',
+      'assessmentLabel': 'הערכה:',
+      'riskExposureTrend': 'מגמת חשיפת סיכון (₪)',
+      'monthly': 'חודשי',
+      'weekly': 'שבועי',
+      'reviewNow': '← לביקורת עכשיו',
+      'seeAll': '← ראה הכל',
+      'noOpenRisks': 'אין סיכונים פתוחים — ציות מצוין!',
+      'selectSession': 'בחר פגישה…',
+      // Session files
+      'sessionFilesTitle': 'קבצי פגישה',
+      'noFilesUploaded': 'לא הועלו קבצים עדיין.',
+      'failedToLoadFiles': 'טעינת קבצים נכשלה',
+      'sourceTask': 'משימה',
+      'sourceAnswer': 'תשובה',
+      'viewText': 'צפה בטקסט',
+      'downloadFile': 'הורד',
+      'noTextAvailable': 'אין תוכן טקסט זמין.',
     },
 
     // ── Spanish ──────────────────────────────────────────────────────────────
@@ -641,6 +780,7 @@ class AppLocalizations {
       'navQuizzes': 'Cuestionarios',
       'navWorkflows': 'Flujos de trabajo',
       'navAgents': 'Agentes IA',
+      'navSessionFiles': 'Archivos de evidencia',
       // Agents
       'agentsSubtitle': 'Gestiona los agentes IA que automatizan las tareas de cumplimiento.',
       'addAgent': 'Agregar agente',
@@ -728,7 +868,12 @@ class AppLocalizations {
       'back': 'Atrás',
       'next': 'Siguiente',
       'finish': 'Finalizar',
+      'yes': 'Sí',
+      'no': 'No',
+      'pressY': 'Pulsa S',
+      'pressN': 'Pulsa N',
       'allDone': '¡Todo listo! 🎉',
+      'goToDashboard': 'Ir al Panel',
       'youCompleted': 'Completaste "{name}"',
       'questionsAnsweredPct': 'preguntas respondidas: {pct}%',
       'viewAnswers': 'Respuestas ({n})',
@@ -769,6 +914,45 @@ class AppLocalizations {
       'firstName': 'Nombre',
       'lastName': 'Apellido',
       'createAndLink': 'Crear y vincular',
+      // Task list
+      'allTasks': 'Todas las tareas',
+      'noCustomerSelected': 'Sin cliente seleccionado.',
+      'selectSessionAbove': 'Selecciona una sesión de evaluación arriba.',
+      'failedToLoadSessions': 'Error al cargar sesiones',
+      'noActiveSessions': 'Sin sesiones activas',
+      'sessionLabel': 'Sesión:',
+      'searchTasksHint': 'Buscar tareas…',
+      'switchToKanban': 'Cambiar a vista Kanban',
+      'noTasksMatch': 'Sin tareas que coincidan con "{q}"',
+      'noTasksForSession': 'Sin tareas para esta sesión.',
+      // Workflow answer
+      'fillingWorkflow': 'Completando flujo de trabajo',
+      'aiAnalyzingDocument': 'IA analizando documento…',
+      'noDescriptionAvailable': 'Sin descripción disponible.',
+      'aiGeneratedDescription': 'Descripción generada por IA',
+      'loadingQuestions': 'Cargando preguntas…',
+      // Executive dashboard
+      'complianceDashboard': 'Panel de cumplimiento',
+      'analyzeAgain': 'Analizar de nuevo',
+      'noCustomerContextSelected': 'Sin cliente seleccionado.',
+      'noActiveAssessmentSessions': 'Sin sesiones de evaluación activas.',
+      'assessmentLabel': 'Evaluación:',
+      'riskExposureTrend': 'Tendencia de exposición al riesgo (₪)',
+      'monthly': 'Mensual',
+      'weekly': 'Semanal',
+      'reviewNow': 'Revisar ahora →',
+      'seeAll': 'Ver todo →',
+      'noOpenRisks': '¡Sin riesgos abiertos — excelente cumplimiento!',
+      'selectSession': 'Seleccionar sesión…',
+      // Session files
+      'sessionFilesTitle': 'Archivos de sesión',
+      'noFilesUploaded': 'Aún no se han subido archivos.',
+      'failedToLoadFiles': 'Error al cargar archivos',
+      'sourceTask': 'Tarea',
+      'sourceAnswer': 'Respuesta',
+      'viewText': 'Ver texto',
+      'downloadFile': 'Descargar',
+      'noTextAvailable': 'Sin contenido de texto disponible.',
     },
 
     // ── French ───────────────────────────────────────────────────────────────
@@ -820,6 +1004,7 @@ class AppLocalizations {
       'navQuizzes': 'Questionnaires',
       'navWorkflows': 'Flux de travail',
       'navAgents': 'Agents IA',
+      'navSessionFiles': 'Fichiers de preuves',
       // Agents
       'agentsSubtitle': 'Gérez les agents IA qui automatisent les tâches de conformité.',
       'addAgent': 'Ajouter un agent',
@@ -907,7 +1092,12 @@ class AppLocalizations {
       'back': 'Retour',
       'next': 'Suivant',
       'finish': 'Terminer',
+      'yes': 'Oui',
+      'no': 'Non',
+      'pressY': 'Appuyez O',
+      'pressN': 'Appuyez N',
       'allDone': 'Tout est fait ! 🎉',
+      'goToDashboard': 'Aller au tableau de bord',
       'youCompleted': 'Vous avez terminé "{name}"',
       'questionsAnsweredPct': 'questions répondues : {pct}%',
       'viewAnswers': 'Réponses ({n})',
@@ -948,6 +1138,45 @@ class AppLocalizations {
       'firstName': 'Prénom',
       'lastName': 'Nom de famille',
       'createAndLink': 'Créer et lier',
+      // Task list
+      'allTasks': 'Toutes les tâches',
+      'noCustomerSelected': 'Aucun client sélectionné.',
+      'selectSessionAbove': 'Sélectionnez une session d\'évaluation ci-dessus.',
+      'failedToLoadSessions': 'Échec du chargement des sessions',
+      'noActiveSessions': 'Aucune session active',
+      'sessionLabel': 'Session :',
+      'searchTasksHint': 'Rechercher des tâches…',
+      'switchToKanban': 'Passer à la vue Kanban',
+      'noTasksMatch': 'Aucune tâche ne correspond à "{q}"',
+      'noTasksForSession': 'Aucune tâche trouvée pour cette session.',
+      // Workflow answer
+      'fillingWorkflow': 'Remplissage du workflow',
+      'aiAnalyzingDocument': 'IA en cours d\'analyse…',
+      'noDescriptionAvailable': 'Aucune description disponible.',
+      'aiGeneratedDescription': 'Description générée par IA',
+      'loadingQuestions': 'Chargement des questions…',
+      // Executive dashboard
+      'complianceDashboard': 'Tableau de bord conformité',
+      'analyzeAgain': 'Analyser à nouveau',
+      'noCustomerContextSelected': 'Aucun client sélectionné.',
+      'noActiveAssessmentSessions': 'Aucune session d\'évaluation active.',
+      'assessmentLabel': 'Évaluation :',
+      'riskExposureTrend': 'Tendance d\'exposition au risque (₪)',
+      'monthly': 'Mensuel',
+      'weekly': 'Hebdomadaire',
+      'reviewNow': 'Réviser maintenant →',
+      'seeAll': 'Voir tout →',
+      'noOpenRisks': 'Aucun risque ouvert — conformité exemplaire !',
+      'selectSession': 'Sélectionner une session…',
+      // Session files
+      'sessionFilesTitle': 'Fichiers de session',
+      'noFilesUploaded': 'Aucun fichier téléversé pour le moment.',
+      'failedToLoadFiles': 'Échec du chargement des fichiers',
+      'sourceTask': 'Tâche',
+      'sourceAnswer': 'Réponse',
+      'viewText': 'Voir le texte',
+      'downloadFile': 'Télécharger',
+      'noTextAvailable': 'Aucun contenu textuel disponible.',
     },
 
     // ── Russian ──────────────────────────────────────────────────────────────
@@ -999,6 +1228,7 @@ class AppLocalizations {
       'navQuizzes': 'Опросники',
       'navWorkflows': 'Рабочие процессы',
       'navAgents': 'ИИ-агенты',
+      'navSessionFiles': 'Файлы доказательств',
       // Agents
       'agentsSubtitle': 'Управляйте ИИ-агентами, автоматизирующими задачи соответствия.',
       'addAgent': 'Добавить агента',
@@ -1086,7 +1316,12 @@ class AppLocalizations {
       'back': 'Назад',
       'next': 'Далее',
       'finish': 'Завершить',
+      'yes': 'Да',
+      'no': 'Нет',
+      'pressY': 'Нажмите Д',
+      'pressN': 'Нажмите Н',
       'allDone': 'Всё готово! 🎉',
+      'goToDashboard': 'Перейти на панель',
       'youCompleted': 'Вы завершили "{name}"',
       'questionsAnsweredPct': 'отвечено вопросов: {pct}%',
       'viewAnswers': 'Ответы ({n})',
@@ -1127,6 +1362,45 @@ class AppLocalizations {
       'firstName': 'Имя',
       'lastName': 'Фамилия',
       'createAndLink': 'Создать и привязать',
+      // Task list
+      'allTasks': 'Все задачи',
+      'noCustomerSelected': 'Клиент не выбран.',
+      'selectSessionAbove': 'Выберите сессию оценки выше.',
+      'failedToLoadSessions': 'Ошибка загрузки сессий',
+      'noActiveSessions': 'Нет активных сессий',
+      'sessionLabel': 'Сессия:',
+      'searchTasksHint': 'Поиск задач…',
+      'switchToKanban': 'Перейти к канбан-доске',
+      'noTasksMatch': 'Задачи по запросу "{q}" не найдены',
+      'noTasksForSession': 'Для этой сессии задач нет.',
+      // Workflow answer
+      'fillingWorkflow': 'Заполнение процесса',
+      'aiAnalyzingDocument': 'ИИ анализирует документ…',
+      'noDescriptionAvailable': 'Описание недоступно.',
+      'aiGeneratedDescription': 'Описание от ИИ',
+      'loadingQuestions': 'Загрузка вопросов…',
+      // Executive dashboard
+      'complianceDashboard': 'Панель соответствия',
+      'analyzeAgain': 'Повторить анализ',
+      'noCustomerContextSelected': 'Клиент не выбран.',
+      'noActiveAssessmentSessions': 'Нет активных сессий оценки.',
+      'assessmentLabel': 'Оценка:',
+      'riskExposureTrend': 'Тренд рисков (₪)',
+      'monthly': 'По месяцам',
+      'weekly': 'По неделям',
+      'reviewNow': 'Проверить →',
+      'seeAll': 'Все →',
+      'noOpenRisks': 'Открытых рисков нет — отличное соответствие!',
+      'selectSession': 'Выбрать сессию…',
+      // Session files
+      'sessionFilesTitle': 'Файлы сессии',
+      'noFilesUploaded': 'Файлы ещё не загружены.',
+      'failedToLoadFiles': 'Ошибка загрузки файлов',
+      'sourceTask': 'Задача',
+      'sourceAnswer': 'Ответ',
+      'viewText': 'Текст',
+      'downloadFile': 'Скачать',
+      'noTextAvailable': 'Текстовое содержимое недоступно.',
     },
   };
 }

@@ -11,6 +11,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../app/router.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../l10n/app_localizations.dart';
@@ -899,8 +900,8 @@ class _TopBar extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Filling Workflow',
-                        style: TextStyle(
+                    Text(AppLocalizations.of(context).fillingWorkflow,
+                        style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
@@ -1671,8 +1672,8 @@ class _EvidencePanelState extends State<_EvidencePanel> {
                         strokeWidth: 1.8, color: Color(0xFF7C3AED)),
                   ),
                   const Gap(8),
-                  const Text('AI analyzing document…',
-                      style: TextStyle(
+                  Text(AppLocalizations.of(context).aiAnalyzingDocument,
+                      style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF7C3AED))),
@@ -2260,11 +2261,12 @@ class _ImageDescriptionView extends StatelessWidget {
   Widget build(BuildContext context) {
     if (description.isEmpty) {
       return Center(
-        child: Text('No description available.',
+        child: Text(AppLocalizations.of(context).noDescriptionAvailable,
             style: const TextStyle(
                 fontSize: 13, color: Color(0xFF9CA3AF))),
       );
     }
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2272,8 +2274,8 @@ class _ImageDescriptionView extends StatelessWidget {
           const Icon(Icons.auto_awesome_outlined,
               size: 16, color: Color(0xFF0EA5E9)),
           const Gap(6),
-          const Text('AI-Generated Description',
-              style: TextStyle(
+          Text(l10n.aiGeneratedDescription,
+              style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF0EA5E9))),
@@ -2337,12 +2339,13 @@ class _YesNoInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
           child: _AnswerButton(
-            label: 'Yes',
-            sublabel: 'Press Y',
+            label: l10n.yes,
+            sublabel: l10n.pressY,
             icon: Icons.check_rounded,
             selected: value == 1,
             activeColor: _kDone,
@@ -2352,8 +2355,8 @@ class _YesNoInput extends StatelessWidget {
         const Gap(14),
         Expanded(
           child: _AnswerButton(
-            label: 'No',
-            sublabel: 'Press N',
+            label: l10n.no,
+            sublabel: l10n.pressN,
             icon: Icons.close_rounded,
             selected: value == 0,
             activeColor: AppColors.danger,
@@ -3047,48 +3050,6 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
               ).animate().fadeIn(delay: 450.ms, duration: 400.ms),
               const Gap(24),
 
-              // ── Quiz results summary ───────────────────────────
-              if (widget.quizResults.isNotEmpty) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: widget.quizResults.entries.map((e) {
-                      final color = _resultColor(e.value);
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: color.withOpacity(0.4)),
-                        ),
-                        child: Text(
-                          e.value,
-                          style: TextStyle(
-                            color: color,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                )
-                    .animate()
-                    .fadeIn(delay: 500.ms, duration: 400.ms)
-                    .slideY(begin: 0.1, end: 0),
-                const Gap(16),
-              ],
-
               // ── AI Analysis panel ──────────────────────────────
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 500),
@@ -3114,7 +3075,7 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
 
               const Gap(28),
 
-              // ── Back button ────────────────────────────────────
+              // ── Dashboard button ───────────────────────────────
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: _kGrad1,
@@ -3123,10 +3084,10 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                 ),
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: const Text('Back to Workflow',
-                    style: TextStyle(
+                onPressed: () => context.go(AppRoutes.dashboard),
+                icon: const Icon(Icons.dashboard_outlined, size: 18),
+                label: Text(AppLocalizations.of(context).goToDashboard,
+                    style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w700)),
               ).animate().fadeIn(delay: 600.ms, duration: 400.ms).slideY(begin: 0.1, end: 0),
             ],
@@ -3373,8 +3334,8 @@ class _LoadingView extends StatelessWidget {
           ),
         ),
         const Gap(16),
-        const Text('Loading questions…',
-            style: TextStyle(color: _kMuted, fontSize: 13)),
+        Text(AppLocalizations.of(context).loadingQuestions,
+            style: const TextStyle(color: _kMuted, fontSize: 13)),
       ])
           .animate()
           .fadeIn(duration: 300.ms),
@@ -3413,7 +3374,7 @@ class _ErrorView extends StatelessWidget {
             ),
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded, size: 16),
-            label: const Text('Retry'),
+            label: Text(AppLocalizations.of(context).retry),
           ),
         ]),
       ),

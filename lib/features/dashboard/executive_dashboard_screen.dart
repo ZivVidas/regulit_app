@@ -10,6 +10,7 @@ import '../../app/router.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/customer/customer_context_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/models/gap.dart' hide Gap;
 import '../../shared/utils/currency_formatter.dart';
 import '../../shared/widgets/metric_card.dart';
@@ -266,12 +267,13 @@ class _ExecutiveDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final customerId = ref.watch(customerContextProvider)?['customerId'] as String?;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Compliance Dashboard'),
+        title: Text(l10n.complianceDashboard),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),
@@ -288,14 +290,14 @@ class _ExecutiveDashboardScreenState
                       )
                     : OutlinedButton.icon(
                         icon: const Icon(Icons.auto_fix_high_outlined, size: 16),
-                        label: const Text('Analyze Again'),
+                        label: Text(l10n.analyzeAgain),
                         onPressed: () => _analyzeAgain(customerId),
                       ),
           ),
         ],
       ),
       body: customerId == null
-          ? const Center(child: Text('No customer context selected.'))
+          ? Center(child: Text(l10n.noCustomerContextSelected))
           : _DashboardWithSession(
               customerId: customerId,
               selectedSessionId: _selectedSessionId,
@@ -352,9 +354,9 @@ class _DashboardWithSession extends ConsumerWidget {
             // ── Dashboard body ───────────────────────────────
             Expanded(
               child: effectiveId == null
-                  ? const Center(
-                      child: Text('No active assessment sessions.',
-                          style: TextStyle(color: AppColors.muted)))
+                  ? Center(
+                      child: Text(AppLocalizations.of(context).noActiveAssessmentSessions,
+                          style: const TextStyle(color: AppColors.muted)))
                   : _SessionBody(
                       sessionId: effectiveId,
                       customerId: customerId,
@@ -393,8 +395,8 @@ class _SessionPickerBar extends StatelessWidget {
         children: [
           const Icon(Icons.assignment_outlined, size: 16, color: AppColors.muted),
           const Gap(8),
-          const Text('Assessment:',
-              style: TextStyle(
+          Text(AppLocalizations.of(context).assessmentLabel,
+              style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: AppColors.muted)),
@@ -595,7 +597,7 @@ class _ActionBanner extends StatelessWidget {
               padding: EdgeInsets.zero,
             ),
             onPressed: () => context.go(AppRoutes.taskList),
-            child: const Text('Review now →'),
+            child: Text(AppLocalizations.of(context).reviewNow),
           ),
         ],
       ),
@@ -689,20 +691,20 @@ class _TrendChartState extends ConsumerState<_TrendChart> {
             Row(
               children: [
                 Expanded(
-                  child: Text('Risk Exposure Trend (₪)',
+                  child: Text(AppLocalizations.of(context).riskExposureTrend,
                       style: AppTextStyles.h4),
                 ),
                 SegmentedButton<String>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: 'monthly',
-                      label: Text('Monthly'),
-                      icon: Icon(Icons.calendar_month_outlined, size: 14),
+                      label: Text(AppLocalizations.of(context).monthly),
+                      icon: const Icon(Icons.calendar_month_outlined, size: 14),
                     ),
                     ButtonSegment(
                       value: 'weekly',
-                      label: Text('Weekly'),
-                      icon: Icon(Icons.calendar_view_week_outlined, size: 14),
+                      label: Text(AppLocalizations.of(context).weekly),
+                      icon: const Icon(Icons.calendar_view_week_outlined, size: 14),
                     ),
                   ],
                   selected: {_period},
@@ -1046,7 +1048,7 @@ class _TopRisksCard extends ConsumerWidget {
                 ),
                 TextButton(
                   onPressed: () => context.go(AppRoutes.taskList),
-                  child: const Text('See all →'),
+                  child: Text(AppLocalizations.of(context).seeAll),
                 ),
               ],
             ),
@@ -1081,7 +1083,7 @@ class _TopRisksCard extends ConsumerWidget {
                           const Icon(Icons.check_circle_outline,
                               size: 36, color: AppColors.success),
                           const Gap(8),
-                          Text('No open risks — great compliance!',
+                          Text(AppLocalizations.of(context).noOpenRisks,
                               style: AppTextStyles.bodySmall
                                   .copyWith(color: AppColors.muted)),
                         ],

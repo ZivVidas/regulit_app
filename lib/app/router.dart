@@ -31,7 +31,10 @@ import '../features/workflows/workflow_rule_engine_screen.dart';
 import '../features/workflows/workflows_screen.dart';
 import '../features/agents/agents_screen.dart';
 import '../features/users/users_screen.dart';
+import '../features/client_admin/client_admin_landing_screen.dart';
 import '../features/client_admin/client_users_screen.dart';
+import '../features/sessions/session_files_screen.dart';
+import '../features/sessions/session_files_nav_screen.dart';
 import '../shared/widgets/app_shell.dart';
 
 part 'router.g.dart';
@@ -69,6 +72,12 @@ abstract class AppRoutes {
   static const taskList = '/task-list';
   // Client-admin user management
   static const clientUsers = '/client-users';
+  // Step-21 landing: async workflow check before sending clientAdmin to home
+  static const clientHome = '/client-home';
+  // Evidence files — nav entry (session picker built in, no param)
+  static const sessionFilesNav = '/session-files';
+  // Evidence files — direct link to a specific session
+  static const sessionFiles = '/session-files/:sessionId';
 }
 
 @riverpod
@@ -335,6 +344,32 @@ GoRouter router(RouterRef ref) {
             pageBuilder: (_, __) => _fadePage(const ClientUsersScreen()),
           ),
 
+          // ── Step-21 landing (async workflow check) ────────────
+          GoRoute(
+            path: AppRoutes.clientHome,
+            name: 'clientHome',
+            pageBuilder: (_, __) =>
+                _fadePage(const ClientAdminLandingScreen()),
+          ),
+
+          // ── Session files — nav entry (session picker built in) ──
+          GoRoute(
+            path: AppRoutes.sessionFilesNav,
+            name: 'sessionFilesNav',
+            pageBuilder: (_, __) =>
+                _fadePage(const SessionFilesNavScreen()),
+          ),
+
+          // ── Session files — direct link to a specific session ────
+          GoRoute(
+            path: AppRoutes.sessionFiles,
+            name: 'sessionFiles',
+            pageBuilder: (context, state) {
+              final sessionId = state.pathParameters['sessionId']!;
+              return _fadePage(SessionFilesScreen(sessionId: sessionId));
+            },
+          ),
+
           // ── Regulit Staff (CSM / Analyst) routes ─────────────
           GoRoute(
             path: AppRoutes.portfolio,
@@ -414,7 +449,7 @@ String _homeForRole(UserRole? role) {
     case UserRole.analyst:
       return AppRoutes.portfolio;
     case UserRole.clientAdmin:
-      return AppRoutes.dashboard;
+      return AppRoutes.clientHome;
     case UserRole.itExecutor:
       return AppRoutes.tasks;
     case UserRole.employee:
