@@ -2509,9 +2509,9 @@ class _MultiPickInput extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Select all that apply',
-          style: TextStyle(color: _kMuted, fontSize: 11, fontWeight: FontWeight.w500),
+        Text(
+          AppLocalizations.of(context).selectAllThatApply,
+          style: const TextStyle(color: _kMuted, fontSize: 11, fontWeight: FontWeight.w500),
         ),
         const Gap(8),
         ...options.asMap().entries.map((e) {

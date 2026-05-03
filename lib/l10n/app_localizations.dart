@@ -184,6 +184,7 @@ class AppLocalizations {
   String get no                    => _t('no');
   String get pressY                => _t('pressY');
   String get pressN                => _t('pressN');
+  String get selectAllThatApply    => _t('selectAllThatApply');
   String get allDone               => _t('allDone');
   String get goToDashboard         => _t('goToDashboard');
   String youCompleted(String name) => _t('youCompleted').replaceFirst('{name}', name);
@@ -261,6 +262,36 @@ class AppLocalizations {
   String get seeAll                      => _t('seeAll');
   String get noOpenRisks                 => _t('noOpenRisks');
   String get selectSession               => _t('selectSession');
+  // metric cards
+  String get totalExposure              => _t('totalExposure');
+  String get complianceScore            => _t('complianceScore');
+  String get openTasksLabel             => _t('openTasksLabel');
+  String get tasksClosedLabel           => _t('tasksClosedLabel');
+  String get runAnalysisToPopulate      => _t('runAnalysisToPopulate');
+  String get requireAttention           => _t('requireAttention');
+  String get allClear                   => _t('allClear');
+  String ofNTotal(int n)                => _t('ofNTotal').replaceFirst('{n}', '$n');
+  // action banner
+  String get actionRequired             => _t('actionRequired');
+  String tasksNeedApproval(int n)       => _t('tasksNeedApproval').replaceFirst('{n}', '$n');
+  // charts / cards
+  String get riskByCategory             => _t('riskByCategory');
+  String get topOpenRisks               => _t('topOpenRisks');
+  String get noTasksForSession          => _t('noTasksForSession');
+  String get failedToLoadTrend          => _t('failedToLoadTrend');
+  String get noEvaluationData           => _t('noEvaluationData');
+  String get failedToLoadDashboard      => _t('failedToLoadDashboard');
+  String nTasks(int n)                  => _t('nTasks').replaceFirst('{n}', '$n');
+  // task status labels
+  String get statusToDo                 => _t('statusToDo');
+  String get statusInProgress           => _t('statusInProgress');
+  String get statusPendingReview        => _t('statusPendingReview');
+  String get statusApproved             => _t('statusApproved');
+  String get statusOverdue              => _t('statusOverdue');
+  // analysis snackbars
+  String analysisCompleteNew(int n)     => _t('analysisCompleteNew').replaceFirst('{n}', '$n');
+  String get analysisCompleteNoGaps     => _t('analysisCompleteNoGaps');
+  String get analysisFailed             => _t('analysisFailed');
 
   // ── Session files screen ──────────────────────────────────────────────────
   String get sessionFilesTitle  => _t('sessionFilesTitle');
@@ -270,6 +301,8 @@ class AppLocalizations {
   String get sourceAnswer       => _t('sourceAnswer');
   String get viewText           => _t('viewText');
   String get downloadFile       => _t('downloadFile');
+  String get downloadAll        => _t('downloadAll');
+  String nFiles(int n)          => _t('nFiles').replaceFirst('{n}', '$n');
   String get noTextAvailable    => _t('noTextAvailable');
 
   // ── Language names (always shown in native script) ────────────────────────
@@ -423,6 +456,7 @@ class AppLocalizations {
       'yes': 'Yes',
       'no': 'No',
       'pressY': 'Press Y',
+      'selectAllThatApply': 'Select all that apply',
       'pressN': 'Press N',
       'allDone': 'All Done! 🎉',
       'goToDashboard': 'Go to Dashboard',
@@ -496,6 +530,31 @@ class AppLocalizations {
       'seeAll': 'See all →',
       'noOpenRisks': 'No open risks — great compliance!',
       'selectSession': 'Select a session…',
+      'totalExposure': 'Total Exposure',
+      'complianceScore': 'Compliance Score',
+      'openTasksLabel': 'Open Tasks',
+      'tasksClosedLabel': 'Tasks Closed',
+      'runAnalysisToPopulate': 'Run analysis to populate',
+      'requireAttention': 'Require attention',
+      'allClear': 'All clear',
+      'ofNTotal': 'of {n} total',
+      'actionRequired': 'Action required:',
+      'tasksNeedApproval': '{n} tasks need your approval.',
+      'riskByCategory': 'Risk by Category',
+      'topOpenRisks': 'Top Open Risks',
+      'noTasksForSession': 'No tasks found for this session.',
+      'failedToLoadTrend': 'Failed to load trend data',
+      'noEvaluationData': 'No evaluation data yet.\nRun an assessment analysis to see trends.',
+      'failedToLoadDashboard': 'Failed to load dashboard',
+      'nTasks': '{n} tasks',
+      'statusToDo': 'To Do',
+      'statusInProgress': 'In Progress',
+      'statusPendingReview': 'Pending Review',
+      'statusApproved': 'Approved',
+      'statusOverdue': 'Overdue',
+      'analysisCompleteNew': 'Analysis complete — {n} new tasks created.',
+      'analysisCompleteNoGaps': 'Analysis complete — no new gaps found.',
+      'analysisFailed': 'Analysis failed',
       // Session files
       'sessionFilesTitle': 'Session Files',
       'noFilesUploaded': 'No files uploaded yet.',
@@ -504,6 +563,8 @@ class AppLocalizations {
       'sourceAnswer': 'Answer',
       'viewText': 'View Text',
       'downloadFile': 'Download',
+      'downloadAll': 'Download All',
+      'nFiles': '{n} files',
       'noTextAvailable': 'No text content available.',
     },
 
@@ -647,6 +708,7 @@ class AppLocalizations {
       'yes': 'כן',
       'no': 'לא',
       'pressY': 'לחץ K',
+      'selectAllThatApply': 'בחר את כל המתאים',
       'pressN': 'לחץ L',
       'allDone': 'הכל הושלם! 🎉',
       'goToDashboard': 'עבור ללוח הבקרה',
@@ -720,6 +782,31 @@ class AppLocalizations {
       'seeAll': '← ראה הכל',
       'noOpenRisks': 'אין סיכונים פתוחים — ציות מצוין!',
       'selectSession': 'בחר פגישה…',
+      'totalExposure': 'סה"כ חשיפה',
+      'complianceScore': 'ציון ציות',
+      'openTasksLabel': 'משימות פתוחות',
+      'tasksClosedLabel': 'משימות סגורות',
+      'runAnalysisToPopulate': 'הפעל ניתוח כדי למלא',
+      'requireAttention': 'דורשות תשומת לב',
+      'allClear': 'הכל תקין',
+      'ofNTotal': 'מתוך {n}',
+      'actionRequired': 'נדרשת פעולה:',
+      'tasksNeedApproval': '{n} משימות מחכות לאישורך.',
+      'riskByCategory': 'סיכון לפי קטגוריה',
+      'topOpenRisks': 'סיכונים פתוחים מובילים',
+      'noTasksForSession': 'לא נמצאו משימות לפגישה זו.',
+      'failedToLoadTrend': 'טעינת נתוני המגמה נכשלה',
+      'noEvaluationData': 'אין נתוני הערכה עדיין.\nהפעל ניתוח הערכה לצפייה במגמות.',
+      'failedToLoadDashboard': 'טעינת לוח הבקרה נכשלה',
+      'nTasks': '{n} משימות',
+      'statusToDo': 'לביצוע',
+      'statusInProgress': 'בתהליך',
+      'statusPendingReview': 'ממתין לבדיקה',
+      'statusApproved': 'אושר',
+      'statusOverdue': 'באיחור',
+      'analysisCompleteNew': 'הניתוח הושלם — {n} משימות חדשות נוצרו.',
+      'analysisCompleteNoGaps': 'הניתוח הושלם — לא נמצאו פערים חדשים.',
+      'analysisFailed': 'הניתוח נכשל',
       // Session files
       'sessionFilesTitle': 'קבצי פגישה',
       'noFilesUploaded': 'לא הועלו קבצים עדיין.',
@@ -728,6 +815,8 @@ class AppLocalizations {
       'sourceAnswer': 'תשובה',
       'viewText': 'צפה בטקסט',
       'downloadFile': 'הורד',
+      'downloadAll': 'הורד הכל',
+      'nFiles': '{n} קבצים',
       'noTextAvailable': 'אין תוכן טקסט זמין.',
     },
 
@@ -871,6 +960,7 @@ class AppLocalizations {
       'yes': 'Sí',
       'no': 'No',
       'pressY': 'Pulsa S',
+      'selectAllThatApply': 'Selecciona todas las que apliquen',
       'pressN': 'Pulsa N',
       'allDone': '¡Todo listo! 🎉',
       'goToDashboard': 'Ir al Panel',
@@ -944,6 +1034,31 @@ class AppLocalizations {
       'seeAll': 'Ver todo →',
       'noOpenRisks': '¡Sin riesgos abiertos — excelente cumplimiento!',
       'selectSession': 'Seleccionar sesión…',
+      'totalExposure': 'Exposición total',
+      'complianceScore': 'Puntuación de cumplimiento',
+      'openTasksLabel': 'Tareas abiertas',
+      'tasksClosedLabel': 'Tareas cerradas',
+      'runAnalysisToPopulate': 'Ejecutar análisis para rellenar',
+      'requireAttention': 'Requieren atención',
+      'allClear': 'Todo en orden',
+      'ofNTotal': 'de {n} en total',
+      'actionRequired': 'Acción requerida:',
+      'tasksNeedApproval': '{n} tareas necesitan su aprobación.',
+      'riskByCategory': 'Riesgo por categoría',
+      'topOpenRisks': 'Principales riesgos abiertos',
+      'noTasksForSession': 'No se encontraron tareas para esta sesión.',
+      'failedToLoadTrend': 'Error al cargar datos de tendencia',
+      'noEvaluationData': 'Aún no hay datos de evaluación.\nEjecute un análisis para ver tendencias.',
+      'failedToLoadDashboard': 'Error al cargar el panel',
+      'nTasks': '{n} tareas',
+      'statusToDo': 'Por hacer',
+      'statusInProgress': 'En progreso',
+      'statusPendingReview': 'Pendiente de revisión',
+      'statusApproved': 'Aprobado',
+      'statusOverdue': 'Vencido',
+      'analysisCompleteNew': 'Análisis completo — {n} nuevas tareas creadas.',
+      'analysisCompleteNoGaps': 'Análisis completo — no se encontraron nuevas brechas.',
+      'analysisFailed': 'El análisis falló',
       // Session files
       'sessionFilesTitle': 'Archivos de sesión',
       'noFilesUploaded': 'Aún no se han subido archivos.',
@@ -952,6 +1067,8 @@ class AppLocalizations {
       'sourceAnswer': 'Respuesta',
       'viewText': 'Ver texto',
       'downloadFile': 'Descargar',
+      'downloadAll': 'Descargar todo',
+      'nFiles': '{n} archivos',
       'noTextAvailable': 'Sin contenido de texto disponible.',
     },
 
@@ -1095,6 +1212,7 @@ class AppLocalizations {
       'yes': 'Oui',
       'no': 'Non',
       'pressY': 'Appuyez O',
+      'selectAllThatApply': 'Sélectionnez tout ce qui s\'applique',
       'pressN': 'Appuyez N',
       'allDone': 'Tout est fait ! 🎉',
       'goToDashboard': 'Aller au tableau de bord',
@@ -1168,6 +1286,31 @@ class AppLocalizations {
       'seeAll': 'Voir tout →',
       'noOpenRisks': 'Aucun risque ouvert — conformité exemplaire !',
       'selectSession': 'Sélectionner une session…',
+      'totalExposure': 'Exposition totale',
+      'complianceScore': 'Score de conformité',
+      'openTasksLabel': 'Tâches ouvertes',
+      'tasksClosedLabel': 'Tâches fermées',
+      'runAnalysisToPopulate': 'Lancer une analyse pour remplir',
+      'requireAttention': 'Requièrent attention',
+      'allClear': 'Tout est bon',
+      'ofNTotal': 'sur {n} au total',
+      'actionRequired': 'Action requise :',
+      'tasksNeedApproval': '{n} tâches nécessitent votre approbation.',
+      'riskByCategory': 'Risque par catégorie',
+      'topOpenRisks': 'Principaux risques ouverts',
+      'noTasksForSession': 'Aucune tâche trouvée pour cette session.',
+      'failedToLoadTrend': 'Échec du chargement des données de tendance',
+      'noEvaluationData': 'Aucune donnée d\'évaluation pour l\'instant.\nLancez une analyse pour voir les tendances.',
+      'failedToLoadDashboard': 'Échec du chargement du tableau de bord',
+      'nTasks': '{n} tâches',
+      'statusToDo': 'À faire',
+      'statusInProgress': 'En cours',
+      'statusPendingReview': 'En attente de révision',
+      'statusApproved': 'Approuvé',
+      'statusOverdue': 'En retard',
+      'analysisCompleteNew': 'Analyse terminée — {n} nouvelles tâches créées.',
+      'analysisCompleteNoGaps': 'Analyse terminée — aucune nouvelle lacune.',
+      'analysisFailed': 'L\'analyse a échoué',
       // Session files
       'sessionFilesTitle': 'Fichiers de session',
       'noFilesUploaded': 'Aucun fichier téléversé pour le moment.',
@@ -1176,6 +1319,8 @@ class AppLocalizations {
       'sourceAnswer': 'Réponse',
       'viewText': 'Voir le texte',
       'downloadFile': 'Télécharger',
+      'downloadAll': 'Tout télécharger',
+      'nFiles': '{n} fichiers',
       'noTextAvailable': 'Aucun contenu textuel disponible.',
     },
 
@@ -1319,6 +1464,7 @@ class AppLocalizations {
       'yes': 'Да',
       'no': 'Нет',
       'pressY': 'Нажмите Д',
+      'selectAllThatApply': 'Выберите все подходящие варианты',
       'pressN': 'Нажмите Н',
       'allDone': 'Всё готово! 🎉',
       'goToDashboard': 'Перейти на панель',
@@ -1392,6 +1538,31 @@ class AppLocalizations {
       'seeAll': 'Все →',
       'noOpenRisks': 'Открытых рисков нет — отличное соответствие!',
       'selectSession': 'Выбрать сессию…',
+      'totalExposure': 'Общая экспозиция',
+      'complianceScore': 'Оценка соответствия',
+      'openTasksLabel': 'Открытые задачи',
+      'tasksClosedLabel': 'Закрытые задачи',
+      'runAnalysisToPopulate': 'Запустите анализ для заполнения',
+      'requireAttention': 'Требуют внимания',
+      'allClear': 'Всё в порядке',
+      'ofNTotal': 'из {n}',
+      'actionRequired': 'Требуется действие:',
+      'tasksNeedApproval': '{n} задач ожидают вашего одобрения.',
+      'riskByCategory': 'Риск по категориям',
+      'topOpenRisks': 'Главные открытые риски',
+      'noTasksForSession': 'Задачи для этой сессии не найдены.',
+      'failedToLoadTrend': 'Ошибка загрузки данных тренда',
+      'noEvaluationData': 'Данных оценки пока нет.\nЗапустите анализ для просмотра трендов.',
+      'failedToLoadDashboard': 'Ошибка загрузки панели',
+      'nTasks': '{n} задач',
+      'statusToDo': 'К выполнению',
+      'statusInProgress': 'В процессе',
+      'statusPendingReview': 'На проверке',
+      'statusApproved': 'Одобрено',
+      'statusOverdue': 'Просрочено',
+      'analysisCompleteNew': 'Анализ завершён — создано {n} новых задач.',
+      'analysisCompleteNoGaps': 'Анализ завершён — новых пробелов не найдено.',
+      'analysisFailed': 'Анализ не удался',
       // Session files
       'sessionFilesTitle': 'Файлы сессии',
       'noFilesUploaded': 'Файлы ещё не загружены.',
@@ -1400,6 +1571,8 @@ class AppLocalizations {
       'sourceAnswer': 'Ответ',
       'viewText': 'Текст',
       'downloadFile': 'Скачать',
+      'downloadAll': 'Скачать всё',
+      'nFiles': '{n} файлов',
       'noTextAvailable': 'Текстовое содержимое недоступно.',
     },
   };

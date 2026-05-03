@@ -244,19 +244,21 @@ class _ExecutiveDashboardScreenState
       ref.invalidate(_riskTrendProvider((customerId, 'monthly')));
       ref.invalidate(_riskTrendProvider((customerId, 'weekly')));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
             created > 0
-                ? 'Analysis complete — $created new task${created == 1 ? '' : 's'} created.'
-                : 'Analysis complete — no new gaps found.',
+                ? l10n.analysisCompleteNew(created)
+                : l10n.analysisCompleteNoGaps,
           ),
           backgroundColor: AppColors.success,
         ));
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Analysis failed: $e'),
+          content: Text('${l10n.analysisFailed}: $e'),
           backgroundColor: AppColors.danger,
         ));
       }
@@ -275,6 +277,23 @@ class _ExecutiveDashboardScreenState
       appBar: AppBar(
         title: Text(l10n.complianceDashboard),
         actions: [
+          // ── Audit Pack shortcut ──────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton.icon(
+              icon: const Icon(Icons.inventory_2_outlined, size: 16),
+              label: Text(l10n.navAuditPack),
+              onPressed: () => context.go(AppRoutes.auditPack),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.blue,
+                foregroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                textStyle: AppTextStyles.bodySmall
+                    .copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          // ── Re-analyse ───────────────────────────────────────
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),
             child: _selectedSessionId == null || customerId == null
@@ -583,10 +602,10 @@ class _ActionBanner extends StatelessWidget {
                 style:
                     AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
                 children: [
-                  const TextSpan(
-                      text: 'Action required: ',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
-                  TextSpan(text: '$openTasks tasks need your approval.'),
+                  TextSpan(
+                      text: '${AppLocalizations.of(context).actionRequired} ',
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                  TextSpan(text: AppLocalizations.of(context).tasksNeedApproval(openTasks)),
                 ],
               ),
             ),
@@ -620,21 +639,22 @@ class _MetricsGrid extends StatelessWidget {
         ? CurrencyFormatter.nisCompact(exec.totalExposure!)
         : '—';
 
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         MetricRow(cards: [
           MetricCard.currency(
-            label: 'Total Exposure',
+            label: l10n.totalExposure,
             amountNIS: exec.totalExposure ?? 0,
-            sub: exec.hasData ? exposureLabel : 'Run analysis to populate',
+            sub: exec.hasData ? exposureLabel : l10n.runAnalysisToPopulate,
             variant: (exec.totalExposure ?? 0) > 0
                 ? MetricVariant.danger
                 : MetricVariant.neutral,
           ),
           MetricCard.percent(
-            label: 'Compliance Score',
-            value: summary.complianceScore, // already 0.0–1.0
-            sub: exec.hasData ? scoreLabel : 'Run analysis to populate',
+            label: l10n.complianceScore,
+            value: summary.complianceScore,
+            sub: exec.hasData ? scoreLabel : l10n.runAnalysisToPopulate,
             variant: summary.complianceScore >= 0.8
                 ? MetricVariant.success
                 : summary.complianceScore >= 0.5
@@ -645,17 +665,17 @@ class _MetricsGrid extends StatelessWidget {
         const Gap(AppSpacing.md),
         MetricRow(cards: [
           MetricCard(
-            label: 'Open Tasks',
+            label: l10n.openTasksLabel,
             value: '${exec.openTasks}',
-            sub: exec.openTasks > 0 ? 'Require attention' : 'All clear',
+            sub: exec.openTasks > 0 ? l10n.requireAttention : l10n.allClear,
             variant: exec.openTasks > 0
                 ? MetricVariant.warning
                 : MetricVariant.success,
           ),
           MetricCard(
-            label: 'Tasks Closed',
+            label: l10n.tasksClosedLabel,
             value: '${exec.closedTasks}',
-            sub: 'of ${exec.totalTasks} total',
+            sub: l10n.ofNTotal(exec.totalTasks),
             variant: MetricVariant.neutral,
           ),
         ]),
@@ -727,7 +747,7 @@ class _TrendChartState extends ConsumerState<_TrendChart> {
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
-                  child: Text('Failed to load trend data',
+                  child: Text(AppLocalizations.of(context).failedToLoadTrend,
                       style: AppTextStyles.caption
                           .copyWith(color: AppColors.muted)),
                 ),
@@ -741,7 +761,7 @@ class _TrendChartState extends ConsumerState<_TrendChart> {
                               size: 32, color: AppColors.muted),
                           const Gap(8),
                           Text(
-                            'No evaluation data yet.\nRun an assessment analysis to see trends.',
+                            AppLocalizations.of(context).noEvaluationData,
                             textAlign: TextAlign.center,
                             style: AppTextStyles.caption
                                 .copyWith(color: AppColors.muted),
@@ -896,13 +916,13 @@ class _CategoryBreakdown extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Text('Risk by Category', style: AppTextStyles.h4),
+                Text(AppLocalizations.of(context).riskByCategory, style: AppTextStyles.h4),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh, size: 16),
                   color: AppColors.muted,
                   visualDensity: VisualDensity.compact,
-                  tooltip: 'Refresh',
+                  tooltip: AppLocalizations.of(context).retry,
                   onPressed: () =>
                       ref.invalidate(_categoryBreakdownProvider(sessionId)),
                 ),
@@ -919,7 +939,7 @@ class _CategoryBreakdown extends ConsumerWidget {
               error: (e, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
-                  'Failed to load: $e',
+                  '${AppLocalizations.of(context).failedToLoadFiles}: $e',
                   style: AppTextStyles.bodySmall
                       .copyWith(color: AppColors.danger),
                 ),
@@ -930,7 +950,7 @@ class _CategoryBreakdown extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
-                        'No tasks found for this session.',
+                        AppLocalizations.of(context).noTasksForSession,
                         style: AppTextStyles.bodySmall
                             .copyWith(color: AppColors.muted),
                       ),
@@ -975,7 +995,7 @@ class _CategoryBreakdown extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
-                                  '${item.taskCount} task${item.taskCount == 1 ? '' : 's'}',
+                                  AppLocalizations.of(context).nTasks(item.taskCount),
                                   style: AppTextStyles.caption
                                       .copyWith(color: AppColors.muted),
                                 ),
@@ -1043,7 +1063,7 @@ class _TopRisksCard extends ConsumerWidget {
                     const Icon(Icons.local_fire_department_rounded,
                         size: 18, color: AppColors.danger),
                     const Gap(AppSpacing.sm),
-                    Text('Top Open Risks', style: AppTextStyles.h4),
+                    Text(AppLocalizations.of(context).topOpenRisks, style: AppTextStyles.h4),
                   ],
                 ),
                 TextButton(
@@ -1066,7 +1086,7 @@ class _TopRisksCard extends ConsumerWidget {
                         size: 16, color: AppColors.danger),
                     const Gap(8),
                     Expanded(
-                      child: Text('Failed to load risks: $e',
+                      child: Text('${AppLocalizations.of(context).failedToLoadDashboard}: $e',
                           style: AppTextStyles.caption
                               .copyWith(color: AppColors.danger)),
                     ),
@@ -1148,14 +1168,17 @@ class _RiskRowState extends State<_RiskRow> {
         _ => AppColors.muted,      // To Do
       };
 
-  String _statusLabel(int statusId, String? desc) =>
-      desc ?? switch (statusId) {
-        2 => 'In Progress',
-        3 => 'Pending Review',
-        4 => 'Approved',
-        5 => 'Overdue',
-        _ => 'To Do',
-      };
+  String _statusLabel(BuildContext context, int statusId, String? desc) {
+    if (desc != null) return desc;
+    final l10n = AppLocalizations.of(context);
+    return switch (statusId) {
+      2 => l10n.statusInProgress,
+      3 => l10n.statusPendingReview,
+      4 => l10n.statusApproved,
+      5 => l10n.statusOverdue,
+      _ => l10n.statusToDo,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1253,7 +1276,7 @@ class _RiskRowState extends State<_RiskRow> {
                           Border.all(color: statusColor.withOpacity(0.35)),
                     ),
                     child: Text(
-                      _statusLabel(item.statusId, item.statusDescription),
+                      _statusLabel(context, item.statusId, item.statusDescription),
                       style: AppTextStyles.tag
                           .copyWith(color: statusColor, fontSize: 10),
                     ),
@@ -1312,7 +1335,7 @@ class _ErrorState extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
           const Gap(AppSpacing.md),
-          Text('Failed to load dashboard', style: AppTextStyles.h3),
+          Text(AppLocalizations.of(context).failedToLoadDashboard, style: AppTextStyles.h3),
           const Gap(AppSpacing.sm),
           Text(error, style: AppTextStyles.caption),
         ],

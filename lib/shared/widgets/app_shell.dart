@@ -417,7 +417,6 @@ List<_NavItem> _navItemsForRole(UserRole? role, AppLocalizations l10n) {
       return [
         _NavItem(icon: Icons.dashboard_outlined,    label: l10n.navDashboard,     route: AppRoutes.dashboard),
         _NavItem(icon: Icons.view_kanban_outlined,  label: l10n.navKanban,        route: AppRoutes.tasks),
-        _NavItem(icon: Icons.inventory_2_outlined,  label: l10n.navAuditPack,     route: AppRoutes.auditPack),
         _NavItem(icon: Icons.folder_copy_outlined,  label: l10n.navSessionFiles,  route: AppRoutes.sessionFilesNav),
         _NavItem(icon: Icons.group_outlined,        label: l10n.navUsers,         route: AppRoutes.clientUsers),
       ];

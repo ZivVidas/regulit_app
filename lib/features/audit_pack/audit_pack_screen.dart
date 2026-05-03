@@ -1411,7 +1411,7 @@ class _HistoryRowState extends State<_HistoryRow> {
               const Gap(2),
               Row(children: [
                 Text(
-                  '${s.answeredCount} answers',
+                  AppLocalizations.of(context).auditAnswerCount(s.answeredCount),
                   style: const TextStyle(color: _kMuted, fontSize: 11),
                 ),
                 if (isActive) ...[
@@ -1423,9 +1423,9 @@ class _HistoryRowState extends State<_HistoryRow> {
                       color: _kAccentBg,
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
-                      'Active',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context).statusActive,
+                      style: const TextStyle(
                         color: _kAccent,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,

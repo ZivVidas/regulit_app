@@ -276,15 +276,54 @@ class _SessionPickerBar extends StatelessWidget {
 
 // ── File list ─────────────────────────────────────────────────────────────────
 
-class _FileList extends ConsumerWidget {
+class _FileList extends ConsumerStatefulWidget {
   final String sessionId;
   final Dio dio;
   const _FileList({required this.sessionId, required this.dio});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_FileList> createState() => _FileListState();
+}
+
+class _FileListState extends ConsumerState<_FileList> {
+  bool _downloadingAll = false;
+
+  Future<void> _downloadAll() async {
+    if (_downloadingAll) return;
+    setState(() => _downloadingAll = true);
+    try {
+      final dir = await getTemporaryDirectory();
+      final savePath = '${dir.path}/session_files.zip';
+
+      await widget.dio.download(
+        '/workflow-answers/${widget.sessionId}/files/download-zip',
+        savePath,
+      );
+
+      if (!mounted) return;
+      final result = await OpenFile.open(savePath);
+      if (result.type != ResultType.done && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not open zip: ${result.message}'),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Download failed: $e'),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _downloadingAll = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final filesAsync = ref.watch(_sfFilesProvider(sessionId));
+    final filesAsync = ref.watch(_sfFilesProvider(widget.sessionId));
 
     return filesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -306,7 +345,7 @@ class _FileList extends ConsumerWidget {
             const Gap(16),
             OutlinedButton.icon(
               onPressed: () =>
-                  ref.invalidate(_sfFilesProvider(sessionId)),
+                  ref.invalidate(_sfFilesProvider(widget.sessionId)),
               icon: const Icon(Icons.refresh, size: 16),
               label: Text(l10n.retry),
             ),
@@ -329,12 +368,69 @@ class _FileList extends ConsumerWidget {
             ),
           );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: files.length,
-          separatorBuilder: (_, __) => const Gap(10),
-          itemBuilder: (_, i) =>
-              _FileCard(item: files[i], dio: dio),
+        return Column(
+          children: [
+            // ── Header bar: file count + Download All ────────────
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 10),
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                border: Border(
+                    bottom: BorderSide(color: AppColors.border)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.folder_copy_outlined,
+                      size: 15, color: AppColors.muted),
+                  const Gap(6),
+                  Text(
+                    l10n.nFiles(files.length),
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.muted),
+                  ),
+                  const Spacer(),
+                  if (_downloadingAll)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.blue),
+                    )
+                  else
+                    TextButton.icon(
+                      onPressed: _downloadAll,
+                      icon: const Icon(
+                          Icons.download_for_offline_outlined,
+                          size: 16),
+                      label: Text(l10n.downloadAll),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.blue,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        textStyle: AppTextStyles.bodySmall
+                            .copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // ── File cards ───────────────────────────────────────
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: files.length,
+                separatorBuilder: (_, __) => const Gap(10),
+                itemBuilder: (_, i) =>
+                    _FileCard(item: files[i], dio: widget.dio),
+              ),
+            ),
+          ],
         );
       },
     );
