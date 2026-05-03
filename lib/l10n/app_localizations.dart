@@ -277,7 +277,6 @@ class AppLocalizations {
   // charts / cards
   String get riskByCategory             => _t('riskByCategory');
   String get topOpenRisks               => _t('topOpenRisks');
-  String get noTasksForSession          => _t('noTasksForSession');
   String get failedToLoadTrend          => _t('failedToLoadTrend');
   String get noEvaluationData           => _t('noEvaluationData');
   String get failedToLoadDashboard      => _t('failedToLoadDashboard');
@@ -542,7 +541,6 @@ class AppLocalizations {
       'tasksNeedApproval': '{n} tasks need your approval.',
       'riskByCategory': 'Risk by Category',
       'topOpenRisks': 'Top Open Risks',
-      'noTasksForSession': 'No tasks found for this session.',
       'failedToLoadTrend': 'Failed to load trend data',
       'noEvaluationData': 'No evaluation data yet.\nRun an assessment analysis to see trends.',
       'failedToLoadDashboard': 'Failed to load dashboard',
@@ -794,7 +792,6 @@ class AppLocalizations {
       'tasksNeedApproval': '{n} משימות מחכות לאישורך.',
       'riskByCategory': 'סיכון לפי קטגוריה',
       'topOpenRisks': 'סיכונים פתוחים מובילים',
-      'noTasksForSession': 'לא נמצאו משימות לפגישה זו.',
       'failedToLoadTrend': 'טעינת נתוני המגמה נכשלה',
       'noEvaluationData': 'אין נתוני הערכה עדיין.\nהפעל ניתוח הערכה לצפייה במגמות.',
       'failedToLoadDashboard': 'טעינת לוח הבקרה נכשלה',
@@ -1046,7 +1043,6 @@ class AppLocalizations {
       'tasksNeedApproval': '{n} tareas necesitan su aprobación.',
       'riskByCategory': 'Riesgo por categoría',
       'topOpenRisks': 'Principales riesgos abiertos',
-      'noTasksForSession': 'No se encontraron tareas para esta sesión.',
       'failedToLoadTrend': 'Error al cargar datos de tendencia',
       'noEvaluationData': 'Aún no hay datos de evaluación.\nEjecute un análisis para ver tendencias.',
       'failedToLoadDashboard': 'Error al cargar el panel',
@@ -1298,7 +1294,6 @@ class AppLocalizations {
       'tasksNeedApproval': '{n} tâches nécessitent votre approbation.',
       'riskByCategory': 'Risque par catégorie',
       'topOpenRisks': 'Principaux risques ouverts',
-      'noTasksForSession': 'Aucune tâche trouvée pour cette session.',
       'failedToLoadTrend': 'Échec du chargement des données de tendance',
       'noEvaluationData': 'Aucune donnée d\'évaluation pour l\'instant.\nLancez une analyse pour voir les tendances.',
       'failedToLoadDashboard': 'Échec du chargement du tableau de bord',
@@ -1550,7 +1545,6 @@ class AppLocalizations {
       'tasksNeedApproval': '{n} задач ожидают вашего одобрения.',
       'riskByCategory': 'Риск по категориям',
       'topOpenRisks': 'Главные открытые риски',
-      'noTasksForSession': 'Задачи для этой сессии не найдены.',
       'failedToLoadTrend': 'Ошибка загрузки данных тренда',
       'noEvaluationData': 'Данных оценки пока нет.\nЗапустите анализ для просмотра трендов.',
       'failedToLoadDashboard': 'Ошибка загрузки панели',
