@@ -97,16 +97,15 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
 
     // Role resolution:
     //   it_executor    → create / edit / delete any task (always opens edit dialog).
-    //   client_admin   → view all tasks & evidence; change status + add/remove evidence
-    //                    only on tasks assigned to themselves.
-    //   employee       → same as client_admin.
+    //   client_admin   → same as it_executor: full read + edit on all tasks.
+    //   employee       → blocked from kanban by the router.
     final customerCtx = ref.watch(customerContextProvider);
     final ctxRoleStr  = customerCtx?['role'] as String?;
-    final isItExecutor = ctxRoleStr == 'it_executor' ||
-                         ref.watch(isItExecutorProvider); // fallback for demo users
     final isClientAdmin = ctxRoleStr == 'client_admin';
-    // Both it_executor and client_admin can fully edit tasks
-    final canEdit = isItExecutor || isClientAdmin;
+    final isItExecutor = ctxRoleStr == 'it_executor' ||
+                         ref.watch(isItExecutorProvider) || // fallback for demo users
+                         isClientAdmin; // client_admin gets identical full-edit rights
+    final canEdit = isItExecutor;
 
     // Current user ID — used to check task assignment for status-change permission.
     final currentUserId = ref.watch(currentUserProvider)?.id;
@@ -220,7 +219,7 @@ class _SessionBar extends StatelessWidget {
           else
             Expanded(
               child: Text(
-                '— no active sessions —',
+                l10n.noActiveSessions,
                 style: AppTextStyles.caption
                     .copyWith(fontStyle: FontStyle.italic),
               ),
@@ -250,7 +249,7 @@ class _SessionBar extends StatelessWidget {
 
           // ── Switch to List View ──────────────────────────────────────────
           Tooltip(
-            message: 'Switch to List View',
+            message: l10n.switchToListView,
             child: IconButton(
               icon: const Icon(Icons.view_list_outlined, size: 20),
               color: AppColors.blue,
@@ -270,7 +269,7 @@ class _SessionBar extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.refresh_outlined, size: 18),
             color: AppColors.muted,
-            tooltip: 'Refresh',
+            tooltip: l10n.refresh,
             onPressed: onRefresh,
             visualDensity: VisualDensity.compact,
           ),
@@ -426,39 +425,16 @@ class _BoardForSession extends ConsumerWidget {
                     } catch (_) {}
                     ref.invalidate(sessionTasksProvider(sessionId));
                   },
-                  // it_executor  → full edit dialog on tap.
-                  // client_admin → read-only detail sheet; status change only
-                  //                if task is assigned to the current user.
+                  // it_executor + client_admin → full edit dialog on tap.
                   // (employee is blocked from kanban by the router.)
                   onTaskTap: (task) async {
-                    if (isItExecutor) {
-                      final refreshed = await showDialog<bool>(
-                        context: context,
-                        builder: (_) =>
-                            TaskEditDialog(task: task, l10n: l10n),
-                      );
-                      if (refreshed == true) {
-                        ref.invalidate(sessionTasksProvider(sessionId));
-                      }
-                    } else {
-                      // client_admin / employee: status change + evidence
-                      // upload only when the task is assigned to them.
-                      // Everyone can view tasks and evidence.
-                      final canChange =
-                          currentUserId != null &&
-                          task.assignedToUserId == currentUserId;
-                      await showDialog<bool>(
-                        context: context,
-                        builder: (_) => TaskEditDialog(
-                          task: task,
-                          l10n: l10n,
-                          readOnly: true,
-                          canChangeStatus: canChange,
-                          canUploadEvidence: canChange,
-                          onStatusChanged: () =>
-                              ref.invalidate(sessionTasksProvider(sessionId)),
-                        ),
-                      );
+                    final refreshed = await showDialog<bool>(
+                      context: context,
+                      builder: (_) =>
+                          TaskEditDialog(task: task, l10n: l10n),
+                    );
+                    if (refreshed == true) {
+                      ref.invalidate(sessionTasksProvider(sessionId));
                     }
                   },
                 ),
@@ -1019,7 +995,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                 children: [
                   Expanded(
                     child: Text(
-                      task.taskName.isEmpty ? '(no name)' : task.taskName,
+                      task.taskName.isEmpty ? widget.l10n.noTaskName : task.taskName,
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -1031,7 +1007,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                   if (widget.canDrag) ...[
                     const Gap(4),
                     Tooltip(
-                      message: 'Drag to change status',
+                      message: widget.l10n.dragToChangeStatus,
                       child: Icon(
                         Icons.drag_indicator_rounded,
                         size: 15,
@@ -1250,7 +1226,7 @@ class _CreateTaskDialogState extends ConsumerState<_CreateTaskDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create task: $e'),
+            content: Text('${l10n.failedToCreateTask}: $e'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -1356,7 +1332,7 @@ class _CreateTaskDialogState extends ConsumerState<_CreateTaskDialog> {
                   controller: _whatCtrl,
                   maxLines: 3,
                   decoration: _inputDeco(
-                      hint: 'Describe the steps to complete this task…'),
+                      hint: l10n.describeStepsHint),
                 ),
 
                 const Gap(16),
@@ -1722,8 +1698,8 @@ class _NoSessionView extends StatelessWidget {
           const Gap(16),
           Text(
             hasSessions
-                ? 'Select a workflow session above to view tasks'
-                : 'No active workflow sessions found for this customer',
+                ? l10n.selectSessionToViewTasks
+                : l10n.noWorkflowSessionsFound,
             style: AppTextStyles.body.copyWith(color: AppColors.muted),
             textAlign: TextAlign.center,
           ),
@@ -1752,7 +1728,7 @@ class _ErrorView extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Retry'),
+            label: Text(AppLocalizations.of(context).retry),
           ),
         ],
       ),

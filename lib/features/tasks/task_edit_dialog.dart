@@ -6,7 +6,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
@@ -14,13 +13,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/customer/customer_context_provider.dart';
 import '../../core/models/workflow_task.dart';
+import '../../core/platform/file_download.dart';
 import '../../l10n/app_localizations.dart';
 
 // ── Shared model ──────────────────────────────────────────────────────────────
@@ -236,7 +234,7 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Evidence review failed: $e'),
+          content: Text('${l10n.evidenceReviewFailed}: $e'),
           backgroundColor: AppColors.danger,
         ));
       }
@@ -271,7 +269,7 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
       setState(() => _saving = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to save: $e'),
+          content: Text('${l10n.failedToSave}: $e'),
           backgroundColor: AppColors.danger,
         ));
       }
@@ -297,7 +295,7 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
       setState(() => _saving = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to save: $e'),
+          content: Text('${l10n.failedToSave}: $e'),
           backgroundColor: AppColors.danger,
         ));
       }
@@ -439,8 +437,7 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                     controller: _whatCtrl,
                     maxLines: 3,
                     enabled: !widget.readOnly,
-                    decoration: _inputDeco(
-                        hint: 'Describe the steps to complete this task…'),
+                    decoration: _inputDeco(hint: l10n.describeStepsHint),
                   ),
 
                   // ── Risk (read-only — LLM-generated) ──────────────────
@@ -835,8 +832,8 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
                                   )
                                 : const Icon(Icons.fact_check_outlined, size: 16),
                             label: Text(_reviewingEvidence
-                                ? 'Reviewing…'
-                                : 'Review Evidence'),
+                                ? l10n.reviewingLabel
+                                : l10n.reviewEvidence),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF6C3FC5),
                               side:
@@ -1015,8 +1012,9 @@ class _EvidenceRowState extends State<_EvidenceRow> {
     );
   }
 
-  /// Downloads the file via the authenticated Dio instance, saves it to the
-  /// system temp directory, then opens it with the OS default app.
+  /// Downloads the file via the authenticated Dio instance.
+  /// On web → triggers the browser save-as dialog.
+  /// On native → saves to the system temp directory and opens with the OS default app.
   Future<void> _download(BuildContext context) async {
     if (_downloading) return;
     setState(() => _downloading = true);
@@ -1028,26 +1026,15 @@ class _EvidenceRowState extends State<_EvidenceRow> {
           ? rawName.substring(idx + 1)
           : rawName;
 
-      final dir = await getTemporaryDirectory();
-      final savePath = '${dir.path}/$cleanName';
-
-      await widget.dio.download(
-        '/files/${widget.item.fileId}/download',
-        savePath,
+      await platformDownload(
+        url: '/files/${widget.item.fileId}/download',
+        fileName: cleanName,
+        dio: widget.dio,
       );
-
-      if (!context.mounted) return;
-      final result = await OpenFile.open(savePath);
-      if (result.type != ResultType.done && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Could not open file: ${result.message}'),
-          backgroundColor: AppColors.danger,
-        ));
-      }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Download failed: $e'),
+          content: Text('${AppLocalizations.of(context).downloadFailed}: $e'),
           backgroundColor: AppColors.danger,
         ));
       }
@@ -1105,7 +1092,7 @@ class _EvidenceRowState extends State<_EvidenceRow> {
           if (hasContent)
             _EvidenceIconBtn(
               icon: Icons.visibility_outlined,
-              tooltip: 'View',
+              tooltip: AppLocalizations.of(context).view,
               color: AppColors.blue,
               onTap: () => _openViewer(context),
             ),
@@ -1122,14 +1109,14 @@ class _EvidenceRowState extends State<_EvidenceRow> {
                 )
               : _EvidenceIconBtn(
                   icon: Icons.download_outlined,
-                  tooltip: 'Download',
+                  tooltip: AppLocalizations.of(context).downloadFile,
                   color: AppColors.success,
                   onTap: () => _download(context),
                 ),
           if (!widget.readOnly)
             _EvidenceIconBtn(
               icon: Icons.delete_outline,
-              tooltip: 'Remove',
+              tooltip: AppLocalizations.of(context).remove,
               color: AppColors.danger,
               onTap: widget.onRemove,
             ),
@@ -1271,7 +1258,7 @@ class _DocumentViewState extends State<_DocumentView> {
   Widget build(BuildContext context) {
     if (widget.fileText.isEmpty) {
       return Center(
-        child: Text('No content available.',
+        child: Text(AppLocalizations.of(context).noContentAvailable,
             style: AppTextStyles.body.copyWith(color: AppColors.muted)),
       );
     }
@@ -1311,7 +1298,7 @@ class _DocumentViewState extends State<_DocumentView> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(14, 16, 14, 8),
                     child: Text(
-                      'Contents',
+                      AppLocalizations.of(context).contentsLabel,
                       style: AppTextStyles.label.copyWith(
                         color: AppColors.muted,
                         fontSize: 11,
@@ -1520,17 +1507,18 @@ class _ImageDescriptionView extends StatelessWidget {
   Widget build(BuildContext context) {
     if (description.isEmpty) {
       return Center(
-        child: Text('No description available.',
+        child: Text(AppLocalizations.of(context).noDescriptionAvailable,
             style: AppTextStyles.body.copyWith(color: AppColors.muted)),
       );
     }
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
           const Icon(Icons.auto_awesome_outlined, size: 16, color: AppColors.info),
           const Gap(6),
-          Text('AI-Generated Description',
+          Text(l10n.aiGeneratedDescription,
               style: AppTextStyles.label.copyWith(color: AppColors.info)),
         ]),
         const Gap(12),

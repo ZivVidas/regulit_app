@@ -17,6 +17,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/models/workflow_task.dart';
+import '../../l10n/app_localizations.dart';
 
 // ── Public sheet ──────────────────────────────────────────────────────────────
 
@@ -145,7 +146,7 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
       if (mounted) {
         setState(() { _saving = false; _error = msg; });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Status update failed: $msg'),
+          content: Text('${AppLocalizations.of(context).statusUpdateFailed}: $msg'),
           backgroundColor: AppColors.danger,
           behavior: SnackBarBehavior.floating,
         ));
@@ -154,7 +155,7 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
       if (mounted) {
         setState(() { _saving = false; _error = e.toString(); });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Status update failed: $e'),
+          content: Text('${AppLocalizations.of(context).statusUpdateFailed}: $e'),
           backgroundColor: AppColors.danger,
           behavior: SnackBarBehavior.floating,
         ));
@@ -172,6 +173,7 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final status = WorkflowTaskStatus.fromId(_statusId);
     final accent = _accentFor(status);
 
@@ -210,8 +212,8 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                   color: AppColors.danger.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text('Required',
-                    style: TextStyle(
+                child: Text(l10n.required,
+                    style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.danger,
                         fontWeight: FontWeight.w600)),
@@ -227,8 +229,8 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                 children: [
                   // What to do
                   if (widget.task.whatToDo != null) ...[
-                    const Text('What To Do',
-                        style: TextStyle(
+                    Text(l10n.whatToDoLabel,
+                        style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             color: AppColors.muted,
                             fontSize: 12)),
@@ -244,8 +246,8 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                       const Icon(Icons.warning_amber_rounded,
                           size: 14, color: AppColors.orange),
                       const Gap(5),
-                      const Text('Risk',
-                          style: TextStyle(
+                      Text(l10n.taskRiskLabel,
+                          style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               color: AppColors.muted,
                               fontSize: 12)),
@@ -272,19 +274,19 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                       if (widget.task.assignedToUserName != null)
                         _MetaItem(
                           icon: Icons.person_outline,
-                          label: 'Assigned to',
+                          label: l10n.assignedToLabel,
                           value: widget.task.assignedToUserName!,
                         ),
                       if (widget.task.dueDate != null)
                         _MetaItem(
                           icon: Icons.calendar_today_outlined,
-                          label: 'Due date',
+                          label: l10n.dueDateLabel,
                           value: DateFormat('dd MMM yyyy').format(widget.task.dueDate!),
                         ),
                       if (widget.task.estimatedFine != null)
                         _MetaItem(
                           icon: Icons.account_balance_outlined,
-                          label: 'Estimated fine',
+                          label: l10n.estimatedFineLabel,
                           value: '₪${NumberFormat.decimalPattern().format(widget.task.estimatedFine)}',
                         ),
                     ],
@@ -299,8 +301,8 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                     const Icon(Icons.attach_file_rounded,
                         size: 14, color: AppColors.muted),
                     const Gap(6),
-                    const Text('Evidence',
-                        style: TextStyle(
+                    Text(l10n.evidenceLabel,
+                        style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             color: AppColors.muted,
                             fontSize: 12)),
@@ -332,8 +334,8 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Text(
                         widget.canChangeStatus
-                            ? 'No evidence attached yet. Upload a file below.'
-                            : 'No evidence attached.',
+                            ? l10n.noEvidenceAttachedUpload
+                            : l10n.noEvidenceAttached,
                         style: const TextStyle(
                             fontSize: 12, color: AppColors.muted),
                       ),
@@ -352,7 +354,7 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                     OutlinedButton.icon(
                       onPressed: _uploading ? null : _pickAndUpload,
                       icon: const Icon(Icons.upload_file_outlined, size: 16),
-                      label: const Text('Add Evidence'),
+                      label: Text(l10n.addEvidence),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.blue,
                         side: const BorderSide(color: AppColors.blue),
@@ -370,8 +372,8 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
 
                   // ── Status section (only when user can change it) ─────────
                   if (widget.canChangeStatus) ...[
-                    const Text('Status',
-                        style: TextStyle(
+                    Text(l10n.taskStatusLabel,
+                        style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             color: AppColors.muted,
                             fontSize: 12)),
@@ -420,14 +422,14 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                               width: 20, height: 20,
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: Colors.white))
-                          : const Text('Save Status',
-                              style: TextStyle(
+                          : Text(l10n.saveStatus,
+                              style: const TextStyle(
                                   color: Colors.white, fontWeight: FontWeight.w600)),
                     ),
                   ] else ...[
                     // Read-only status chip
-                    const Text('Status',
-                        style: TextStyle(
+                    Text(l10n.taskStatusLabel,
+                        style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             color: AppColors.muted,
                             fontSize: 12)),
@@ -453,8 +455,8 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
                       ]),
                     ),
                     const Gap(8),
-                    Text('You can only change status for tasks assigned to you.',
-                        style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                    Text(l10n.onlyChangeStatusIfAssigned,
+                        style: const TextStyle(fontSize: 12, color: AppColors.muted)),
                   ],
                   const Gap(32),
                 ],
@@ -496,7 +498,7 @@ class _EvidenceSufficiencyBadge extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Evidence Sufficiency',
+              Text(AppLocalizations.of(context).evidenceSufficiency,
                   style: TextStyle(
                       fontSize: 11,
                       color: _color,

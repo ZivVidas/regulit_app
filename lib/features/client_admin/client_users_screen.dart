@@ -240,7 +240,7 @@ class ClientUsersScreen extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: Text(l10n.unlink),
-        content: Text('Remove $name from this organisation?'),
+        content: Text(l10n.removeFromOrg(name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

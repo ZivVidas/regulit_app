@@ -270,7 +270,7 @@ class AuditPackScreen extends ConsumerWidget {
                       sessions: slist,
                       starting: s.starting.contains(wfId),
                       onStartNew: () async {
-                        final wfName = wf['workflowName'] as String? ?? 'Workflow';
+                        final wfName = wf['workflowName'] as String? ?? AppLocalizations.of(context).workflowLabel;
                         final sid = await not.startSession(wfId);
                         if (sid != null && context.mounted) {
                           context.push(
@@ -282,7 +282,7 @@ class AuditPackScreen extends ConsumerWidget {
                       },
                       onEditLast: slist.isEmpty ? null : () {
                         final sid    = slist.first.id;
-                        final wfName = wf['workflowName'] as String? ?? 'Workflow';
+                        final wfName = wf['workflowName'] as String? ?? AppLocalizations.of(context).workflowLabel;
                         context.push(
                           Uri(path: '/workflow-answer/$sid',
                               queryParameters: {'workflowName': wfName})
@@ -290,7 +290,7 @@ class AuditPackScreen extends ConsumerWidget {
                         );
                       },
                       onViewHistory: slist.isEmpty ? null : () {
-                        final wfName = wf['workflowName'] as String? ?? 'Workflow';
+                        final wfName = wf['workflowName'] as String? ?? AppLocalizations.of(context).workflowLabel;
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,

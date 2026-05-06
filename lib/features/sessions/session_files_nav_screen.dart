@@ -8,19 +8,17 @@
 library;
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/customer/customer_context_provider.dart';
+import '../../core/platform/file_download.dart';
 import '../../l10n/app_localizations.dart';
 
 // ── Models ────────────────────────────────────────────────────────────────────
@@ -292,26 +290,15 @@ class _FileListState extends ConsumerState<_FileList> {
     if (_downloadingAll) return;
     setState(() => _downloadingAll = true);
     try {
-      final dir = await getTemporaryDirectory();
-      final savePath = '${dir.path}/session_files.zip';
-
-      await widget.dio.download(
-        '/workflow-answers/${widget.sessionId}/files/download-zip',
-        savePath,
+      await platformDownload(
+        url: '/workflow-answers/${widget.sessionId}/files/download-zip',
+        fileName: 'session_files.zip',
+        dio: widget.dio,
       );
-
-      if (!mounted) return;
-      final result = await OpenFile.open(savePath);
-      if (result.type != ResultType.done && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Could not open zip: ${result.message}'),
-          backgroundColor: AppColors.danger,
-        ));
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Download failed: $e'),
+          content: Text('${AppLocalizations.of(context).downloadFailed}: $e'),
           backgroundColor: AppColors.danger,
         ));
       }
@@ -491,13 +478,13 @@ class _FileCardState extends State<_FileCard> {
       nav.pop(); // close spinner even if fetch failed
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Could not load file: $e'),
+        content: Text('${AppLocalizations.of(context).couldNotLoadFile}: $e'),
         backgroundColor: AppColors.danger,
       ));
     }
   }
 
-  // ── Download (via authenticated Dio → temp dir → OS open) ─────────────────
+  // ── Download (authenticated Dio → web save-as or native OS open) ──────────
 
   Future<void> _download() async {
     if (_downloading) return;
@@ -512,26 +499,15 @@ class _FileCardState extends State<_FileCard> {
                   ? widget.item.fileName
                   : rawName;
 
-      final dir = await getTemporaryDirectory();
-      final savePath = '${dir.path}/$cleanName';
-
-      await widget.dio.download(
-        '/files/${widget.item.fileId}/download',
-        savePath,
+      await platformDownload(
+        url: '/files/${widget.item.fileId}/download',
+        fileName: cleanName,
+        dio: widget.dio,
       );
-
-      if (!mounted) return;
-      final result = await OpenFile.open(savePath);
-      if (result.type != ResultType.done && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Could not open file: ${result.message}'),
-          backgroundColor: AppColors.danger,
-        ));
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Download failed: $e'),
+          content: Text('${AppLocalizations.of(context).downloadFailed}: $e'),
           backgroundColor: AppColors.danger,
         ));
       }
@@ -835,7 +811,7 @@ class _DocumentViewState extends State<_DocumentView> {
   Widget build(BuildContext context) {
     if (widget.fileText.isEmpty) {
       return Center(
-        child: Text('No content available.',
+        child: Text(AppLocalizations.of(context).noContentAvailable,
             style: AppTextStyles.body.copyWith(color: AppColors.muted)),
       );
     }
@@ -873,7 +849,7 @@ class _DocumentViewState extends State<_DocumentView> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(14, 16, 14, 8),
-                    child: Text('Contents',
+                    child: Text(AppLocalizations.of(context).contentsLabel,
                         style: AppTextStyles.label.copyWith(
                             color: AppColors.muted,
                             fontSize: 11,

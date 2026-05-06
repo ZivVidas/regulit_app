@@ -9,7 +9,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../core/platform/file_download.dart';
 
 import '../../app/router.dart';
 import '../../app/theme.dart';
@@ -433,8 +433,21 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
 
     // Guard: must answer before advancing
     if (!local.hasValue) {
-      state = state.copyWith(error: 'Please answer this question before continuing.');
+      state = state.copyWith(error: 'pleaseAnswerBeforeContinuing');
       return;
+    }
+
+    // Guard: evidence required and condition met but no file uploaded yet
+    final reqsEv   = q['requiresEvidence'] as bool? ?? false;
+    final evidCond = q['evidenceCondition'] as String?;
+    if (reqsEv &&
+        _evidenceConditionMet(evidCond, local) &&
+        !state.serverAnsweredIds.contains(qId)) {
+      final hasFiles = state.pendingFiles[qId]?.isNotEmpty ?? false;
+      if (!hasFiles) {
+        state = state.copyWith(error: 'evidenceRequiredBeforeContinuing');
+        return;
+      }
     }
 
     state = state.copyWith(saving: true, error: null);
@@ -1595,7 +1608,7 @@ class _EvidencePanelState extends State<_EvidencePanel> {
         final allFiles = [..._serverFiles.map((f) => _FileEntry.server(f)),
                           ...widget.pendingFiles.map((f) => _FileEntry.pending(f))];
         final hasFiles = allFiles.isNotEmpty;
-        final baseUrl  = ref.read(dioProvider).options.baseUrl;
+        final dio      = ref.read(dioProvider);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1609,7 +1622,7 @@ class _EvidencePanelState extends State<_EvidencePanel> {
                 child: Text(
                   widget.promptText != null && widget.promptText!.isNotEmpty
                       ? widget.promptText!
-                      : 'Evidence',
+                      : AppLocalizations.of(context).evidenceLabel,
                   style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -1690,7 +1703,7 @@ class _EvidencePanelState extends State<_EvidencePanel> {
                 ),
                 const Gap(4),
                 Text(
-                  'Uploading… ${(_uploadProgress * 100).toInt()}%',
+                  AppLocalizations.of(context).uploadingPercent((_uploadProgress * 100).toInt()),
                   style: const TextStyle(
                       fontSize: 10, color: AppColors.muted),
                 ),
@@ -1703,14 +1716,14 @@ class _EvidencePanelState extends State<_EvidencePanel> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'No evidence uploaded yet.',
+                  AppLocalizations.of(context).noEvidenceUploadedYet,
                   style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
                 ),
               )
             else
               ...allFiles.map((entry) => _EvidenceFileEntryRow(
                     entry: entry,
-                    baseUrl: baseUrl,
+                    dio: dio,
                     onRemoveServer: (f) => _removeServerFile(ref, f),
                     onRemovePending: (f) =>
                         widget.notifier.removePendingFile(widget.questionId, f.id),
@@ -1732,7 +1745,7 @@ class _EvidencePanelState extends State<_EvidencePanel> {
               OutlinedButton.icon(
                 onPressed: _uploading ? null : () => _pickAndUpload(ref),
                 icon: const Icon(Icons.upload_file_outlined, size: 15),
-                label: Text(hasFiles ? 'הוסף ראיה' : 'הוסף ראיה',
+                label: Text(AppLocalizations.of(context).addEvidence,
                     style: const TextStyle(fontSize: 12)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.blue,
@@ -1754,7 +1767,7 @@ class _EvidencePanelState extends State<_EvidencePanel> {
                         )
                       : const Icon(Icons.fact_check_outlined, size: 15),
                   label: Text(
-                    _reviewingEvidence ? 'Reviewing…' : 'Review Evidence',
+                    _reviewingEvidence ? AppLocalizations.of(context).reviewingLabel : AppLocalizations.of(context).reviewEvidence,
                     style: const TextStyle(fontSize: 12),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -1791,78 +1804,88 @@ class _FileEntry {
                            (imgDesc != null && imgDesc!.isNotEmpty);
 }
 
-class _EvidenceFileEntryRow extends StatelessWidget {
+class _EvidenceFileEntryRow extends StatefulWidget {
   final _FileEntry entry;
-  final String baseUrl;
+  final Dio dio;
   final void Function(_ServerFile) onRemoveServer;
   final void Function(_PendingFile) onRemovePending;
   final void Function(_FileEntry entry) onView;
 
   const _EvidenceFileEntryRow({
     required this.entry,
-    required this.baseUrl,
+    required this.dio,
     required this.onRemoveServer,
     required this.onRemovePending,
     required this.onView,
   });
 
   @override
+  State<_EvidenceFileEntryRow> createState() => _EvidenceFileEntryRowState();
+}
+
+class _EvidenceFileEntryRowState extends State<_EvidenceFileEntryRow> {
+  bool _downloading = false;
+
+  Future<void> _download() async {
+    if (_downloading) return;
+    setState(() => _downloading = true);
+    try {
+      await platformDownload(
+        url: '/files/${widget.entry.fileId}/download',
+        fileName: widget.entry.name,
+        dio: widget.dio,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              '${AppLocalizations.of(context).downloadFailed}: $e'),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final entry = widget.entry;
+    final l10n = AppLocalizations.of(context);
     final dateStr = entry.date != null
         ? entry.date!.substring(0, 10).split('-').reversed.join('/')
         : null;
+    final isImage = entry.isImage;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: const Color(0xFFF7F9FC),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
-          // Delete
-          GestureDetector(
-            onTap: () {
-              if (entry.server != null) onRemoveServer(entry.server!);
-              else if (entry.pending != null) onRemovePending(entry.pending!);
-            },
-            child: const Icon(Icons.delete_outline_rounded,
-                size: 16, color: Color(0xFFDC2626)),
+          // ── File type icon ────────────────────────────────────
+          Icon(
+            isImage ? Icons.image_outlined : Icons.description_outlined,
+            size: 16,
+            color: isImage ? AppColors.info : AppColors.blue,
           ),
           const Gap(8),
-          // Download (server files only)
-          if (entry.server != null) ...[
-            GestureDetector(
-              onTap: () async {
-                final url = Uri.parse('$baseUrl/files/${entry.fileId}/download');
-                if (await canLaunchUrl(url)) launchUrl(url);
-              },
-              child: const Icon(Icons.download_outlined,
-                  size: 16, color: Color(0xFF16A34A)),
-            ),
-            const Gap(8),
-          ],
-          // View content
-          if (entry.hasContent) ...[
-            GestureDetector(
-              onTap: () => onView(entry),
-              child: const Icon(Icons.visibility_outlined,
-                  size: 16, color: AppColors.blue),
-            ),
-            const Gap(8),
-          ],
-          // Name + date + type icon
+          // ── Name + date ───────────────────────────────────────
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(entry.name,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w500),
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right),
+                Text(
+                  entry.name,
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
                 if (dateStr != null)
                   Text(dateStr,
                       style: const TextStyle(
@@ -1870,18 +1893,74 @@ class _EvidenceFileEntryRow extends StatelessWidget {
               ],
             ),
           ),
-          const Gap(8),
-          Icon(
-            entry.isImage
-                ? Icons.image_outlined
-                : Icons.insert_drive_file_outlined,
-            size: 16,
-            color: const Color(0xFF9CA3AF),
+          const Gap(4),
+          // ── View button (only when content is available) ──────
+          if (entry.hasContent)
+            _EvidenceBtn(
+              icon: Icons.visibility_outlined,
+              tooltip: l10n.view,
+              color: AppColors.blue,
+              onTap: () => widget.onView(entry),
+            ),
+          // ── Download button (server files only) ───────────────
+          if (entry.server != null)
+            _downloading
+                ? const Padding(
+                    padding: EdgeInsets.all(5),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.success),
+                    ),
+                  )
+                : _EvidenceBtn(
+                    icon: Icons.download_outlined,
+                    tooltip: l10n.downloadFile,
+                    color: AppColors.success,
+                    onTap: _download,
+                  ),
+          // ── Delete button ─────────────────────────────────────
+          _EvidenceBtn(
+            icon: Icons.delete_outline,
+            tooltip: l10n.remove,
+            color: AppColors.danger,
+            onTap: () {
+              if (entry.server != null) widget.onRemoveServer(entry.server!);
+              else if (entry.pending != null) widget.onRemovePending(entry.pending!);
+            },
           ),
         ],
       ),
     );
   }
+}
+
+// ── Small icon button with tooltip (mirrors task_edit_dialog._EvidenceIconBtn)
+class _EvidenceBtn extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final Color color;
+  final VoidCallback onTap;
+  const _EvidenceBtn({
+    required this.icon,
+    required this.tooltip,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.all(5),
+            child: Icon(icon, size: 16, color: color),
+          ),
+        ),
+      );
 }
 
 // ── Evidence content viewer dialog ────────────────────────────
@@ -1930,7 +2009,7 @@ class _EvidenceViewerDialog extends StatelessWidget {
                   const Gap(10),
                   Expanded(
                     child: Text(
-                      entry.name.isNotEmpty ? entry.name : 'Evidence',
+                      entry.name.isNotEmpty ? entry.name : AppLocalizations.of(context).evidenceLabel,
                       style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w600),
                       overflow: TextOverflow.ellipsis,
@@ -2003,7 +2082,7 @@ class _DocumentViewState extends State<_DocumentView> {
   Widget build(BuildContext context) {
     if (widget.fileText.isEmpty) {
       return Center(
-        child: Text('No content available.',
+        child: Text(AppLocalizations.of(context).noContentAvailable,
             style: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
       );
     }
@@ -2039,11 +2118,11 @@ class _DocumentViewState extends State<_DocumentView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(14, 16, 14, 8),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 16, 14, 8),
                     child: Text(
-                      'CONTENTS',
-                      style: TextStyle(
+                      AppLocalizations.of(context).contentsLabel.toUpperCase(),
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF9CA3AF),
@@ -2310,14 +2389,14 @@ class _EvidenceNotice extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, size: 15, color: Color(0xFFD97706)),
-          Gap(8),
+          const Icon(Icons.warning_amber_rounded, size: 15, color: Color(0xFFD97706)),
+          const Gap(8),
           Expanded(
             child: Text(
-              'Evidence may be required based on your answer.',
-              style: TextStyle(
+              AppLocalizations.of(context).evidenceMayBeRequired,
+              style: const TextStyle(
                 color: Color(0xFFD97706),
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -2652,7 +2731,7 @@ class _TextInput extends StatelessWidget {
       maxLines:   5,
       style: const TextStyle(fontSize: 14, color: _kText),
       decoration: InputDecoration(
-        hintText: 'Type your answer here…',
+        hintText: AppLocalizations.of(context).typeAnswerHint,
         hintStyle: const TextStyle(color: _kMuted, fontSize: 13),
         filled: true,
         fillColor: const Color(0xFFF8FAFC),
@@ -2740,7 +2819,7 @@ class _NumericInput extends StatelessWidget {
             Icon(Icons.info_outline_rounded, size: 13, color: _kMuted.withOpacity(0.7)),
             const Gap(4),
             Text(
-              'Enter a number',
+              AppLocalizations.of(context).enterANumber,
               style: TextStyle(fontSize: 12, color: _kMuted.withOpacity(0.7)),
             ),
           ],
@@ -2804,7 +2883,12 @@ class _NavBar extends StatelessWidget {
                     color: AppColors.dangerLight,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(error!,
+                  child: Text(
+                      error == 'pleaseAnswerBeforeContinuing'
+                          ? AppLocalizations.of(context).pleaseAnswerBeforeContinuing
+                          : error == 'evidenceRequiredBeforeContinuing'
+                              ? AppLocalizations.of(context).evidenceRequiredBeforeContinuing
+                              : error!,
                       style: const TextStyle(color: AppColors.danger, fontSize: 12)),
                 ),
               Row(
@@ -2856,7 +2940,7 @@ class _NavBar extends StatelessWidget {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
                     ),
-                    onPressed: saving ? null : () => onNext(),
+                    onPressed: saving || !canAdvance ? null : () => onNext(),
                     icon: saving
                         ? const SizedBox(
                             width: 15, height: 15,
@@ -3033,14 +3117,14 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
                 children: [
                   _StatBadge(
                     icon: Icons.quiz_rounded,
-                    label: 'Answered',
+                    label: AppLocalizations.of(context).answeredLabel,
                     value: '${widget.totalAnswered} / ${widget.totalQuestions}',
                     color: _kDone,
                   ),
                   const Gap(12),
                   _StatBadge(
                     icon: Icons.percent_rounded,
-                    label: 'Completion',
+                    label: AppLocalizations.of(context).completionLabel,
                     value: widget.totalQuestions == 0
                         ? '100%'
                         : '${(widget.totalAnswered * 100 ~/ widget.totalQuestions)}%',
@@ -3130,18 +3214,18 @@ class _AnalyzingPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'AI is analyzing your responses…',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context).aiAnalyzingResponses,
+                  style: const TextStyle(
                     color: Color(0xFF5B21B6),
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const Gap(2),
-                const Text(
-                  'Identifying compliance gaps — this may take up to a minute',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context).identifyingComplianceGaps,
+                  style: const TextStyle(
                     color: Color(0xFF7C3AED),
                     fontSize: 11,
                   ),
@@ -3168,17 +3252,18 @@ class _TasksCreatedPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n   = AppLocalizations.of(context);
     final hasTasks = tasksCreated > 0;
     final bg     = hasTasks ? const Color(0xFFFEF3C7) : const Color(0xFFF0FDF4);
     final border = hasTasks ? const Color(0xFFFDE68A) : const Color(0xFFBBF7D0);
     final icon   = hasTasks ? Icons.task_alt_rounded  : Icons.check_circle_outline_rounded;
     final iconColor = hasTasks ? const Color(0xFFD97706) : _kDone;
     final label  = hasTasks
-        ? '$tasksCreated compliance task${tasksCreated != 1 ? 's' : ''} created'
-        : 'No compliance gaps found';
+        ? l10n.tasksCreatedCount(tasksCreated)
+        : l10n.noComplianceGapsFound;
     final sub    = hasTasks
-        ? 'Review your tasks in the Task Board'
-        : 'All requirements appear to be met';
+        ? l10n.reviewTasksInBoard
+        : l10n.allRequirementsMet;
 
     return Container(
       width: double.infinity,
@@ -3240,7 +3325,7 @@ class _AnalyzeErrorPanel extends StatelessWidget {
           const Gap(10),
           Expanded(
             child: Text(
-              'Analysis failed: $error',
+              '${AppLocalizations.of(context).analysisFailed}: $error',
               style: const TextStyle(
                   color: Color(0xFFDC2626), fontSize: 12),
               maxLines: 2,
@@ -3250,8 +3335,8 @@ class _AnalyzeErrorPanel extends StatelessWidget {
           const Gap(8),
           TextButton(
             onPressed: onRetry,
-            child: const Text('Retry',
-                style: TextStyle(
+            child: Text(AppLocalizations.of(context).retry,
+                style: const TextStyle(
                     color: Color(0xFFDC2626),
                     fontWeight: FontWeight.w700)),
           ),
@@ -3310,7 +3395,7 @@ class _EmptyView extends StatelessWidget {
         const Icon(Icons.quiz_outlined, size: 52, color: Color(0xFFCBD5E1)),
         const Gap(16),
         Text(
-          'No questions found in "$workflowName".\nAdd quizzes with questions first.',
+          AppLocalizations.of(context).noQuestionsFound(workflowName),
           textAlign: TextAlign.center,
           style: const TextStyle(color: _kMuted, fontSize: 14),
         ),

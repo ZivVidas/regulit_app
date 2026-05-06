@@ -304,6 +304,56 @@ class AppLocalizations {
   String nFiles(int n)          => _t('nFiles').replaceFirst('{n}', '$n');
   String get noTextAvailable    => _t('noTextAvailable');
 
+  // ── Shared UI / task & evidence ───────────────────────────────────────────
+  String get switchToListView           => _t('switchToListView');
+  String get refresh                    => _t('refresh');
+  String get noTaskName                 => _t('noTaskName');
+  String get dragToChangeStatus         => _t('dragToChangeStatus');
+  String get failedToCreateTask         => _t('failedToCreateTask');
+  String get describeStepsHint          => _t('describeStepsHint');
+  String get selectSessionToViewTasks   => _t('selectSessionToViewTasks');
+  String get noWorkflowSessionsFound    => _t('noWorkflowSessionsFound');
+  String get reviewingLabel             => _t('reviewingLabel');
+  String get reviewEvidence             => _t('reviewEvidence');
+  String get couldNotOpenFile           => _t('couldNotOpenFile');
+  String get downloadFailed             => _t('downloadFailed');
+  String get noContentAvailable         => _t('noContentAvailable');
+  String get contentsLabel              => _t('contentsLabel');
+  String get remove                     => _t('remove');
+  String get assignedToLabel            => _t('assignedToLabel');
+  String get evidenceLabel              => _t('evidenceLabel');
+  String get noEvidenceAttachedUpload   => _t('noEvidenceAttachedUpload');
+  String get noEvidenceAttached         => _t('noEvidenceAttached');
+  String get saveStatus                 => _t('saveStatus');
+  String get onlyChangeStatusIfAssigned => _t('onlyChangeStatusIfAssigned');
+  String get evidenceSufficiency        => _t('evidenceSufficiency');
+  String get statusUpdateFailed         => _t('statusUpdateFailed');
+  String get failedToSave               => _t('failedToSave');
+  String get evidenceReviewFailed       => _t('evidenceReviewFailed');
+  String get workflowLabel              => _t('workflowLabel');
+  String get pleaseAnswerBeforeContinuing => _t('pleaseAnswerBeforeContinuing');
+  String get evidenceRequiredBeforeContinuing => _t('evidenceRequiredBeforeContinuing');
+  String get nextHintYN                 => _t('nextHintYN');
+  String get uploadFailed               => _t('uploadFailed');
+  String uploadingPercent(int pct)      => _t('uploadingPercent').replaceFirst('{pct}', '$pct');
+  String get noEvidenceUploadedYet      => _t('noEvidenceUploadedYet');
+  String get evidenceMayBeRequired      => _t('evidenceMayBeRequired');
+  String get typeAnswerHint             => _t('typeAnswerHint');
+  String get enterANumber               => _t('enterANumber');
+  String get requestTimedOut            => _t('requestTimedOut');
+  String get answeredLabel              => _t('answeredLabel');
+  String get completionLabel            => _t('completionLabel');
+  String get aiAnalyzingResponses       => _t('aiAnalyzingResponses');
+  String get identifyingComplianceGaps  => _t('identifyingComplianceGaps');
+  String tasksCreatedCount(int n)       => _t('tasksCreatedCount').replaceFirst('{n}', '$n');
+  String get noComplianceGapsFound      => _t('noComplianceGapsFound');
+  String get reviewTasksInBoard         => _t('reviewTasksInBoard');
+  String get allRequirementsMet         => _t('allRequirementsMet');
+  String noQuestionsFound(String name)  => _t('noQuestionsFound').replaceFirst('{name}', name);
+  String removeFromOrg(String name)     => _t('removeFromOrg').replaceFirst('{name}', name);
+  String get couldNotOpenZip            => _t('couldNotOpenZip');
+  String get couldNotLoadFile           => _t('couldNotLoadFile');
+
   // ── Language names (always shown in native script) ────────────────────────
   String get langEnglish => 'English';
   String get langHebrew  => 'עברית';
@@ -564,6 +614,55 @@ class AppLocalizations {
       'downloadAll': 'Download All',
       'nFiles': '{n} files',
       'noTextAvailable': 'No text content available.',
+      // Shared UI / task & evidence
+      'switchToListView': 'Switch to List View',
+      'refresh': 'Refresh',
+      'noTaskName': '(no name)',
+      'dragToChangeStatus': 'Drag to change status',
+      'failedToCreateTask': 'Failed to create task',
+      'describeStepsHint': 'Describe the steps to complete this task…',
+      'selectSessionToViewTasks': 'Select a workflow session above to view tasks',
+      'noWorkflowSessionsFound': 'No active workflow sessions found for this customer',
+      'reviewingLabel': 'Reviewing…',
+      'reviewEvidence': 'Review Evidence',
+      'couldNotOpenFile': 'Could not open file',
+      'downloadFailed': 'Download failed',
+      'noContentAvailable': 'No content available.',
+      'contentsLabel': 'Contents',
+      'remove': 'Remove',
+      'assignedToLabel': 'Assigned to',
+      'evidenceLabel': 'Evidence',
+      'noEvidenceAttachedUpload': 'No evidence attached yet. Upload files above.',
+      'noEvidenceAttached': 'No evidence attached.',
+      'saveStatus': 'Save Status',
+      'onlyChangeStatusIfAssigned': 'You can only change the status if you are assigned to this task.',
+      'evidenceSufficiency': 'Evidence Sufficiency',
+      'statusUpdateFailed': 'Status update failed',
+      'failedToSave': 'Failed to save',
+      'evidenceReviewFailed': 'Evidence review failed',
+      'workflowLabel': 'Workflow',
+      'pleaseAnswerBeforeContinuing': 'Please answer before continuing.',
+      'evidenceRequiredBeforeContinuing': 'Please upload at least one evidence file before continuing.',
+      'nextHintYN': 'Press Y for Yes or N for No.',
+      'uploadFailed': 'Upload failed',
+      'uploadingPercent': 'Uploading {pct}%…',
+      'noEvidenceUploadedYet': 'No evidence uploaded yet.',
+      'evidenceMayBeRequired': 'Evidence may be required for this question.',
+      'typeAnswerHint': 'Type your answer…',
+      'enterANumber': 'Enter a number',
+      'requestTimedOut': 'Request timed out',
+      'answeredLabel': 'Answered',
+      'completionLabel': 'Completion',
+      'aiAnalyzingResponses': 'AI is analyzing your responses…',
+      'identifyingComplianceGaps': 'Identifying compliance gaps and generating tasks…',
+      'tasksCreatedCount': '{n} compliance tasks created.',
+      'noComplianceGapsFound': 'No compliance gaps found.',
+      'reviewTasksInBoard': 'Review the tasks in the Kanban board.',
+      'allRequirementsMet': 'All requirements are met.',
+      'noQuestionsFound': 'No questions found for "{name}".',
+      'removeFromOrg': 'Remove {name} from this organisation?',
+      'couldNotOpenZip': 'Could not open the downloaded ZIP file.',
+      'couldNotLoadFile': 'Could not load file',
     },
 
     // ── Hebrew (RTL) ─────────────────────────────────────────────────────────
@@ -815,6 +914,55 @@ class AppLocalizations {
       'downloadAll': 'הורד הכל',
       'nFiles': '{n} קבצים',
       'noTextAvailable': 'אין תוכן טקסט זמין.',
+      // Shared UI / task & evidence
+      'switchToListView': 'מעבר לתצוגת רשימה',
+      'refresh': 'רענן',
+      'noTaskName': '(ללא שם)',
+      'dragToChangeStatus': 'גרור לשינוי סטטוס',
+      'failedToCreateTask': 'יצירת משימה נכשלה',
+      'describeStepsHint': 'תאר את השלבים לביצוע המשימה…',
+      'selectSessionToViewTasks': 'בחר פגישת תהליך עבודה למעלה לצפייה במשימות',
+      'noWorkflowSessionsFound': 'לא נמצאו פגישות תהליך פעילות עבור לקוח זה',
+      'reviewingLabel': 'בודק…',
+      'reviewEvidence': 'בדוק ראיות',
+      'couldNotOpenFile': 'לא ניתן לפתוח את הקובץ',
+      'downloadFailed': 'ההורדה נכשלה',
+      'noContentAvailable': 'אין תוכן זמין.',
+      'contentsLabel': 'תוכן',
+      'remove': 'הסר',
+      'assignedToLabel': 'מוקצה ל',
+      'evidenceLabel': 'ראיות',
+      'noEvidenceAttachedUpload': 'אין ראיות מצורפות עדיין. העלה קבצים למעלה.',
+      'noEvidenceAttached': 'אין ראיות מצורפות.',
+      'saveStatus': 'שמור סטטוס',
+      'onlyChangeStatusIfAssigned': 'ניתן לשנות סטטוס רק אם המשימה מוקצית לך.',
+      'evidenceSufficiency': 'מידת הראיות',
+      'statusUpdateFailed': 'עדכון הסטטוס נכשל',
+      'failedToSave': 'השמירה נכשלה',
+      'evidenceReviewFailed': 'בדיקת הראיות נכשלה',
+      'workflowLabel': 'תהליך עבודה',
+      'pleaseAnswerBeforeContinuing': 'אנא ענה לפני שממשיכים.',
+      'evidenceRequiredBeforeContinuing': 'אנא העלה לפחות קובץ ראיה אחד לפני שממשיכים.',
+      'nextHintYN': 'לחץ כ לכן או ל ללאו.',
+      'uploadFailed': 'ההעלאה נכשלה',
+      'uploadingPercent': 'מעלה {pct}%…',
+      'noEvidenceUploadedYet': 'לא הועלו ראיות עדיין.',
+      'evidenceMayBeRequired': 'ייתכן שנדרשות ראיות לשאלה זו.',
+      'typeAnswerHint': 'הקלד את תשובתך…',
+      'enterANumber': 'הזן מספר',
+      'requestTimedOut': 'הבקשה פגה',
+      'answeredLabel': 'נענה',
+      'completionLabel': 'השלמה',
+      'aiAnalyzingResponses': 'AI מנתח את תשובותיך…',
+      'identifyingComplianceGaps': 'מזהה פערי ציות ומייצר משימות…',
+      'tasksCreatedCount': 'נוצרו {n} משימות ציות.',
+      'noComplianceGapsFound': 'לא נמצאו פערי ציות.',
+      'reviewTasksInBoard': 'סקור את המשימות בלוח הקנבן.',
+      'allRequirementsMet': 'כל הדרישות מולאו.',
+      'noQuestionsFound': 'לא נמצאו שאלות עבור "{name}".',
+      'removeFromOrg': 'להסיר את {name} מהארגון?',
+      'couldNotOpenZip': 'לא ניתן לפתוח את קובץ ה-ZIP שהורד.',
+      'couldNotLoadFile': 'לא ניתן לטעון את הקובץ',
     },
 
     // ── Spanish ──────────────────────────────────────────────────────────────
@@ -1066,6 +1214,55 @@ class AppLocalizations {
       'downloadAll': 'Descargar todo',
       'nFiles': '{n} archivos',
       'noTextAvailable': 'Sin contenido de texto disponible.',
+      // Shared UI / task & evidence
+      'switchToListView': 'Cambiar a vista de lista',
+      'refresh': 'Actualizar',
+      'noTaskName': '(sin nombre)',
+      'dragToChangeStatus': 'Arrastra para cambiar estado',
+      'failedToCreateTask': 'Error al crear tarea',
+      'describeStepsHint': 'Describe los pasos para completar esta tarea…',
+      'selectSessionToViewTasks': 'Selecciona una sesión de flujo de trabajo arriba para ver las tareas',
+      'noWorkflowSessionsFound': 'No se encontraron sesiones de flujo activas para este cliente',
+      'reviewingLabel': 'Revisando…',
+      'reviewEvidence': 'Revisar evidencia',
+      'couldNotOpenFile': 'No se pudo abrir el archivo',
+      'downloadFailed': 'Error al descargar',
+      'noContentAvailable': 'Sin contenido disponible.',
+      'contentsLabel': 'Contenido',
+      'remove': 'Eliminar',
+      'assignedToLabel': 'Asignado a',
+      'evidenceLabel': 'Evidencia',
+      'noEvidenceAttachedUpload': 'Sin evidencia adjunta aún. Sube archivos arriba.',
+      'noEvidenceAttached': 'Sin evidencia adjunta.',
+      'saveStatus': 'Guardar estado',
+      'onlyChangeStatusIfAssigned': 'Solo puedes cambiar el estado si estás asignado a esta tarea.',
+      'evidenceSufficiency': 'Suficiencia de evidencia',
+      'statusUpdateFailed': 'Error al actualizar estado',
+      'failedToSave': 'Error al guardar',
+      'evidenceReviewFailed': 'Error al revisar evidencia',
+      'workflowLabel': 'Flujo de trabajo',
+      'pleaseAnswerBeforeContinuing': 'Por favor responde antes de continuar.',
+      'evidenceRequiredBeforeContinuing': 'Por favor sube al menos un archivo de evidencia antes de continuar.',
+      'nextHintYN': 'Presiona S para Sí o N para No.',
+      'uploadFailed': 'Error al subir',
+      'uploadingPercent': 'Subiendo {pct}%…',
+      'noEvidenceUploadedYet': 'Sin evidencia subida aún.',
+      'evidenceMayBeRequired': 'Es posible que se requiera evidencia para esta pregunta.',
+      'typeAnswerHint': 'Escribe tu respuesta…',
+      'enterANumber': 'Ingresa un número',
+      'requestTimedOut': 'Tiempo de solicitud agotado',
+      'answeredLabel': 'Respondido',
+      'completionLabel': 'Completado',
+      'aiAnalyzingResponses': 'La IA está analizando tus respuestas…',
+      'identifyingComplianceGaps': 'Identificando brechas y generando tareas…',
+      'tasksCreatedCount': 'Se crearon {n} tareas de cumplimiento.',
+      'noComplianceGapsFound': 'No se encontraron brechas de cumplimiento.',
+      'reviewTasksInBoard': 'Revisa las tareas en el tablero Kanban.',
+      'allRequirementsMet': 'Se cumplen todos los requisitos.',
+      'noQuestionsFound': 'No se encontraron preguntas para "{name}".',
+      'removeFromOrg': '¿Eliminar a {name} de esta organización?',
+      'couldNotOpenZip': 'No se pudo abrir el archivo ZIP descargado.',
+      'couldNotLoadFile': 'No se pudo cargar el archivo',
     },
 
     // ── French ───────────────────────────────────────────────────────────────
@@ -1317,6 +1514,55 @@ class AppLocalizations {
       'downloadAll': 'Tout télécharger',
       'nFiles': '{n} fichiers',
       'noTextAvailable': 'Aucun contenu textuel disponible.',
+      // Shared UI / task & evidence
+      'switchToListView': 'Passer à la vue liste',
+      'refresh': 'Actualiser',
+      'noTaskName': '(sans nom)',
+      'dragToChangeStatus': 'Glisser pour changer le statut',
+      'failedToCreateTask': 'Échec de la création de la tâche',
+      'describeStepsHint': 'Décrivez les étapes pour accomplir cette tâche…',
+      'selectSessionToViewTasks': 'Sélectionnez une session de flux ci-dessus pour voir les tâches',
+      'noWorkflowSessionsFound': 'Aucune session de flux active trouvée pour ce client',
+      'reviewingLabel': 'Révision…',
+      'reviewEvidence': 'Réviser les preuves',
+      'couldNotOpenFile': 'Impossible d\'ouvrir le fichier',
+      'downloadFailed': 'Échec du téléchargement',
+      'noContentAvailable': 'Aucun contenu disponible.',
+      'contentsLabel': 'Contenu',
+      'remove': 'Supprimer',
+      'assignedToLabel': 'Assigné à',
+      'evidenceLabel': 'Preuves',
+      'noEvidenceAttachedUpload': 'Aucune preuve jointe. Téléversez des fichiers ci-dessus.',
+      'noEvidenceAttached': 'Aucune preuve jointe.',
+      'saveStatus': 'Enregistrer le statut',
+      'onlyChangeStatusIfAssigned': 'Vous ne pouvez changer le statut que si cette tâche vous est assignée.',
+      'evidenceSufficiency': 'Suffisance des preuves',
+      'statusUpdateFailed': 'Échec de la mise à jour du statut',
+      'failedToSave': 'Échec de l\'enregistrement',
+      'evidenceReviewFailed': 'Échec de la révision des preuves',
+      'workflowLabel': 'Flux de travail',
+      'pleaseAnswerBeforeContinuing': 'Veuillez répondre avant de continuer.',
+      'evidenceRequiredBeforeContinuing': 'Veuillez télécharger au moins un fichier de preuve avant de continuer.',
+      'nextHintYN': 'Appuyez sur O pour Oui ou N pour Non.',
+      'uploadFailed': 'Échec du téléversement',
+      'uploadingPercent': 'Téléversement {pct}%…',
+      'noEvidenceUploadedYet': 'Aucune preuve téléversée pour le moment.',
+      'evidenceMayBeRequired': 'Des preuves peuvent être requises pour cette question.',
+      'typeAnswerHint': 'Saisissez votre réponse…',
+      'enterANumber': 'Entrez un nombre',
+      'requestTimedOut': 'Délai de la requête dépassé',
+      'answeredLabel': 'Répondu',
+      'completionLabel': 'Complétion',
+      'aiAnalyzingResponses': 'L\'IA analyse vos réponses…',
+      'identifyingComplianceGaps': 'Identification des lacunes et génération des tâches…',
+      'tasksCreatedCount': '{n} tâches de conformité créées.',
+      'noComplianceGapsFound': 'Aucune lacune de conformité trouvée.',
+      'reviewTasksInBoard': 'Révisez les tâches dans le tableau Kanban.',
+      'allRequirementsMet': 'Toutes les exigences sont satisfaites.',
+      'noQuestionsFound': 'Aucune question trouvée pour « {name} ».',
+      'removeFromOrg': 'Retirer {name} de cette organisation ?',
+      'couldNotOpenZip': 'Impossible d\'ouvrir le fichier ZIP téléchargé.',
+      'couldNotLoadFile': 'Impossible de charger le fichier',
     },
 
     // ── Russian ──────────────────────────────────────────────────────────────
@@ -1568,6 +1814,55 @@ class AppLocalizations {
       'downloadAll': 'Скачать всё',
       'nFiles': '{n} файлов',
       'noTextAvailable': 'Текстовое содержимое недоступно.',
+      // Shared UI / task & evidence
+      'switchToListView': 'Переключить на список',
+      'refresh': 'Обновить',
+      'noTaskName': '(без имени)',
+      'dragToChangeStatus': 'Перетащите для смены статуса',
+      'failedToCreateTask': 'Не удалось создать задачу',
+      'describeStepsHint': 'Опишите шаги для выполнения задачи…',
+      'selectSessionToViewTasks': 'Выберите сессию рабочего процесса выше для просмотра задач',
+      'noWorkflowSessionsFound': 'Активных сессий рабочего процесса для этого клиента не найдено',
+      'reviewingLabel': 'Проверяется…',
+      'reviewEvidence': 'Проверить доказательства',
+      'couldNotOpenFile': 'Не удалось открыть файл',
+      'downloadFailed': 'Ошибка загрузки',
+      'noContentAvailable': 'Содержимое недоступно.',
+      'contentsLabel': 'Содержимое',
+      'remove': 'Удалить',
+      'assignedToLabel': 'Назначено',
+      'evidenceLabel': 'Доказательства',
+      'noEvidenceAttachedUpload': 'Доказательства ещё не прикреплены. Загрузите файлы выше.',
+      'noEvidenceAttached': 'Доказательства не прикреплены.',
+      'saveStatus': 'Сохранить статус',
+      'onlyChangeStatusIfAssigned': 'Изменить статус можно только если задача назначена вам.',
+      'evidenceSufficiency': 'Достаточность доказательств',
+      'statusUpdateFailed': 'Ошибка обновления статуса',
+      'failedToSave': 'Ошибка сохранения',
+      'evidenceReviewFailed': 'Ошибка проверки доказательств',
+      'workflowLabel': 'Рабочий процесс',
+      'pleaseAnswerBeforeContinuing': 'Пожалуйста, ответьте перед продолжением.',
+      'evidenceRequiredBeforeContinuing': 'Пожалуйста, загрузите хотя бы один файл доказательства перед продолжением.',
+      'nextHintYN': 'Нажмите Д для Да или Н для Нет.',
+      'uploadFailed': 'Ошибка загрузки',
+      'uploadingPercent': 'Загрузка {pct}%…',
+      'noEvidenceUploadedYet': 'Доказательства ещё не загружены.',
+      'evidenceMayBeRequired': 'Для этого вопроса могут потребоваться доказательства.',
+      'typeAnswerHint': 'Введите ваш ответ…',
+      'enterANumber': 'Введите число',
+      'requestTimedOut': 'Время ожидания истекло',
+      'answeredLabel': 'Отвечено',
+      'completionLabel': 'Выполнение',
+      'aiAnalyzingResponses': 'ИИ анализирует ваши ответы…',
+      'identifyingComplianceGaps': 'Выявление пробелов и создание задач…',
+      'tasksCreatedCount': 'Создано {n} задач соответствия.',
+      'noComplianceGapsFound': 'Пробелов соответствия не найдено.',
+      'reviewTasksInBoard': 'Просмотрите задачи на канбан-доске.',
+      'allRequirementsMet': 'Все требования выполнены.',
+      'noQuestionsFound': 'Вопросы для «{name}» не найдены.',
+      'removeFromOrg': 'Удалить {name} из организации?',
+      'couldNotOpenZip': 'Не удалось открыть скачанный ZIP-файл.',
+      'couldNotLoadFile': 'Не удалось загрузить файл',
     },
   };
 }
