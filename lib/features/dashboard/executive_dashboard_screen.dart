@@ -824,21 +824,99 @@ class _CategoryBreakdown extends ConsumerWidget {
     return AppColors.warning;
   }
 
-  /// Icon for a known category name.
+  /// Icon for a known category name — matches keywords in all 5 supported languages
+  /// (EN / HE / ES / FR / RU) so the icon is correct regardless of customer locale.
   static IconData _categoryIcon(String cat) {
     final c = cat.toLowerCase();
-    if (c.contains('govern') || c.contains('legal')) return Icons.gavel_outlined;
-    if (c.contains('access') || c.contains('identity')) return Icons.lock_outline;
-    if (c.contains('backup') || c.contains('recovery')) return Icons.backup_outlined;
-    if (c.contains('network')) return Icons.lan_outlined;
-    if (c.contains('incident')) return Icons.crisis_alert_outlined;
-    if (c.contains('physical')) return Icons.security_outlined;
-    if (c.contains('risk')) return Icons.assessment_outlined;
-    if (c.contains('third') || c.contains('vendor')) return Icons.handshake_outlined;
-    if (c.contains('audit') || c.contains('monitor')) return Icons.fact_check_outlined;
-    if (c.contains('training') || c.contains('awareness')) return Icons.school_outlined;
-    if (c.contains('data') || c.contains('protection')) return Icons.shield_outlined;
+
+    // Govern & legal
+    if (c.contains('govern') || c.contains('legal') ||
+        c.contains('ממשל') || c.contains('משפט') ||
+        c.contains('gobierno') || c.contains('juridique') ||
+        c.contains('gouvernance') || c.contains('право')) {
+      return Icons.gavel_outlined;
+    }
+    // Access control
+    if (c.contains('access') || c.contains('identity') ||
+        c.contains('גישה') ||
+        c.contains('acceso') || c.contains('accès') ||
+        c.contains('доступа')) {
+      return Icons.lock_outline;
+    }
+    // Data protection
+    if (c.contains('data') || c.contains('protection') ||
+        c.contains('מידע') || c.contains('הגנת') ||
+        c.contains('datos') || c.contains('protección') ||
+        c.contains('données') ||
+        c.contains('данных')) {
+      return Icons.shield_outlined;
+    }
+    // Backup & recovery
+    if (c.contains('backup') || c.contains('recovery') ||
+        c.contains('גיבוי') || c.contains('שחזור') ||
+        c.contains('respaldo') || c.contains('recuperación') ||
+        c.contains('sauvegarde') || c.contains('récupération') ||
+        c.contains('резервное') || c.contains('восстановление')) {
+      return Icons.backup_outlined;
+    }
+    // Incident response
+    if (c.contains('incident') ||
+        c.contains('אירוע') || c.contains('תגובה') ||
+        c.contains('incidente') || c.contains('respuesta') ||
+        c.contains('incidents') || c.contains('réponse') ||
+        c.contains('инцидент') || c.contains('реагирование')) {
+      return Icons.crisis_alert_outlined;
+    }
+    // Network security
+    if (c.contains('network') ||
+        c.contains('רשת') ||
+        c.contains('red') ||
+        c.contains('réseau') ||
+        c.contains('сетевая')) {
+      return Icons.lan_outlined;
+    }
+    // Physical security
+    if (c.contains('physical') ||
+        c.contains('פיזי') ||
+        c.contains('física') ||
+        c.contains('physique') ||
+        c.contains('физическая')) {
+      return Icons.security_outlined;
+    }
+    // Risk management (check before generic 'risk' / 'ניהול' overlap)
+    if (c.contains('risk manag') || c.contains('gestión de riesgo') ||
+        c.contains('gestion des risque') ||
+        c.contains('ניהול סיכון') ||
+        c.contains('управление риск')) {
+      return Icons.assessment_outlined;
+    }
+    // Third-party management
+    if (c.contains('third') || c.contains('vendor') ||
+        c.contains('צד שלישי') || c.contains('שלישי') ||
+        c.contains('terceros') ||
+        c.contains('tiers') ||
+        c.contains('третьими')) {
+      return Icons.handshake_outlined;
+    }
+    // Audit & monitoring
+    if (c.contains('audit') || c.contains('monitor') ||
+        c.contains('ביקורת') || c.contains('ניטור') ||
+        c.contains('auditoría') || c.contains('monitoreo') ||
+        c.contains('surveillance') ||
+        c.contains('аудит') || c.contains('мониторинг')) {
+      return Icons.fact_check_outlined;
+    }
+    // Training & awareness
+    if (c.contains('training') || c.contains('awareness') ||
+        c.contains('הכשרה') || c.contains('מודעות') ||
+        c.contains('formación') || c.contains('concienciación') ||
+        c.contains('formation') || c.contains('sensibilisation') ||
+        c.contains('обучение') || c.contains('осведомлённость')) {
+      return Icons.school_outlined;
+    }
+    // Endpoint
     if (c.contains('endpoint')) return Icons.devices_outlined;
+
     return Icons.category_outlined;
   }
 

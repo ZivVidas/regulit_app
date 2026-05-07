@@ -1522,6 +1522,7 @@ class _EvidencePanelState extends State<_EvidencePanel> {
     final bytes = picked.bytes;
     if (bytes == null || bytes.isEmpty) return;
 
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _uploading = true;
       _analyzing = false;
@@ -1556,7 +1557,7 @@ class _EvidencePanelState extends State<_EvidencePanel> {
         imageDescription: data['imageDescription'] as String?,
       );
     } catch (e) {
-      if (mounted) setState(() => _uploadError = 'Upload failed. Please try again.');
+      if (mounted) setState(() => _uploadError = l10n.uploadFailedRetry);
     } finally {
       if (mounted) setState(() { _uploading = false; _analyzing = false; });
     }
@@ -3004,7 +3005,8 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
   }
 
   Future<void> _runAnalysis() async {
-    final dio = ref.read(dioProvider);
+    final dio  = ref.read(dioProvider);
+    final l10n = AppLocalizations.of(context);
 
     // LLM gap analysis can take 1-3 minutes (loads docs + calls GPT-4o).
     // On Flutter Web, BrowserHttpClientAdapter uses connectTimeout as the
@@ -3038,7 +3040,7 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
         } else if (e.type == DioExceptionType.connectionTimeout ||
                    e.type == DioExceptionType.receiveTimeout ||
                    e.type == DioExceptionType.sendTimeout) {
-          msg = 'The request timed out. The analysis may still be running — please try again in a moment.';
+          msg = l10n.analysisTimedOut;
         } else {
           msg = e.message ?? 'Unknown error';
         }

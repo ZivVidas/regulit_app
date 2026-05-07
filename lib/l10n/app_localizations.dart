@@ -340,12 +340,14 @@ class AppLocalizations {
   String get evidenceRequiredBeforeContinuing => _t('evidenceRequiredBeforeContinuing');
   String get nextHintYN                 => _t('nextHintYN');
   String get uploadFailed               => _t('uploadFailed');
+  String get uploadFailedRetry          => _t('uploadFailedRetry');
   String uploadingPercent(int pct)      => _t('uploadingPercent').replaceFirst('{pct}', '$pct');
   String get noEvidenceUploadedYet      => _t('noEvidenceUploadedYet');
   String get evidenceMayBeRequired      => _t('evidenceMayBeRequired');
   String get typeAnswerHint             => _t('typeAnswerHint');
   String get enterANumber               => _t('enterANumber');
   String get requestTimedOut            => _t('requestTimedOut');
+  String get analysisTimedOut           => _t('analysisTimedOut');
   String get answeredLabel              => _t('answeredLabel');
   String get completionLabel            => _t('completionLabel');
   String get aiAnalyzingResponses       => _t('aiAnalyzingResponses');
@@ -655,12 +657,14 @@ class AppLocalizations {
       'evidenceRequiredBeforeContinuing': 'Please upload at least one evidence file before continuing.',
       'nextHintYN': 'Press Y for Yes or N for No.',
       'uploadFailed': 'Upload failed',
+      'uploadFailedRetry': 'Upload failed. Please try again.',
       'uploadingPercent': 'Uploading {pct}%…',
       'noEvidenceUploadedYet': 'No evidence uploaded yet.',
       'evidenceMayBeRequired': 'Evidence may be required for this question.',
       'typeAnswerHint': 'Type your answer…',
       'enterANumber': 'Enter a number',
       'requestTimedOut': 'Request timed out',
+      'analysisTimedOut': 'The request timed out. The analysis may still be running — please try again in a moment.',
       'answeredLabel': 'Answered',
       'completionLabel': 'Completion',
       'aiAnalyzingResponses': 'AI is analyzing your responses…',
@@ -960,12 +964,14 @@ class AppLocalizations {
       'evidenceRequiredBeforeContinuing': 'אנא העלה לפחות קובץ ראיה אחד לפני שממשיכים.',
       'nextHintYN': 'לחץ כ לכן או ל ללאו.',
       'uploadFailed': 'ההעלאה נכשלה',
+      'uploadFailedRetry': 'ההעלאה נכשלה. אנא נסה שנית.',
       'uploadingPercent': 'מעלה {pct}%…',
       'noEvidenceUploadedYet': 'לא הועלו ראיות עדיין.',
       'evidenceMayBeRequired': 'ייתכן שנדרשות ראיות לשאלה זו.',
       'typeAnswerHint': 'הקלד את תשובתך…',
       'enterANumber': 'הזן מספר',
       'requestTimedOut': 'הבקשה פגה',
+      'analysisTimedOut': 'הבקשה פגה. הניתוח עשוי להמשיך לפעול — אנא נסה שנית בעוד רגע.',
       'answeredLabel': 'נענה',
       'completionLabel': 'השלמה',
       'aiAnalyzingResponses': 'AI מנתח את תשובותיך…',
@@ -1265,12 +1271,14 @@ class AppLocalizations {
       'evidenceRequiredBeforeContinuing': 'Por favor sube al menos un archivo de evidencia antes de continuar.',
       'nextHintYN': 'Presiona S para Sí o N para No.',
       'uploadFailed': 'Error al subir',
+      'uploadFailedRetry': 'Error al subir. Por favor, inténtalo de nuevo.',
       'uploadingPercent': 'Subiendo {pct}%…',
       'noEvidenceUploadedYet': 'Sin evidencia subida aún.',
       'evidenceMayBeRequired': 'Es posible que se requiera evidencia para esta pregunta.',
       'typeAnswerHint': 'Escribe tu respuesta…',
       'enterANumber': 'Ingresa un número',
       'requestTimedOut': 'Tiempo de solicitud agotado',
+      'analysisTimedOut': 'La solicitud expiró. El análisis puede seguir ejecutándose — inténtalo de nuevo en un momento.',
       'answeredLabel': 'Respondido',
       'completionLabel': 'Completado',
       'aiAnalyzingResponses': 'La IA está analizando tus respuestas…',
@@ -1570,12 +1578,14 @@ class AppLocalizations {
       'evidenceRequiredBeforeContinuing': 'Veuillez télécharger au moins un fichier de preuve avant de continuer.',
       'nextHintYN': 'Appuyez sur O pour Oui ou N pour Non.',
       'uploadFailed': 'Échec du téléversement',
+      'uploadFailedRetry': 'Échec du téléversement. Veuillez réessayer.',
       'uploadingPercent': 'Téléversement {pct}%…',
       'noEvidenceUploadedYet': 'Aucune preuve téléversée pour le moment.',
       'evidenceMayBeRequired': 'Des preuves peuvent être requises pour cette question.',
       'typeAnswerHint': 'Saisissez votre réponse…',
       'enterANumber': 'Entrez un nombre',
       'requestTimedOut': 'Délai de la requête dépassé',
+      'analysisTimedOut': 'La requête a expiré. L\'analyse est peut-être encore en cours — veuillez réessayer dans un instant.',
       'answeredLabel': 'Répondu',
       'completionLabel': 'Complétion',
       'aiAnalyzingResponses': 'L\'IA analyse vos réponses…',
@@ -1875,12 +1885,14 @@ class AppLocalizations {
       'evidenceRequiredBeforeContinuing': 'Пожалуйста, загрузите хотя бы один файл доказательства перед продолжением.',
       'nextHintYN': 'Нажмите Д для Да или Н для Нет.',
       'uploadFailed': 'Ошибка загрузки',
+      'uploadFailedRetry': 'Ошибка загрузки. Пожалуйста, попробуйте ещё раз.',
       'uploadingPercent': 'Загрузка {pct}%…',
       'noEvidenceUploadedYet': 'Доказательства ещё не загружены.',
       'evidenceMayBeRequired': 'Для этого вопроса могут потребоваться доказательства.',
       'typeAnswerHint': 'Введите ваш ответ…',
       'enterANumber': 'Введите число',
       'requestTimedOut': 'Время ожидания истекло',
+      'analysisTimedOut': 'Время ожидания истекло. Анализ может ещё выполняться — повторите попытку через мгновение.',
       'answeredLabel': 'Отвечено',
       'completionLabel': 'Выполнение',
       'aiAnalyzingResponses': 'ИИ анализирует ваши ответы…',
