@@ -265,6 +265,11 @@ class AppLocalizations {
   // metric cards
   String get totalExposure              => _t('totalExposure');
   String get complianceScore            => _t('complianceScore');
+  String get regulatoryExposure         => _t('regulatoryExposure');
+  String get lowRisk                    => _t('lowRisk');
+  String get mediumRisk                 => _t('mediumRisk');
+  String get highRisk                   => _t('highRisk');
+  String riskEliminated(String amount)  => _t('riskEliminated').replaceFirst('{amount}', amount);
   String get openTasksLabel             => _t('openTasksLabel');
   String get tasksClosedLabel           => _t('tasksClosedLabel');
   String get runAnalysisToPopulate      => _t('runAnalysisToPopulate');
@@ -581,6 +586,11 @@ class AppLocalizations {
       'selectSession': 'Select a session…',
       'totalExposure': 'Total Exposure',
       'complianceScore': 'Compliance Score',
+      'regulatoryExposure': 'Regulatory Exposure',
+      'lowRisk': 'Low Risk',
+      'mediumRisk': 'Medium Risk',
+      'highRisk': 'High Risk',
+      'riskEliminated': '{amount} risk eliminated',
       'openTasksLabel': 'Open Tasks',
       'tasksClosedLabel': 'Tasks Closed',
       'runAnalysisToPopulate': 'Run analysis to populate',
@@ -881,6 +891,11 @@ class AppLocalizations {
       'selectSession': 'בחר פגישה…',
       'totalExposure': 'סה"כ חשיפה',
       'complianceScore': 'ציון ציות',
+      'regulatoryExposure': 'חשיפה רגולטורית',
+      'lowRisk': 'סיכון נמוך',
+      'mediumRisk': 'סיכון בינוני',
+      'highRisk': 'סיכון גבוה',
+      'riskEliminated': '{amount} סיכון הוסר',
       'openTasksLabel': 'משימות פתוחות',
       'tasksClosedLabel': 'משימות סגורות',
       'runAnalysisToPopulate': 'הפעל ניתוח כדי למלא',
@@ -1181,6 +1196,11 @@ class AppLocalizations {
       'selectSession': 'Seleccionar sesión…',
       'totalExposure': 'Exposición total',
       'complianceScore': 'Puntuación de cumplimiento',
+      'regulatoryExposure': 'Exposición regulatoria',
+      'lowRisk': 'Riesgo bajo',
+      'mediumRisk': 'Riesgo medio',
+      'highRisk': 'Riesgo alto',
+      'riskEliminated': '{amount} de riesgo eliminado',
       'openTasksLabel': 'Tareas abiertas',
       'tasksClosedLabel': 'Tareas cerradas',
       'runAnalysisToPopulate': 'Ejecutar análisis para rellenar',
@@ -1481,6 +1501,11 @@ class AppLocalizations {
       'selectSession': 'Sélectionner une session…',
       'totalExposure': 'Exposition totale',
       'complianceScore': 'Score de conformité',
+      'regulatoryExposure': 'Exposition réglementaire',
+      'lowRisk': 'Risque faible',
+      'mediumRisk': 'Risque moyen',
+      'highRisk': 'Risque élevé',
+      'riskEliminated': '{amount} de risque éliminé',
       'openTasksLabel': 'Tâches ouvertes',
       'tasksClosedLabel': 'Tâches fermées',
       'runAnalysisToPopulate': 'Lancer une analyse pour remplir',
@@ -1781,6 +1806,11 @@ class AppLocalizations {
       'selectSession': 'Выбрать сессию…',
       'totalExposure': 'Общая экспозиция',
       'complianceScore': 'Оценка соответствия',
+      'regulatoryExposure': 'Регуляторная экспозиция',
+      'lowRisk': 'Низкий риск',
+      'mediumRisk': 'Средний риск',
+      'highRisk': 'Высокий риск',
+      'riskEliminated': '{amount} риска устранено',
       'openTasksLabel': 'Открытые задачи',
       'tasksClosedLabel': 'Закрытые задачи',
       'runAnalysisToPopulate': 'Запустите анализ для заполнения',

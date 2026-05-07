@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/models/gap.dart' hide Gap; // 'Gap' widget comes from package:gap
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/currency_formatter.dart';
 
 /// Circular risk gauge for the Executive Dashboard hero section.
@@ -16,6 +17,7 @@ class RiskMeterWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final pct = (summary.totalExposureNIS / 3200000).clamp(0.0, 1.0);
     final riskColor = switch (pct) {
       < 0.3  => AppColors.success,
@@ -23,9 +25,9 @@ class RiskMeterWidget extends StatelessWidget {
       _      => AppColors.danger,
     };
     final riskLabel = switch (pct) {
-      < 0.3  => 'Low Risk',
-      < 0.6  => 'Medium Risk',
-      _      => 'High Risk',
+      < 0.3  => l10n.lowRisk,
+      < 0.6  => l10n.mediumRisk,
+      _      => l10n.highRisk,
     };
 
     return Card(
@@ -33,7 +35,7 @@ class RiskMeterWidget extends StatelessWidget {
         padding: AppSpacing.cardPadding,
         child: Column(
           children: [
-            Text('Regulatory Exposure', style: AppTextStyles.h4),
+            Text(l10n.regulatoryExposure, style: AppTextStyles.h4),
             const Gap(AppSpacing.md),
 
             // ── Gauge ────────────────────────────────────────
@@ -105,7 +107,7 @@ class RiskMeterWidget extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Compliance Score', style: AppTextStyles.caption),
+                Text(l10n.complianceScore, style: AppTextStyles.caption),
                 Text(
                   '${(summary.complianceScore * 100).round()}%',
                   style: AppTextStyles.bodySmall.copyWith(
@@ -127,7 +129,7 @@ class RiskMeterWidget extends StatelessWidget {
             ),
             const Gap(AppSpacing.sm),
             Text(
-              '${CurrencyFormatter.nisCompact(summary.resolvedExposureNIS)} risk eliminated',
+              l10n.riskEliminated(CurrencyFormatter.nisCompact(summary.resolvedExposureNIS)),
               style: AppTextStyles.caption
                   .copyWith(color: AppColors.success),
             ),
