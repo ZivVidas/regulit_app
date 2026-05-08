@@ -440,6 +440,10 @@ UserRole? _roleFromCtxMap(Map<String, dynamic>? ctx) {
 
 /// Which screen to land on after login, based on role.
 /// Null role = client user (role lives in customer context) → dashboard.
+///
+/// All client-side roles (clientAdmin, itExecutor, employee) pass through
+/// /client-home first so the workflow-check runs for every role before the
+/// user reaches their actual home screen.
 String _homeForRole(UserRole? role) {
   if (role == null) return AppRoutes.dashboard;
   switch (role) {
@@ -449,11 +453,12 @@ String _homeForRole(UserRole? role) {
     case UserRole.analyst:
       return AppRoutes.portfolio;
     case UserRole.clientAdmin:
-      return AppRoutes.clientHome;
     case UserRole.itExecutor:
-      return AppRoutes.tasks;
     case UserRole.employee:
-      return AppRoutes.taskList;
+      // Pass through the landing screen so the workflow redirect is checked
+      // regardless of role. The landing screen forwards to the correct home
+      // (dashboard / tasks / task-list) when no redirect is needed.
+      return AppRoutes.clientHome;
   }
 }
 

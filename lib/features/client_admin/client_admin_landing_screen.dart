@@ -1,17 +1,17 @@
-/// Step-21 landing screen for client_admin users.
+/// Landing screen for all client-side roles (client_admin, it_executor, employee).
 ///
-/// On mount it calls two lightweight API endpoints in parallel:
-///   1. GET /customers/{id}/workflows   → how many workflows are linked?
-///   2. GET /workflow-answers/by-customer/{id} → do any have isActive=true?
+/// Every role passes through here on workspace entry so the workflow-completion
+/// check runs before the user reaches their actual home screen.
 ///
-/// Decision logic
-/// ──────────────
-///   • 0 workflows  or  2+ workflows  →  go to /dashboard  (normal hub)
-///   • exactly 1 workflow:
-///       – has an is_active session  →  workflow is filled  →  /dashboard
-///       – no is_active session      →  not yet filled:
-///             * in-progress session exists  → continue it (go to answer screen)
-///             * no session at all           → create a new one, then go to it
+/// On mount it calls GET /customers/{id}/workflow-check, which returns:
+///   • { redirectToWorkflow: false }
+///       → customer already completed at least one workflow
+///       → forward to the role-appropriate home (dashboard / tasks / task-list)
+///
+///   • { redirectToWorkflow: true, sessionId, workflowId, workflowName }
+///       → customer has never completed any workflow
+///       – sessionId non-null  → continue the most recent in-progress session
+///       – sessionId null      → create a new session via POST /workflow-answers
 ///
 /// The screen shows only a full-screen loading spinner; it's invisible to the
 /// user on fast connections.
@@ -46,68 +46,57 @@ class _ClientAdminLandingState
     final ctx = ref.read(customerContextProvider);
     final customerId = ctx?['customerId'] as String?;
 
+    // Determine the role-appropriate home for this user so we know where to
+    // forward them when no workflow redirect is needed.
+    final role = (ctx?['role'] as String?) ?? '';
+    final home = switch (role) {
+      'it_executor' => AppRoutes.tasks,
+      'employee'    => AppRoutes.taskList,
+      _             => AppRoutes.dashboard, // client_admin or unknown
+    };
+
     if (customerId == null || !mounted) {
-      _go(AppRoutes.dashboard);
+      _go(home);
       return;
     }
 
     try {
       final dio = ref.read(dioProvider);
 
-      final results = await Future.wait([
-        dio.get<List<dynamic>>('/customers/$customerId/workflows'),
-        dio.get<List<dynamic>>('/workflow-answers/by-customer/$customerId'),
-      ]);
+      // Single endpoint — backend checks whether the customer has any evaluated
+      // workflow (workflow_answers_evaluation row). If not, it returns the first
+      // workflow that still needs filling.
+      final res = await dio.get<Map<String, dynamic>>(
+        '/customers/$customerId/workflow-check',
+      );
 
       if (!mounted) return;
 
-      final workflows =
-          (results[0].data ?? []).cast<Map<String, dynamic>>();
-      final sessions =
-          (results[1].data ?? []).cast<Map<String, dynamic>>();
+      final data = res.data!;
 
-      // Only intervene when exactly 1 workflow is assigned
-      if (workflows.length != 1) {
-        _go(AppRoutes.dashboard);
+      // Customer already completed at least one workflow → normal home screen.
+      if (data['redirectToWorkflow'] != true) {
+        _go(home);
         return;
       }
 
-      final wf = workflows.first;
-      final workflowId = wf['workflowId'] as String;
-      final workflowName = wf['workflowName'] as String? ?? '';
+      // No completed workflow yet → redirect to fill-in.
+      final workflowId   = data['workflowId']   as String;
+      final workflowName = data['workflowName'] as String? ?? '';
+      final existingId   = data['sessionId']    as String?;
 
-      // Sessions belonging to this workflow, newest first
-      final wfSessions = sessions
-          .where((s) => s['workflowId'] == workflowId)
-          .toList()
-        ..sort((a, b) {
-          final ad = DateTime.tryParse(a['dateModified'] as String? ?? '') ??
-              DateTime(0);
-          final bd = DateTime.tryParse(b['dateModified'] as String? ?? '') ??
-              DateTime(0);
-          return bd.compareTo(ad);
-        });
-
-      // If there is already a completed (active) session → go to dashboard
-      final hasCompleted = wfSessions.any((s) => s['isActive'] == true);
-      if (hasCompleted) {
-        _go(AppRoutes.dashboard);
-        return;
-      }
-
-      // No completed session — navigate the user to fill the workflow.
       String sessionId;
-      if (wfSessions.isNotEmpty) {
-        // Continue the most recently modified in-progress session
-        sessionId = wfSessions.first['id'] as String;
+      if (existingId != null) {
+        // Continue the most recent in-progress session.
+        sessionId = existingId;
       } else {
-        // Create a brand-new session
-        final res = await dio.post<Map<String, dynamic>>(
+        // No session exists yet — create one.
+        final created = await dio.post<Map<String, dynamic>>(
           '/workflow-answers',
           data: {'workflowId': workflowId, 'customerId': customerId},
         );
         if (!mounted) return;
-        sessionId = res.data!['id'] as String;
+        sessionId = created.data!['id'] as String;
       }
 
       context.goNamed(
@@ -116,7 +105,7 @@ class _ClientAdminLandingState
         queryParameters: {'workflowName': workflowName},
       );
     } catch (_) {
-      if (mounted) _go(AppRoutes.dashboard);
+      if (mounted) _go(home);
     }
   }
 
