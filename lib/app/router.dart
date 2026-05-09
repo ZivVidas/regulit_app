@@ -137,7 +137,24 @@ GoRouter router(RouterRef ref) {
           AppRoutes.clientUsers,
         ];
 
-        if (ctxRole == UserRole.employee) {
+        if (ctxRole == UserRole.clientAdmin) {
+          // client_admin menu routes require a completed analysis.
+          // Use ref.read (not ref.watch) so this check never causes a router
+          // rebuild — the landing screen handles the transition explicitly.
+          const clientAdminMenuRoutes = [
+            AppRoutes.dashboard,
+            AppRoutes.tasks,
+            AppRoutes.sessionFilesNav,
+            AppRoutes.clientUsers,
+          ];
+          final hasEvaluated =
+              ref.read(clientHasEvaluatedWorkflowsProvider);
+          if (!hasEvaluated &&
+              (clientAdminMenuRoutes.contains(loc) ||
+                  loc.startsWith('/session-files/'))) {
+            return AppRoutes.clientHome;
+          }
+        } else if (ctxRole == UserRole.employee) {
           // employee: only task list screen
           if (clientAdminOnly.contains(loc) || loc == AppRoutes.tasks) {
             return AppRoutes.taskList;

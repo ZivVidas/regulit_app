@@ -50,6 +50,8 @@ class CustomerSelectScreen extends ConsumerWidget {
           // ── Auto-select when user belongs to exactly 1 customer ──
           if (customers.length == 1) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
+              ref.read(clientHasEvaluatedWorkflowsProvider.notifier).state =
+                  false;
               ref.read(customerContextProvider.notifier).state = customers[0];
             });
             return const Center(child: CircularProgressIndicator());
@@ -125,6 +127,10 @@ class CustomerSelectScreen extends ConsumerWidget {
                             itemBuilder: (context, i) => _CustomerCard(
                               data: customers[i],
                               onTap: () {
+                                ref
+                                    .read(clientHasEvaluatedWorkflowsProvider
+                                        .notifier)
+                                    .state = false;
                                 ref
                                     .read(customerContextProvider.notifier)
                                     .state = customers[i];

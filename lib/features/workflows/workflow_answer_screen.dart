@@ -14,6 +14,7 @@ import '../../core/platform/file_download.dart';
 import '../../app/router.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
+import '../../core/customer/customer_context_provider.dart';
 import '../../l10n/app_localizations.dart';
 
 // ── Palette ───────────────────────────────────────────────────
@@ -2997,40 +2998,118 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
   bool _analyzing = true;
   int? _tasksCreated;
   String? _analyzeError;
+  bool _analysisPending = false; // true = LLM running in background, response already received
+
+  Timer? _pollTimer;     // polls /analyze-status while _analysisPending is true
+  int   _pollCount = 0;  // counts polls; stops after _kMaxPolls
+
+  // 5 s × 72 polls = 6 minutes maximum wait before giving up.
+  static const _kPollInterval = Duration(seconds: 5);
+  static const _kMaxPolls     = 72;
 
   @override
   void initState() {
     super.initState();
-    _runAnalysis();
+    // Defer to post-frame so inherited widgets (AppLocalizations) are available.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _runAnalysis();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Start polling GET /analyze-status every 5 seconds until analysis completes
+  /// or the 6-minute timeout is reached.
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollCount = 0;
+    _pollTimer = Timer.periodic(_kPollInterval, (_) async {
+      _pollCount++;
+      if (!mounted) {
+        _pollTimer?.cancel();
+        return;
+      }
+      // Timeout: give up after _kMaxPolls attempts (~6 minutes)
+      if (_pollCount >= _kMaxPolls) {
+        _pollTimer?.cancel();
+        if (mounted) {
+          final l10n = AppLocalizations.of(context);
+          setState(() {
+            _analysisPending = false;
+            _analyzeError    = l10n.analysisTimedOut;
+          });
+        }
+        return;
+      }
+      try {
+        final dio = ref.read(dioProvider);
+        final res = await dio.get<Map<String, dynamic>>(
+          '/workflow-answers/${widget.sessionId}/analyze-status',
+        );
+        final pending = res.data?['pending'] as bool? ?? true;
+        if (!pending && mounted) {
+          _pollTimer?.cancel();
+          final failed  = res.data?['failed']  as bool? ?? false;
+          final created = res.data?['tasksCreated'] as int? ?? 0;
+          if (failed) {
+            final l10n = AppLocalizations.of(context);
+            setState(() {
+              _analysisPending = false;
+              _analyzeError    = l10n.analysisTimedOut;
+            });
+          } else {
+            setState(() {
+              _analysisPending = false;
+              _tasksCreated    = created;
+            });
+            _unlockNav();
+          }
+        }
+      } catch (_) {
+        // Silently ignore transient poll errors — keep polling.
+      }
+    });
+  }
+
+  /// Called as soon as analysis is confirmed complete (evaluation row exists).
+  /// Unlocks the nav menu so the client_admin sees the sidebar buttons
+  /// immediately — without waiting for them to click "Go to Dashboard".
+  void _unlockNav() {
+    ref.read(clientHasEvaluatedWorkflowsProvider.notifier).state = true;
+    final cid =
+        ref.read(customerContextProvider)?['customerId'] as String?;
+    if (cid != null) ref.invalidate(clientNavEnabledProvider(cid));
   }
 
   Future<void> _runAnalysis() async {
-    final dio  = ref.read(dioProvider);
-    final l10n = AppLocalizations.of(context);
+    final dio = ref.read(dioProvider);
 
-    // LLM gap analysis can take 1-3 minutes (loads docs + calls GPT-4o).
-    // On Flutter Web, BrowserHttpClientAdapter uses connectTimeout as the
-    // overall XHR timeout — per-request Options.receiveTimeout is ignored.
-    // We temporarily widen both timeouts and restore them in finally.
+    // The analyze endpoint returns immediately (background task).
     final origConnect = dio.options.connectTimeout;
     final origReceive = dio.options.receiveTimeout;
-    dio.options.connectTimeout = const Duration(minutes: 4);
-    dio.options.receiveTimeout  = const Duration(minutes: 4);
+    dio.options.connectTimeout = const Duration(seconds: 15);
+    dio.options.receiveTimeout  = const Duration(seconds: 15);
 
     try {
       final res = await dio.post<Map<String, dynamic>>(
         '/workflow-answers/${widget.sessionId}/analyze',
       );
-      final created = res.data?['tasksCreated'] as int? ?? 0;
+      final created  = res.data?['tasksCreated']   as int?  ?? 0;
+      final pending  = res.data?['analysisPending'] as bool? ?? false;
       if (mounted) {
         setState(() {
-          _analyzing = false;
-          _tasksCreated = created;
+          _analyzing       = false;
+          _analysisPending = pending;
+          _tasksCreated    = pending ? null : created;
         });
+        if (!pending) _unlockNav();
+        if (pending) _startPolling();
       }
     } catch (e) {
-      // Non-critical: show done screen even if analysis fails.
-      // Extract a short human-readable message from DioException.
       String msg;
       if (e is DioException) {
         final data = e.response?.data;
@@ -3040,7 +3119,9 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
         } else if (e.type == DioExceptionType.connectionTimeout ||
                    e.type == DioExceptionType.receiveTimeout ||
                    e.type == DioExceptionType.sendTimeout) {
-          msg = l10n.analysisTimedOut;
+          msg = mounted
+              ? AppLocalizations.of(context).analysisTimedOut
+              : 'Analysis timed out';
         } else {
           msg = e.message ?? 'Unknown error';
         }
@@ -3054,7 +3135,6 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
         });
       }
     } finally {
-      // Always restore the original timeouts
       dio.options.connectTimeout = origConnect;
       dio.options.receiveTimeout  = origReceive;
     }
@@ -3153,10 +3233,12 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
                               _runAnalysis();
                             },
                           )
-                        : _TasksCreatedPanel(
-                            key: const ValueKey('done'),
-                            tasksCreated: _tasksCreated ?? 0,
-                          ),
+                        : _analysisPending
+                            ? _AnalysisPendingPanel(key: const ValueKey('pending'))
+                            : _TasksCreatedPanel(
+                                key: const ValueKey('done'),
+                                tasksCreated: _tasksCreated ?? 0,
+                              ),
               ),
 
               const Gap(28),
@@ -3170,7 +3252,20 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                 ),
-                onPressed: () => context.go(AppRoutes.dashboard),
+                onPressed: () {
+                  // Instant unlock via the StateProvider (shell fallback).
+                  ref
+                      .read(clientHasEvaluatedWorkflowsProvider.notifier)
+                      .state = true;
+                  // Also invalidate the cached FutureProvider so the shell
+                  // re-fetches the authoritative server result.
+                  final ctx = ref.read(customerContextProvider);
+                  final cid = ctx?['customerId'] as String?;
+                  if (cid != null) {
+                    ref.invalidate(clientNavEnabledProvider(cid));
+                  }
+                  context.go(AppRoutes.dashboard);
+                },
                 icon: const Icon(Icons.dashboard_outlined, size: 18),
                 label: Text(AppLocalizations.of(context).goToDashboard,
                     style: const TextStyle(
@@ -3232,6 +3327,15 @@ class _AnalyzingPanel extends StatelessWidget {
                     fontSize: 11,
                   ),
                 ),
+                const Gap(4),
+                Text(
+                  AppLocalizations.of(context).analysisRunsInBackground,
+                  style: const TextStyle(
+                    color: Color(0xFF8B5CF6),
+                    fontSize: 10,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ],
             ),
           ),
@@ -3244,6 +3348,123 @@ class _AnalyzingPanel extends StatelessWidget {
           duration: 1800.ms,
           color: Colors.white.withOpacity(0.4),
         );
+  }
+}
+
+// ── Analysis pending panel (background task started) ───────────
+class _AnalysisPendingPanel extends StatefulWidget {
+  const _AnalysisPendingPanel({super.key});
+
+  @override
+  State<_AnalysisPendingPanel> createState() => _AnalysisPendingPanelState();
+}
+
+class _AnalysisPendingPanelState extends State<_AnalysisPendingPanel>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _pulse;
+  bool _hourglassTop = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          setState(() => _hourglassTop = !_hourglassTop);
+          _ctrl.reverse();
+        } else if (status == AnimationStatus.dismissed) {
+          setState(() => _hourglassTop = !_hourglassTop);
+          _ctrl.forward();
+        }
+      });
+    _pulse = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        final t = _pulse.value;
+        final borderColor = Color.lerp(
+          const Color(0xFFBAE6FD),
+          const Color(0xFF0284C7),
+          t,
+        )!;
+        final bgColor = Color.lerp(
+          const Color(0xFFF0F9FF),
+          const Color(0xFFE0F2FE),
+          t,
+        )!;
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0284C7).withOpacity(0.15 * t),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: Row(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: Icon(
+              _hourglassTop
+                  ? Icons.hourglass_top_rounded
+                  : Icons.hourglass_bottom_rounded,
+              key: ValueKey(_hourglassTop),
+              color: const Color(0xFF0284C7),
+              size: 26,
+            ),
+          ),
+          const Gap(14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.analysisRunningInBackground,
+                  style: const TextStyle(
+                    color: Color(0xFF0369A1),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Gap(2),
+                Text(
+                  l10n.tasksWillAppearInDashboard,
+                  style: const TextStyle(
+                    color: Color(0xFF0284C7),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

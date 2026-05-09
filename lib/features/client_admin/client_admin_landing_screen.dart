@@ -73,9 +73,15 @@ class _ClientAdminLandingState
       if (!mounted) return;
 
       final data = res.data!;
+      final hasEvaluated = data['redirectToWorkflow'] != true;
+
+      // Tell the nav shell whether to show the full menu.
+      // Written to a separate provider so the router is NOT triggered.
+      ref.read(clientHasEvaluatedWorkflowsProvider.notifier).state =
+          hasEvaluated;
 
       // Customer already completed at least one workflow → normal home screen.
-      if (data['redirectToWorkflow'] != true) {
+      if (hasEvaluated) {
         _go(home);
         return;
       }

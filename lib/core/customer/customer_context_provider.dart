@@ -24,6 +24,9 @@ class CustomerContextNotifier extends StateNotifier<Map<String, dynamic>?> {
       (prev, next) {
         if (prev != next) {
           state = null;
+          // Also reset the workflow-evaluation flag so the next user/workspace
+          // starts clean.
+          _ref.read(clientHasEvaluatedWorkflowsProvider.notifier).state = false;
         }
       },
     );
@@ -40,6 +43,39 @@ final customerContextProvider =
     StateNotifierProvider<CustomerContextNotifier, Map<String, dynamic>?>(
   (ref) => CustomerContextNotifier(ref),
 );
+
+// ── Has the current customer at least one analyzed workflow session? ──────────
+//
+// Stored separately from customerContextProvider so that writing to it does
+// NOT trigger a router rebuild (the router only watches customerContextProvider
+// and authStateProvider).  Writing to customerContextProvider caused an
+// infinite loop: update → router rebuilds → new GoRouter → screen remounts →
+// update → …
+//
+// Reset to false on logout / user switch (see CustomerContextNotifier above)
+// and whenever the user selects a new workspace (see customer_select_screen).
+final clientHasEvaluatedWorkflowsProvider = StateProvider<bool>((ref) => false);
+
+// ── Direct nav-gate check (used by AppShell) ─────────────────────────────────
+//
+// Calls workflow-check for a given customerId and returns true when
+// redirectToWorkflow == false (i.e. at least one evaluated session exists).
+//
+// Using FutureProvider.family (non-autoDispose) so the result is cached per
+// customerId across rebuilds — no flicker, no extra round-trips on re-render.
+// Invalidate via ref.invalidate(clientNavEnabledProvider(customerId)) after a
+// workflow is completed to force a fresh check.
+final clientNavEnabledProvider =
+    FutureProvider.autoDispose.family<bool, String>((ref, customerId) async {
+  try {
+    final dio = ref.read(dioProvider);
+    final res = await dio
+        .get<Map<String, dynamic>>('/customers/$customerId/workflow-check');
+    return res.data?['redirectToWorkflow'] != true;
+  } catch (_) {
+    return false;
+  }
+});
 
 // ── All customers this user is linked to ─────────────────────────────────────
 /// Used by /select-customer to list workspaces and to auto-select when the

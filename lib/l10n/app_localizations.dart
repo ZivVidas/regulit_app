@@ -352,6 +352,9 @@ class AppLocalizations {
   String get completionLabel            => _t('completionLabel');
   String get aiAnalyzingResponses       => _t('aiAnalyzingResponses');
   String get identifyingComplianceGaps  => _t('identifyingComplianceGaps');
+  String get analysisRunsInBackground   => _t('analysisRunsInBackground');
+  String get analysisRunningInBackground => _t('analysisRunningInBackground');
+  String get tasksWillAppearInDashboard  => _t('tasksWillAppearInDashboard');
   String tasksCreatedCount(int n)       => _t('tasksCreatedCount').replaceFirst('{n}', '$n');
   String get noComplianceGapsFound      => _t('noComplianceGapsFound');
   String get reviewTasksInBoard         => _t('reviewTasksInBoard');
@@ -669,6 +672,9 @@ class AppLocalizations {
       'completionLabel': 'Completion',
       'aiAnalyzingResponses': 'AI is analyzing your responses…',
       'identifyingComplianceGaps': 'Identifying compliance gaps and generating tasks…',
+      'analysisRunsInBackground': 'This may take a few minutes. You can go to the dashboard in the meantime.',
+      'analysisRunningInBackground': 'Analysis is running in the background',
+      'tasksWillAppearInDashboard': 'Your compliance tasks will appear in the dashboard in a few minutes.',
       'tasksCreatedCount': '{n} compliance tasks created.',
       'noComplianceGapsFound': 'No compliance gaps found.',
       'reviewTasksInBoard': 'Review the tasks in the Kanban board.',
@@ -976,6 +982,9 @@ class AppLocalizations {
       'completionLabel': 'השלמה',
       'aiAnalyzingResponses': 'AI מנתח את תשובותיך…',
       'identifyingComplianceGaps': 'מזהה פערי ציות ומייצר משימות…',
+      'analysisRunsInBackground': 'זה עשוי לקחת כמה דקות. ניתן לעבור ללוח הבקרה בינתיים.',
+      'analysisRunningInBackground': 'הניתוח רץ ברקע',
+      'tasksWillAppearInDashboard': 'משימות הציות שלך יופיעו בלוח הבקרה בעוד מספר דקות.',
       'tasksCreatedCount': 'נוצרו {n} משימות ציות.',
       'noComplianceGapsFound': 'לא נמצאו פערי ציות.',
       'reviewTasksInBoard': 'סקור את המשימות בלוח הקנבן.',
@@ -1283,6 +1292,9 @@ class AppLocalizations {
       'completionLabel': 'Completado',
       'aiAnalyzingResponses': 'La IA está analizando tus respuestas…',
       'identifyingComplianceGaps': 'Identificando brechas y generando tareas…',
+      'analysisRunsInBackground': 'Esto puede tardar unos minutos. Puedes ir al panel mientras tanto.',
+      'analysisRunningInBackground': 'El análisis se está ejecutando en segundo plano',
+      'tasksWillAppearInDashboard': 'Tus tareas de cumplimiento aparecerán en el panel en unos minutos.',
       'tasksCreatedCount': 'Se crearon {n} tareas de cumplimiento.',
       'noComplianceGapsFound': 'No se encontraron brechas de cumplimiento.',
       'reviewTasksInBoard': 'Revisa las tareas en el tablero Kanban.',
@@ -1590,6 +1602,9 @@ class AppLocalizations {
       'completionLabel': 'Complétion',
       'aiAnalyzingResponses': 'L\'IA analyse vos réponses…',
       'identifyingComplianceGaps': 'Identification des lacunes et génération des tâches…',
+      'analysisRunsInBackground': 'Cela peut prendre quelques minutes. Vous pouvez aller au tableau de bord en attendant.',
+      'analysisRunningInBackground': 'L\'analyse s\'exécute en arrière-plan',
+      'tasksWillAppearInDashboard': 'Vos tâches de conformité apparaîtront dans le tableau de bord dans quelques minutes.',
       'tasksCreatedCount': '{n} tâches de conformité créées.',
       'noComplianceGapsFound': 'Aucune lacune de conformité trouvée.',
       'reviewTasksInBoard': 'Révisez les tâches dans le tableau Kanban.',
@@ -1897,6 +1912,9 @@ class AppLocalizations {
       'completionLabel': 'Выполнение',
       'aiAnalyzingResponses': 'ИИ анализирует ваши ответы…',
       'identifyingComplianceGaps': 'Выявление пробелов и создание задач…',
+      'analysisRunsInBackground': 'Это может занять несколько минут. Вы можете перейти на панель управления.',
+      'analysisRunningInBackground': 'Анализ выполняется в фоновом режиме',
+      'tasksWillAppearInDashboard': 'Ваши задачи соответствия появятся на панели управления через несколько минут.',
       'tasksCreatedCount': 'Создано {n} задач соответствия.',
       'noComplianceGapsFound': 'Пробелов соответствия не найдено.',
       'reviewTasksInBoard': 'Просмотрите задачи на канбан-доске.',

@@ -21,13 +21,29 @@ class AppShell extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     if (user == null) return child;
 
-    // For client users (role == null), derive effective role from customer context
+    // Customer context role always takes priority over the user's system role.
+    // A user may have a system role (e.g. employee) that is overridden when they
+    // operate inside a customer workspace as client_admin or it_executor.
     final customerCtx = ref.watch(customerContextProvider);
-    final effectiveRole = user.role ?? _roleFromContext(customerCtx);
+    final effectiveRole = _roleFromContext(customerCtx) ?? user.role;
+
+    // For clientAdmin: ask the server directly (FutureProvider, cached per
+    // customerId). Falls back to the StateProvider value while loading so the
+    // "Go to Dashboard" button can give instant feedback.
+    bool hasEvaluatedWorkflows = ref.watch(clientHasEvaluatedWorkflowsProvider);
+    if (effectiveRole == UserRole.clientAdmin) {
+      final customerId = customerCtx?['customerId'] as String?;
+      if (customerId != null) {
+        hasEvaluatedWorkflows =
+            ref.watch(clientNavEnabledProvider(customerId)).valueOrNull ??
+                hasEvaluatedWorkflows;
+      }
+    }
 
     final l10n = AppLocalizations.of(context);
     final isDesktop = MediaQuery.sizeOf(context).width >= 700;
-    final navItems = _navItemsForRole(effectiveRole, l10n);
+    final navItems = _navItemsForRole(effectiveRole, l10n,
+        hasEvaluatedWorkflows: hasEvaluatedWorkflows);
     final currentIndex = _selectedIndex(context, navItems);
 
     if (isDesktop) {
@@ -391,7 +407,11 @@ class _NavItem {
 }
 
 /// Null role = customer context not yet resolved → show minimal nav.
-List<_NavItem> _navItemsForRole(UserRole? role, AppLocalizations l10n) {
+List<_NavItem> _navItemsForRole(
+  UserRole? role,
+  AppLocalizations l10n, {
+  bool hasEvaluatedWorkflows = false,
+}) {
   if (role == null) {
     return [];
   }
@@ -414,6 +434,9 @@ List<_NavItem> _navItemsForRole(UserRole? role, AppLocalizations l10n) {
         _NavItem(icon: Icons.bar_chart_outlined,     label: l10n.navReports,       route: '/reports'),
       ];
     case UserRole.clientAdmin:
+      // Show the full menu only after the customer has at least one
+      // analyzed workflow-answer session (workflow_answers_evaluation row exists).
+      if (!hasEvaluatedWorkflows) return [];
       return [
         _NavItem(icon: Icons.dashboard_outlined,    label: l10n.navDashboard,     route: AppRoutes.dashboard),
         _NavItem(icon: Icons.view_kanban_outlined,  label: l10n.navKanban,        route: AppRoutes.tasks),
