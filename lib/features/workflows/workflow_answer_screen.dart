@@ -576,9 +576,28 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
               '/evidence-review',
               data: {'type': 'answer', 'elementId': answerId},
             );
-            final decision = (reviewRes.data?['decision'] as String? ?? '').toUpperCase();
+            final d = reviewRes.data ?? const <String, dynamic>{};
+            final decision   = (d['decision'] as String? ?? '').toUpperCase();
+            final summary    = d['summary']                  as String?;
+            final reason     = d['reason']                   as String? ?? '';
+            final pcntg      = (d['evidenceSufficiencyPcntg'] as num?)?.toInt();
+
+            // Persist review results into local _LocalAns so the evidence
+            // panel can show the decision badge / summary box when the user
+            // navigates back to this question.
+            final updatedAns = Map<String, _LocalAns>.from(state.answers);
+            final cur = updatedAns[qId];
+            if (cur != null) {
+              updatedAns[qId] = cur.copyWith(
+                evidenceDecision:        decision,
+                evidenceSummary:         summary,
+                evidenceReason:          reason,
+                evidenceSufficiencyPcntg: pcntg,
+              );
+              state = state.copyWith(answers: updatedAns);
+            }
+
             if (decision != 'APPROVE') {
-              final reason = reviewRes.data?['reason'] as String? ?? '';
               state = state.copyWith(
                 saving: false,
                 error: reason.isNotEmpty ? reason : 'Evidence is insufficient.',
