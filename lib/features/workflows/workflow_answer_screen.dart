@@ -59,6 +59,9 @@ class _LocalAns {
   String answerText;
   Set<String> pickedOptionIds;
   int? evidenceSufficiencyPcntg; // loaded from server, shown as badge
+  String? evidenceDecision;      // 'APPROVE' | 'INSUFFICIENT'
+  String? evidenceSummary;       // LLM short summary
+  String? evidenceReason;        // LLM reasoning
   String? answerId;              // server answer ID — used to load evidence files
 
   _LocalAns({
@@ -66,6 +69,9 @@ class _LocalAns {
     this.answerText = '',
     Set<String>? pickedOptionIds,
     this.evidenceSufficiencyPcntg,
+    this.evidenceDecision,
+    this.evidenceSummary,
+    this.evidenceReason,
     this.answerId,
   }) : pickedOptionIds = pickedOptionIds ?? {};
 
@@ -81,6 +87,10 @@ class _LocalAns {
     Set<String>? pickedOptionIds,
     int? evidenceSufficiencyPcntg,
     bool clearSufficiency = false,
+    String? evidenceDecision,
+    String? evidenceSummary,
+    String? evidenceReason,
+    bool clearReview = false,
     String? answerId,
   }) =>
       _LocalAns(
@@ -88,9 +98,18 @@ class _LocalAns {
             clearAnswerNumber ? null : (answerNumber ?? this.answerNumber),
         answerText: answerText ?? this.answerText,
         pickedOptionIds: pickedOptionIds ?? Set.from(this.pickedOptionIds),
-        evidenceSufficiencyPcntg: clearSufficiency
+        evidenceSufficiencyPcntg: (clearSufficiency || clearReview)
             ? null
             : (evidenceSufficiencyPcntg ?? this.evidenceSufficiencyPcntg),
+        evidenceDecision: clearReview
+            ? null
+            : (evidenceDecision ?? this.evidenceDecision),
+        evidenceSummary: clearReview
+            ? null
+            : (evidenceSummary ?? this.evidenceSummary),
+        evidenceReason: clearReview
+            ? null
+            : (evidenceReason ?? this.evidenceReason),
         answerId: answerId ?? this.answerId,
       );
 }
@@ -271,6 +290,9 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
           pickedOptionIds:
               Set<String>.from(m['pickedOptionIds'] as List? ?? []),
           evidenceSufficiencyPcntg: m['evidenceSufficiencyPcntg'] as int?,
+          evidenceDecision:         m['evidenceDecision']         as String?,
+          evidenceSummary:          m['evidenceSummary']          as String?,
+          evidenceReason:           m['evidenceReason']           as String?,
           answerId: m['id'] as String?,
         );
       }
@@ -348,18 +370,33 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
 
   // ── Answer setters ──────────────────────────────────────────
 
+  /// Returns a new serverAnsweredIds set without [questionId] — so the
+  /// evidence guard re-runs when the user changes a previously-saved answer.
+  Set<String> _invalidateServerAnswered(String questionId) =>
+      Set<String>.from(state.serverAnsweredIds)..remove(questionId);
+
   void setAnswerNumber(String questionId, int? v) {
     final cur = state.answers[questionId] ?? _LocalAns();
+    if (cur.answerNumber == v) return; // no real change
     state = state.copyWith(
-      answers: {...state.answers, questionId: cur.copyWith(answerNumber: v)},
+      answers: {
+        ...state.answers,
+        questionId: cur.copyWith(answerNumber: v, clearReview: true),
+      },
+      serverAnsweredIds: _invalidateServerAnswered(questionId),
       error: null,
     );
   }
 
   void setAnswerText(String questionId, String v) {
     final cur = state.answers[questionId] ?? _LocalAns();
+    if (cur.answerText == v) return;
     state = state.copyWith(
-      answers: {...state.answers, questionId: cur.copyWith(answerText: v)},
+      answers: {
+        ...state.answers,
+        questionId: cur.copyWith(answerText: v, clearReview: true),
+      },
+      serverAnsweredIds: _invalidateServerAnswered(questionId),
       error: null,
     );
   }
@@ -375,19 +412,26 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
     state = state.copyWith(
       answers: {
         ...state.answers,
-        questionId: cur.copyWith(pickedOptionIds: newPicked),
+        questionId:
+            cur.copyWith(pickedOptionIds: newPicked, clearReview: true),
       },
+      serverAnsweredIds: _invalidateServerAnswered(questionId),
       error: null,
     );
   }
 
   void setOnePickOption(String questionId, String optId) {
     final cur = state.answers[questionId] ?? _LocalAns();
+    if (cur.pickedOptionIds.length == 1 && cur.pickedOptionIds.contains(optId)) return;
     state = state.copyWith(
       answers: {
         ...state.answers,
-        questionId: cur.copyWith(pickedOptionIds: {optId}, answerText: optId),
+        questionId: cur.copyWith(
+            pickedOptionIds: {optId},
+            answerText: optId,
+            clearReview: true),
       },
+      serverAnsweredIds: _invalidateServerAnswered(questionId),
       error: null,
     );
   }
@@ -443,6 +487,7 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
     final evidCond = q['evidenceCondition'] as String?;
     if (reqsEv &&
         _evidenceConditionMet(evidCond, local) &&
+        local.evidenceDecision?.toUpperCase() != 'APPROVE' &&
         !state.serverAnsweredIds.contains(qId)) {
       final hasFiles = state.pendingFiles[qId]?.isNotEmpty ?? false;
       if (!hasFiles) {
@@ -497,7 +542,14 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
         if (updatedAnswers.containsKey(qId)) {
           updatedAnswers[qId] = updatedAnswers[qId]!.copyWith(answerId: answerId);
         }
-        state = state.copyWith(answers: updatedAnswers);
+        // Mark the question as server-answered so canAdvance / evidence guard
+        // recognise it next time the user navigates back.
+        final updatedServerAnswered =
+            Set<String>.from(state.serverAnsweredIds)..add(qId);
+        state = state.copyWith(
+          answers: updatedAnswers,
+          serverAnsweredIds: updatedServerAnswered,
+        );
 
         final toLink = List<_PendingFile>.from(state.pendingFiles[qId] ?? []);
         for (final f in toLink) {
@@ -515,6 +567,27 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
           final newPending = Map<String, List<_PendingFile>>.from(state.pendingFiles)
             ..remove(qId);
           state = state.copyWith(pendingFiles: newPending);
+
+          // ── 3b. Evidence review (blocking) ─────────────────────────────────
+          // Files were just linked — run the review synchronously so we can
+          // block navigation if the evidence is insufficient.
+          try {
+            final reviewRes = await _dio.post<Map<String, dynamic>>(
+              '/evidence-review',
+              data: {'type': 'answer', 'elementId': answerId},
+            );
+            final decision = (reviewRes.data?['decision'] as String? ?? '').toUpperCase();
+            if (decision != 'APPROVE') {
+              final reason = reviewRes.data?['reason'] as String? ?? '';
+              state = state.copyWith(
+                saving: false,
+                error: reason.isNotEmpty ? reason : 'Evidence is insufficient.',
+              );
+              return;
+            }
+          } catch (_) {
+            // If the review call itself fails, allow navigation (non-blocking).
+          }
         }
       }
 
@@ -846,6 +919,8 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
                   // Evidence only required when the condition matches the answer.
                   final evidCond = q['evidenceCondition'] as String?;
                   if (!_evidenceConditionMet(evidCond, localAns)) return true;
+                  // LLM already approved this evidence → allow advance.
+                  if (localAns.evidenceDecision?.toUpperCase() == 'APPROVE') return true;
                   // Already answered server-side → evidence was previously provided.
                   if (s.serverAnsweredIds.contains(qId)) return true;
                   // New answer → must have at least one pending file.
@@ -1357,6 +1432,8 @@ class _QuestionView extends StatelessWidget {
                       alreadyAnswered:  alreadyAnswered,
                       notifier:         notifier,
                       sufficiencyPcntg: localAns.evidenceSufficiencyPcntg,
+                      reviewDecision:   localAns.evidenceDecision,
+                      reviewSummary:    localAns.evidenceSummary,
                     )
                         .animate()
                         .fadeIn(duration: 300.ms)
@@ -1454,6 +1531,8 @@ class _EvidencePanel extends StatefulWidget {
   final bool alreadyAnswered;
   final _AnsNotifier notifier;
   final int? sufficiencyPcntg;
+  final String? reviewDecision;
+  final String? reviewSummary;
 
   const _EvidencePanel({
     required this.sessionId,
@@ -1464,6 +1543,8 @@ class _EvidencePanel extends StatefulWidget {
     required this.alreadyAnswered,
     required this.notifier,
     this.sufficiencyPcntg,
+    this.reviewDecision,
+    this.reviewSummary,
   });
 
   @override
@@ -1485,17 +1566,30 @@ class _EvidencePanelState extends State<_EvidencePanel> {
   @override
   void initState() {
     super.initState();
-    _sufficiency = widget.sufficiencyPcntg;
+    _sufficiency    = widget.sufficiencyPcntg;
+    _reviewDecision = widget.reviewDecision;
+    _reviewSummary  = widget.reviewSummary;
   }
 
   @override
   void didUpdateWidget(_EvidencePanel old) {
     super.didUpdateWidget(old);
     if (old.answerId != widget.answerId) {
-      setState(() { _filesFetched = false; _serverFiles = []; });
+      setState(() {
+        _filesFetched = false;
+        _serverFiles = [];
+        _reviewDecision = widget.reviewDecision;
+        _reviewSummary  = widget.reviewSummary;
+      });
     }
     if (old.sufficiencyPcntg != widget.sufficiencyPcntg) {
       setState(() => _sufficiency = widget.sufficiencyPcntg);
+    }
+    if (old.reviewDecision != widget.reviewDecision) {
+      setState(() => _reviewDecision = widget.reviewDecision);
+    }
+    if (old.reviewSummary != widget.reviewSummary) {
+      setState(() => _reviewSummary = widget.reviewSummary);
     }
   }
 
@@ -3153,13 +3247,14 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+    return SingleChildScrollView(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
             children: [
               // ── Animated checkmark ─────────────────────────────
               Container(
@@ -3275,6 +3370,7 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
           ),
         ),
       ),
+    ),
     );
   }
 }
