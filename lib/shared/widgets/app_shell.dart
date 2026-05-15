@@ -10,7 +10,7 @@ import '../../core/models/user.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Responsive app shell:
-/// - Web / desktop  → NavigationRail (left sidebar, icon-only, 56px)
+/// - Web / desktop  → expanded sidebar (160px, labels + groups)
 /// - Mobile          → BottomNavigationBar
 class AppShell extends ConsumerWidget {
   final Widget child;
