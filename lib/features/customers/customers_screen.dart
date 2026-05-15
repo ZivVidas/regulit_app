@@ -9,6 +9,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
+import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/page_header.dart';
 import 'customer_users_panel.dart';
 import 'customer_workflows_panel.dart';
 
@@ -147,10 +150,38 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── Vivid gradient header ──────────────────────────
-          _GradientHeader(
-            searchCtrl: _searchCtrl,
-            onSearch: _search,
-            onAdd: () => _showCustomerForm(context, null),
+          PageHeader(
+            title: 'Customers',
+            variant: PageHeaderVariant.secondaryGradient,
+            leading: const Icon(Icons.business_rounded,
+                color: Colors.white, size: 28),
+            actions: [
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add_business_outlined, size: 16),
+                label: const Text('Add Customer',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13)),
+                onPressed: () => _showCustomerForm(context, null),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.orange,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          ),
+          // ── Search bar ────────────────────────────────────
+          Padding(
+            padding:
+                const EdgeInsets.fromLTRB(20, 12, 20, 4),
+            child: _SearchBar(
+              searchCtrl: _searchCtrl,
+              onSearch: _search,
+            ),
           ),
 
           // ── Count row ─────────────────────────────────────
@@ -176,10 +207,21 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                             ref.read(_customersProvider.notifier).load(),
                       )
                     : s.items.isEmpty
-                        ? _EmptyView(
-                            message: s.search.isEmpty
-                                ? 'No customers yet. Add the first one.'
-                                : 'No customers match "${s.search}".',
+                        ? EmptyState(
+                            icon: Icons.business_center_rounded,
+                            title: s.search.isEmpty
+                                ? 'No customers yet'
+                                : 'No customers found',
+                            description: s.search.isEmpty
+                                ? 'Add your first customer to get started.'
+                                : 'No customers match "${s.search}". '
+                                    'Try a different search term or add a new customer.',
+                            action: ElevatedButton.icon(
+                              icon: const Icon(Icons.add_rounded, size: 18),
+                              label: const Text('Add Customer'),
+                              onPressed: () =>
+                                  _showCustomerForm(context, null),
+                            ),
                           )
                         : ListView.builder(
                             padding:
@@ -292,143 +334,55 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   }
 }
 
-// ── Gradient header with search ───────────────────────────────
-class _GradientHeader extends StatefulWidget {
+// ── Search bar ────────────────────────────────────────────────
+class _SearchBar extends StatefulWidget {
   final TextEditingController searchCtrl;
   final ValueChanged<String> onSearch;
-  final VoidCallback onAdd;
 
-  const _GradientHeader({
+  const _SearchBar({
     required this.searchCtrl,
     required this.onSearch,
-    required this.onAdd,
   });
 
   @override
-  State<_GradientHeader> createState() => _GradientHeaderState();
+  State<_SearchBar> createState() => _SearchBarState();
 }
 
-class _GradientHeaderState extends State<_GradientHeader> {
+class _SearchBarState extends State<_SearchBar> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_kGrad0, _kGrad1],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+    return TextField(
+      controller: widget.searchCtrl,
+      onChanged: (v) {
+        setState(() {});
+        widget.onSearch(v);
+      },
+      decoration: InputDecoration(
+        hintText: 'Search by name, city, or industry…',
+        prefixIcon: const Icon(Icons.search_rounded, size: 18),
+        suffixIcon: widget.searchCtrl.text.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear, size: 16),
+                onPressed: () {
+                  widget.searchCtrl.clear();
+                  widget.onSearch('');
+                  setState(() {});
+                },
+              )
+            : null,
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppColors.border),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x40EA580C),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title row
-              Row(
-                children: [
-                  const Icon(Icons.business_rounded,
-                      color: Colors.white, size: 28),
-                  const Gap(10),
-                  Text(
-                    'Customers',
-                    style: AppTextStyles.h2.copyWith(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  _AnimatedAddButton(onPressed: widget.onAdd),
-                ],
-              ),
-              const Gap(14),
-              // Search bar on gradient
-              Container(
-                height: 42,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: Colors.white.withOpacity(0.30)),
-                ),
-                child: TextField(
-                  controller: widget.searchCtrl,
-                  onChanged: (v) {
-                    setState(() {});
-                    widget.onSearch(v);
-                  },
-                  style: const TextStyle(
-                      color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: 'Search by name, city, or industry…',
-                    hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.65),
-                        fontSize: 14),
-                    prefixIcon: Icon(Icons.search_rounded,
-                        color: Colors.white.withOpacity(0.8),
-                        size: 18),
-                    suffixIcon: widget.searchCtrl.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.clear,
-                                color: Colors.white.withOpacity(0.8),
-                                size: 16),
-                            onPressed: () {
-                              widget.searchCtrl.clear();
-                              widget.onSearch('');
-                              setState(() {});
-                            },
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppColors.border),
         ),
       ),
     );
-  }
-}
-
-// ── Animated Add button ───────────────────────────────────────
-class _AnimatedAddButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  const _AnimatedAddButton({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton.icon(
-      style: FilledButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: _kGrad0,
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10)),
-        elevation: 0,
-      ),
-      onPressed: onPressed,
-      icon: const Icon(Icons.add_business_outlined, size: 16),
-      label: const Text('Add Customer',
-          style:
-              TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-    )
-        .animate(onPlay: (c) => c.repeat(reverse: true))
-        .shimmer(
-            duration: 2400.ms, color: _kGrad1.withOpacity(0.35));
   }
 }
 
@@ -468,7 +422,10 @@ class _CustomerCardState extends State<_CustomerCard> {
     final name = c['name'] as String? ?? '—';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
-    return MouseRegion(
+    return AppCard(
+      variant: AppCardVariant.elevated,
+      padding: EdgeInsets.zero,
+      child: MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
@@ -655,6 +612,7 @@ class _CustomerCardState extends State<_CustomerCard> {
           ),
         ),
       ),
+    ),
     )
         // ── Staggered entry animation ─────────────────────
         .animate()
@@ -877,32 +835,7 @@ class _PageBtnState extends State<_PageBtn> {
   }
 }
 
-// ── Empty / Error ─────────────────────────────────────────────
-class _EmptyView extends StatelessWidget {
-  final String message;
-  const _EmptyView({required this.message});
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.business_outlined,
-              size: 56, color: AppColors.muted),
-          const Gap(14),
-          Text(message,
-              style:
-                  AppTextStyles.body.copyWith(color: AppColors.muted),
-              textAlign: TextAlign.center),
-        ]),
-      )
-          .animate(onPlay: (c) => c.repeat(reverse: true))
-          .scale(
-            begin: const Offset(0.97, 0.97),
-            end: const Offset(1.01, 1.01),
-            duration: 1800.ms,
-            curve: Curves.easeInOut,
-          );
-}
-
+// ── Error ─────────────────────────────────────────────────────
 class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
