@@ -74,15 +74,28 @@ class AppShell extends ConsumerWidget {
     // Mobile
     return Scaffold(
       body: child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex.clamp(0, navItems.length - 1),
-        onTap: (i) => context.go(navItems[i].route),
-        items: navItems
-            .map((item) => BottomNavigationBarItem(
-                  icon: Icon(item.icon),
-                  label: item.label,
-                ))
-            .toList(),
+      bottomNavigationBar: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x12000000),
+              blurRadius: 8,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          elevation: 0,
+          currentIndex: currentIndex.clamp(0, navItems.length - 1),
+          onTap: (i) => context.go(navItems[i].route),
+          items: navItems
+              .map((item) => BottomNavigationBarItem(
+                    icon: Icon(item.icon),
+                    label: item.label,
+                  ))
+              .toList(),
+        ),
       ),
     );
   }

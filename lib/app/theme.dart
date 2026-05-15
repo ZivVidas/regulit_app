@@ -316,12 +316,19 @@ abstract class AppTheme {
     ),
 
     // Navigation Rail (web sidebar)
-    navigationRailTheme: const NavigationRailThemeData(
+    navigationRailTheme: NavigationRailThemeData(
       backgroundColor: AppColors.blue,
-      selectedIconTheme: IconThemeData(color: AppColors.white),
-      unselectedIconTheme: IconThemeData(color: AppColors.sidebarIconInactive),
+      selectedIconTheme:
+          const IconThemeData(color: AppColors.white, size: 22),
+      unselectedIconTheme:
+          const IconThemeData(color: AppColors.sidebarIconInactive, size: 22),
       indicatorColor: AppColors.orange,
+      indicatorShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
       labelType: NavigationRailLabelType.none,
+      minWidth: 56,
+      useIndicator: true,
     ),
 
     // Bottom Nav (mobile)
