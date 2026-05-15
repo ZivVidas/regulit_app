@@ -121,39 +121,67 @@ class _DesktopSidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
     final currentLocale = ref.watch(localeProvider);
+    final l10n = AppLocalizations.of(context);
+
+    // Build nav item list with optional section labels
+    final List<Widget> navWidgets = [];
+    String? lastGroup;
+    final hasGroups = items.any((item) => item.group != null);
+
+    for (int i = 0; i < items.length; i++) {
+      final item = items[i];
+      if (hasGroups && item.group != null && item.group != lastGroup) {
+        navWidgets.add(_SidebarSectionLabel(label: item.group!));
+        lastGroup = item.group;
+      }
+      navWidgets.add(_SidebarNavItem(
+        item: item,
+        isActive: i == selectedIndex,
+        onTap: () => context.go(item.route),
+      ));
+    }
 
     return Container(
-      width: 56,
+      width: 160,
       color: AppColors.sidebarBg,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo
-          const SizedBox(height: 12),
-          _Logo(),
-          const SizedBox(height: 12),
-          const Divider(color: Colors.white12, height: 1),
-          const SizedBox(height: 8),
-
-          // Nav icons
-          ...items.asMap().entries.map((entry) {
-            final isActive = entry.key == selectedIndex;
-            return _SidebarIcon(
-              item: entry.value,
-              isActive: isActive,
-              onTap: () => context.go(entry.value.route),
-            );
-          }),
-
+          const SizedBox(height: 16),
+          // Brand row
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                Image.asset(
+                  'assets/images/newlogo.png',
+                  width: 28,
+                  height: 28,
+                  filterQuality: FilterQuality.high,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'ReguLit',
+                  style: TextStyle(
+                    fontFamily: 'Heebo',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Nav items (with optional section group labels)
+          ...navWidgets,
           const Spacer(),
-
-          // Language picker
-          _LanguagePicker(currentLocale: currentLocale),
-          const SizedBox(height: 4),
-
+          // Language picker row
+          _LanguagePickerRow(currentLocale: currentLocale),
           // Settings
-          _SidebarIcon(
+          _SidebarNavItem(
             item: _NavItem(
               icon: Icons.settings_outlined,
               label: l10n.settings,
@@ -162,21 +190,97 @@ class _DesktopSidebar extends ConsumerWidget {
             isActive: false,
             onTap: () {},
           ),
+          const SizedBox(height: 4),
+          const Divider(color: Color(0x1FFFFFFF), height: 1),
+          // User footer
+          _UserFooter(user: user, ref: ref),
           const SizedBox(height: 8),
-
-          // User avatar + logout
-          _UserAvatar(user: user, ref: ref),
-          const SizedBox(height: 12),
         ],
       ),
     );
   }
 }
 
-// ── Language Picker ───────────────────────────────────────────────────────────
-class _LanguagePicker extends ConsumerWidget {
+// ── Sidebar Nav Item ─────────────────────────────────────────────────────────
+class _SidebarNavItem extends StatelessWidget {
+  final _NavItem item;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _SidebarNavItem({
+    required this.item,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0x21FFFFFF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              item.icon,
+              size: 18,
+              color: isActive ? Colors.white : const Color(0x8CFFFFFF),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                item.label,
+                style: TextStyle(
+                  fontFamily: 'Heebo',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isActive ? Colors.white : const Color(0x8CFFFFFF),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Sidebar Section Label ────────────────────────────────────────────────────
+class _SidebarSectionLabel extends StatelessWidget {
+  final String label;
+  const _SidebarSectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      child: Text(
+        label.toUpperCase(),
+        style: const TextStyle(
+          fontFamily: 'Heebo',
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.6,
+          color: Color(0x59FFFFFF), // 35% white
+        ),
+      ),
+    );
+  }
+}
+
+// ── Language Picker Row ──────────────────────────────────────────────────────
+class _LanguagePickerRow extends ConsumerWidget {
   final Locale currentLocale;
-  const _LanguagePicker({required this.currentLocale});
+  const _LanguagePickerRow({required this.currentLocale});
 
   static const _languages = [
     (locale: Locale('en'), flag: '🇬🇧', name: 'English'),
@@ -188,106 +292,61 @@ class _LanguagePicker extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Tooltip(
-      message: 'Language / שפה',
-      preferBelow: false,
-      child: PopupMenuButton<Locale>(
-        padding: EdgeInsets.zero,
-        icon: const Icon(
-          Icons.translate,
-          size: 20,
-          color: AppColors.sidebarIconInactive,
-        ),
-        onSelected: (locale) =>
-            ref.read(localeProvider.notifier).setLocale(locale),
-        itemBuilder: (_) => _languages
-            .map(
-              (lang) => PopupMenuItem<Locale>(
-                value: lang.locale,
-                child: Row(
-                  children: [
-                    Text(lang.flag, style: const TextStyle(fontSize: 18)),
-                    const SizedBox(width: 10),
-                    Text(
-                      lang.name,
-                      style: TextStyle(
-                        fontWeight: currentLocale.languageCode ==
-                                lang.locale.languageCode
-                            ? FontWeight.w700
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
+    return PopupMenuButton<Locale>(
+      padding: EdgeInsets.zero,
+      offset: const Offset(160, 0),
+      tooltip: '',
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 9, 16, 9),
+        child: Row(
+          children: const [
+            Icon(Icons.translate, size: 18, color: Color(0x8CFFFFFF)),
+            SizedBox(width: 10),
+            Text(
+              'Language',
+              style: TextStyle(
+                fontFamily: 'Heebo',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0x8CFFFFFF),
               ),
-            )
-            .toList(),
-      ),
-    );
-  }
-}
-
-// ── Logo ─────────────────────────────────────────────────────────────────────
-class _Logo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/newlogo.png',
-      width: 36,
-      height: 36,
-      filterQuality: FilterQuality.high,
-    );
-  }
-}
-
-// ── Sidebar Icon ─────────────────────────────────────────────────────────────
-class _SidebarIcon extends StatelessWidget {
-  final _NavItem item;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _SidebarIcon({
-    required this.item,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: item.label,
-      preferBelow: false,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: 40,
-          height: 40,
-          margin: const EdgeInsets.symmetric(vertical: 3),
-          decoration: BoxDecoration(
-            color: isActive ? AppColors.orange : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            item.icon,
-            size: 20,
-            color: isActive
-                ? AppColors.white
-                : AppColors.sidebarIconInactive,
-          ),
+            ),
+          ],
         ),
       ),
+      onSelected: (locale) =>
+          ref.read(localeProvider.notifier).setLocale(locale),
+      itemBuilder: (_) => _languages
+          .map(
+            (lang) => PopupMenuItem<Locale>(
+              value: lang.locale,
+              child: Row(
+                children: [
+                  Text(lang.flag, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 10),
+                  Text(
+                    lang.name,
+                    style: TextStyle(
+                      fontWeight:
+                          currentLocale.languageCode == lang.locale.languageCode
+                              ? FontWeight.w700
+                              : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }
 
-// ── User Avatar + Logout ──────────────────────────────────────────────────────
-class _UserAvatar extends StatelessWidget {
+// ── User Footer ──────────────────────────────────────────────────────────────
+class _UserFooter extends StatelessWidget {
   final AppUser user;
   final WidgetRef ref;
-
-  const _UserAvatar({required this.user, required this.ref});
+  const _UserFooter({required this.user, required this.ref});
 
   @override
   Widget build(BuildContext context) {
@@ -297,19 +356,53 @@ class _UserAvatar extends StatelessWidget {
 
     return GestureDetector(
       onTap: () => _showLogoutMenu(context),
-      child: Tooltip(
-        message: '${user.name}\n${user.email}',
-        child: CircleAvatar(
-          radius: 16,
-          backgroundColor: AppColors.orange,
-          child: Text(
-            initials.toUpperCase(),
-            style: const TextStyle(
-              color: AppColors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 12,
+              backgroundColor: AppColors.orange,
+              child: Text(
+                initials.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    user.name,
+                    style: const TextStyle(
+                      fontFamily: 'Heebo',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    user.role?.displayName ?? '',
+                    style: const TextStyle(
+                      fontFamily: 'Heebo',
+                      fontSize: 9,
+                      color: Color(0x80FFFFFF), // 50% white
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -416,7 +509,13 @@ class _NavItem {
   final IconData icon;
   final String label;
   final String route;
-  const _NavItem({required this.icon, required this.label, required this.route});
+  final String? group;
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.route,
+    this.group,
+  });
 }
 
 /// Null role = customer context not yet resolved → show minimal nav.
@@ -425,36 +524,32 @@ List<_NavItem> _navItemsForRole(
   AppLocalizations l10n, {
   bool hasEvaluatedWorkflows = false,
 }) {
-  if (role == null) {
-    return [];
-  }
+  if (role == null) return [];
   switch (role) {
     case UserRole.regulitAdmin:
       return [
-        _NavItem(icon: Icons.people_outlined,        label: l10n.navUsers,      route: AppRoutes.users),
-        _NavItem(icon: Icons.business_outlined,      label: l10n.navCustomers,  route: AppRoutes.customers),
-        _NavItem(icon: Icons.quiz_outlined,          label: l10n.navQuizzes,    route: AppRoutes.quizzes),
-        _NavItem(icon: Icons.account_tree_outlined,  label: l10n.navWorkflows,  route: AppRoutes.workflows),
-        _NavItem(icon: Icons.smart_toy_outlined,     label: l10n.navAgents,     route: AppRoutes.agents),
-        _NavItem(icon: Icons.dashboard_rounded,      label: l10n.navAdminDash,  route: AppRoutes.adminDashboard),
+        _NavItem(icon: Icons.people_outlined,        label: l10n.navUsers,      route: AppRoutes.users,           group: 'Main'),
+        _NavItem(icon: Icons.business_outlined,      label: l10n.navCustomers,  route: AppRoutes.customers,       group: 'Main'),
+        _NavItem(icon: Icons.quiz_outlined,          label: l10n.navQuizzes,    route: AppRoutes.quizzes,         group: 'Workflows'),
+        _NavItem(icon: Icons.account_tree_outlined,  label: l10n.navWorkflows,  route: AppRoutes.workflows,       group: 'Workflows'),
+        _NavItem(icon: Icons.smart_toy_outlined,     label: l10n.navAgents,     route: AppRoutes.agents,          group: 'Workflows'),
+        _NavItem(icon: Icons.dashboard_rounded,      label: l10n.navAdminDash,  route: AppRoutes.adminDashboard,  group: 'System'),
       ];
     case UserRole.csm:
     case UserRole.analyst:
       return [
-        _NavItem(icon: Icons.business_outlined,      label: l10n.navClients,       route: AppRoutes.portfolio),
-        _NavItem(icon: Icons.check_circle_outline,   label: l10n.navEvidenceQueue, route: AppRoutes.evidenceQueue),
-        _NavItem(icon: Icons.notifications_outlined, label: l10n.navAlerts,        route: '/alerts'),
-        _NavItem(icon: Icons.bar_chart_outlined,     label: l10n.navReports,       route: '/reports'),
+        _NavItem(icon: Icons.business_outlined,      label: l10n.navClients,       route: AppRoutes.portfolio,     group: 'Clients'),
+        _NavItem(icon: Icons.check_circle_outline,   label: l10n.navEvidenceQueue, route: AppRoutes.evidenceQueue, group: 'Clients'),
+        _NavItem(icon: Icons.notifications_outlined, label: l10n.navAlerts,        route: '/alerts',               group: 'Monitoring'),
+        _NavItem(icon: Icons.bar_chart_outlined,     label: l10n.navReports,       route: '/reports',              group: 'Monitoring'),
       ];
     case UserRole.clientAdmin:
-      // Show the full menu only after the customer has at least one
-      // analyzed workflow-answer session (workflow_answers_evaluation row exists).
       if (!hasEvaluatedWorkflows) return [];
       return [
-        _NavItem(icon: Icons.dashboard_outlined,    label: l10n.navDashboard,     route: AppRoutes.dashboard),
-        _NavItem(icon: Icons.view_kanban_outlined,  label: l10n.navKanban,        route: AppRoutes.tasks),
-        _NavItem(icon: Icons.folder_copy_outlined,  label: l10n.navSessionFiles,  route: AppRoutes.sessionFilesNav),
-        _NavItem(icon: Icons.group_outlined,        label: l10n.navUsers,         route: AppRoutes.clientUsers),
+        _NavItem(icon: Icons.dashboard_outlined,   label: l10n.navDashboard,    route: AppRoutes.dashboard,       group: 'Main'),
+        _NavItem(icon: Icons.view_kanban_outlined,  label: l10n.navKanban,       route: AppRoutes.tasks,           group: 'Main'),
+        _NavItem(icon: Icons.folder_copy_outlined,  label: l10n.navSessionFiles, route: AppRoutes.sessionFilesNav, group: 'Manage'),
+        _NavItem(icon: Icons.group_outlined,        label: l10n.navUsers,        route: AppRoutes.clientUsers,     group: 'Manage'),
       ];
     case UserRole.itExecutor:
       return [
@@ -462,7 +557,6 @@ List<_NavItem> _navItemsForRole(
         _NavItem(icon: Icons.folder_copy_outlined,  label: l10n.navSessionFiles, route: AppRoutes.sessionFilesNav),
       ];
     case UserRole.employee:
-      // Step 15: task list only (default screen)
       return [
         _NavItem(icon: Icons.list_alt_outlined, label: l10n.navMyTasks, route: AppRoutes.taskList),
       ];
