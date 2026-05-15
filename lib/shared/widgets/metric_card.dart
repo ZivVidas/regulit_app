@@ -119,8 +119,7 @@ class MetricCard extends StatelessWidget {
   static const _subStyle = TextStyle(
     fontFamily: 'Heebo', fontSize: 11, color: Color(0xBFFFFFFF), // 75% white
   );
-  static const _iconColor  = Color(0xCCFFFFFF);
-  static const _trendColor = Color(0xCCFFFFFF);
+  static const _dimWhite = Color(0xCCFFFFFF); // 80% white — icons and trend text
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +142,7 @@ class MetricCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (icon != null) Icon(icon, size: 20, color: _iconColor),
+              if (icon != null) Icon(icon, size: 20, color: _dimWhite),
               if (trailing != null) trailing!,
             ],
           ),
@@ -154,7 +153,7 @@ class MetricCard extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(trend!.direction.icon, size: 14, color: _trendColor),
+                Icon(trend!.direction.icon, size: 14, color: _dimWhite),
                 const SizedBox(width: 3),
                 Text(trend!.label, style: _trendStyle),
               ],
@@ -172,6 +171,7 @@ class MetricCard extends StatelessWidget {
     final contentStack = Stack(
       clipBehavior: Clip.none,
       children: [
+        // orb first → renders behind content
         Positioned(
           top: -25,
           right: -15,

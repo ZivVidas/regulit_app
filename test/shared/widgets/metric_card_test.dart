@@ -84,6 +84,13 @@ void main() {
       expect(decoration.gradient, isNotNull);
     });
 
+    testWidgets('glow orb is wrapped in IgnorePointer', (tester) async {
+      await tester.pumpWidget(_wrap(
+        const MetricCard(label: 'Score', value: '84%'),
+      ));
+      expect(find.byType(IgnorePointer), findsAtLeastNWidgets(1));
+    });
+
     testWidgets('non-tappable card has DecoratedBox with gradient', (tester) async {
       await tester.pumpWidget(_wrap(
         const MetricCard(label: 'Score', value: '84%'),
