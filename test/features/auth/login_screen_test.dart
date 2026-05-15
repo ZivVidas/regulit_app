@@ -44,10 +44,6 @@ Widget _wrap(WidgetTester tester, {required Size size}) {
 }
 
 void main() {
-  tearDown(() {
-    // Reset view after each test.
-  });
-
   group('LoginScreen — desktop layout (≥ 700 px)', () {
     testWidgets('shows brand panel with ReguLit name and headline',
         (tester) async {
