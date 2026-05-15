@@ -551,6 +551,12 @@ class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
   bool _sent = false;
 
   @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
