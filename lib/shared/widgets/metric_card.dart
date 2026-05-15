@@ -15,18 +15,18 @@ class MetricTrend {
 }
 
 extension _MetricVariantX on MetricVariant {
-  Color get valueColor => switch (this) {
-        MetricVariant.neutral => AppColors.blue,
-        MetricVariant.success => AppColors.success,
-        MetricVariant.warning => AppColors.warning,
-        MetricVariant.danger  => AppColors.danger,
+  LinearGradient get gradient => switch (this) {
+        MetricVariant.neutral => AppGradients.primaryHeader,
+        MetricVariant.success => AppGradients.successHeader,
+        MetricVariant.warning => AppGradients.warningHeader,
+        MetricVariant.danger  => AppGradients.dangerHeader,
       };
 
-  Color get tintColor => switch (this) {
-        MetricVariant.neutral => AppSurfaces.card,
-        MetricVariant.success => AppSurfaces.successTint,
-        MetricVariant.warning => AppSurfaces.warningTint,
-        MetricVariant.danger  => AppSurfaces.dangerTint,
+  Color get shadowColor => switch (this) {
+        MetricVariant.neutral => const Color(0x400078D4),
+        MetricVariant.success => const Color(0x40107C10),
+        MetricVariant.warning => const Color(0x40CA8A04),
+        MetricVariant.danger  => const Color(0x40D13438),
       };
 }
 
@@ -36,25 +36,8 @@ extension _TrendDirectionX on TrendDirection {
         TrendDirection.down => Icons.trending_down_rounded,
         TrendDirection.flat => Icons.trending_flat_rounded,
       };
-
-  Color get color => switch (this) {
-        TrendDirection.up   => AppColors.success,
-        TrendDirection.down => AppColors.danger,
-        TrendDirection.flat => AppColors.muted,
-      };
 }
 
-/// Reusable metric card used across all dashboards.
-///
-/// ```dart
-/// MetricCard(
-///   label: 'Total Exposure',
-///   value: '₪2,400,000',
-///   variant: MetricVariant.danger,
-///   icon: Icons.warning_rounded,
-///   trend: MetricTrend(direction: TrendDirection.up, label: '+3 new gaps'),
-/// )
-/// ```
 class MetricCard extends StatelessWidget {
   final String label;
   final String value;
@@ -64,7 +47,6 @@ class MetricCard extends StatelessWidget {
   final VoidCallback? onTap;
   final IconData? icon;
   final MetricTrend? trend;
-  final bool tinted;
 
   const MetricCard({
     super.key,
@@ -76,7 +58,6 @@ class MetricCard extends StatelessWidget {
     this.onTap,
     this.icon,
     this.trend,
-    this.tinted = false,
   });
 
   factory MetricCard.currency({
@@ -123,11 +104,29 @@ class MetricCard extends StatelessWidget {
     );
   }
 
+  // All text is white-palette on gradient backgrounds.
+  static const _labelStyle = TextStyle(
+    fontFamily: 'Heebo', fontSize: 11, fontWeight: FontWeight.w700,
+    letterSpacing: 0.4, color: Color(0xB3FFFFFF), // 70% white
+  );
+  static const _valueStyle = TextStyle(
+    fontFamily: 'Heebo', fontSize: 28, fontWeight: FontWeight.w800,
+    color: Colors.white, height: 1,
+  );
+  static const _trendStyle = TextStyle(
+    fontFamily: 'Heebo', fontSize: 11, color: Color(0xCCFFFFFF), // 80% white
+  );
+  static const _subStyle = TextStyle(
+    fontFamily: 'Heebo', fontSize: 11, color: Color(0xBFFFFFFF), // 75% white
+  );
+  static const _iconColor  = Color(0xCCFFFFFF);
+  static const _trendColor = Color(0xCCFFFFFF);
+
   @override
   Widget build(BuildContext context) {
-    final bgColor = tinted ? variant.tintColor : AppSurfaces.card;
     final radius = BorderRadius.circular(AppRadius.lg);
 
+    // ── Content ──────────────────────────────────────────────
     Widget content = Padding(
       padding: AppSpacing.cardPadding,
       child: Column(
@@ -139,70 +138,104 @@ class MetricCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   label.toUpperCase(),
-                  style: AppTextStyles.label,
+                  style: _labelStyle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (icon != null)
-                Icon(icon, size: 18, color: variant.valueColor),
+              if (icon != null) Icon(icon, size: 20, color: _iconColor),
               if (trailing != null) trailing!,
             ],
           ),
           const Gap(AppSpacing.sm),
-          Text(
-            value,
-            style: AppTextStyles.metric.copyWith(color: variant.valueColor),
-          ),
+          Text(value, style: _valueStyle),
           if (trend != null) ...[
             const Gap(AppSpacing.xs),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(trend!.direction.icon,
-                    size: 14, color: trend!.direction.color),
+                Icon(trend!.direction.icon, size: 14, color: _trendColor),
                 const SizedBox(width: 3),
-                Text(
-                  trend!.label,
-                  style: AppTextStyles.caption
-                      .copyWith(color: trend!.direction.color),
-                ),
+                Text(trend!.label, style: _trendStyle),
               ],
             ),
           ],
           if (sub != null && trend == null) ...[
             const Gap(AppSpacing.xs),
-            Text(sub!, style: AppTextStyles.caption),
+            Text(sub!, style: _subStyle),
           ],
         ],
       ),
     );
 
-    return Material(
-      color: bgColor,
-      borderRadius: radius,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: radius,
-          boxShadow: AppShadows.md,
-          border: tinted
-              ? null
-              : Border.all(color: AppColors.border.withValues(alpha: 0.6)),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: radius,
-          child: ClipRRect(
-            borderRadius: radius,
-            child: content,
+    // ── Glow orb (decorative, no pointer events) ─────────────
+    final contentStack = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          top: -25,
+          right: -15,
+          child: IgnorePointer(
+            child: SizedBox(
+              width: 90,
+              height: 90,
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  color: Color(0x1AFFFFFF), // 10% white circle
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
           ),
         ),
+        content,
+      ],
+    );
+
+    final shadow = BoxShadow(
+      color: variant.shadowColor,
+      blurRadius: 20,
+      offset: const Offset(0, 4),
+    );
+
+    // ── Tappable: Ink (gradient) on Material (ink canvas) ────
+    if (onTap != null) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: [shadow],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: radius,
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: variant.gradient,
+              borderRadius: radius,
+            ),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: radius,
+              child: ClipRRect(borderRadius: radius, child: contentStack),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // ── Non-tappable: DecoratedBox with gradient ──────────────
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: variant.gradient,
+        borderRadius: radius,
+        boxShadow: [shadow],
       ),
+      child: ClipRRect(borderRadius: radius, child: contentStack),
     );
   }
 }
 
-/// Row of metric cards — responsive wrap on small screens
+/// Row of metric cards — responsive wrap on small screens.
 class MetricRow extends StatelessWidget {
   final List<MetricCard> cards;
   const MetricRow({super.key, required this.cards});
@@ -215,8 +248,7 @@ class MetricRow extends StatelessWidget {
           return Column(
             children: cards
                 .map((c) => Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: AppSpacing.md),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
                       child: SizedBox(width: double.infinity, child: c),
                     ))
                 .toList(),
