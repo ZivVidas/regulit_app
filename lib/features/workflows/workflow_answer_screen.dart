@@ -1646,8 +1646,11 @@ class _EvidencePanelState extends State<_EvidencePanel> {
 
     try {
       final dio = ref.read(dioProvider);
+      final customerId =
+          ref.read(customerContextProvider)?['customerId'] as String?;
       final formData = FormData.fromMap({
         'file': MultipartFile.fromBytes(bytes, filename: picked.name),
+        if (customerId != null) 'customer_id': customerId,
       });
       final uploadRes = await dio.post<Map<String, dynamic>>(
         '/files/upload',

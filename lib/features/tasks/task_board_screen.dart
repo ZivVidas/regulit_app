@@ -417,6 +417,22 @@ class _BoardForSession extends ConsumerWidget {
                   currentUserId: currentUserId,
                   // Drag-and-drop status change — PATCH the task then refresh.
                   onStatusChange: (task, newStatus) async {
+                    // Guard: cannot move to Approved without an APPROVE
+                    // decision on the evidence.
+                    // Exception: if the task is not required, skip the guard.
+                    if (newStatus == WorkflowTaskStatus.approved &&
+                        task.isRequired &&
+                        (task.evidenceDecision?.toUpperCase() ?? '') !=
+                            'APPROVE') {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(
+                            l10n.cannotApproveWithoutEvidenceApproval),
+                        backgroundColor: AppColors.danger,
+                        behavior: SnackBarBehavior.floating,
+                      ));
+                      ref.invalidate(sessionTasksProvider(sessionId));
+                      return;
+                    }
                     try {
                       await ref.read(dioProvider).patch<void>(
                         '/workflow-tasks/${task.id}/status',

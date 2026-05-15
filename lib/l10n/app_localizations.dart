@@ -333,6 +333,7 @@ class AppLocalizations {
   String get onlyChangeStatusIfAssigned => _t('onlyChangeStatusIfAssigned');
   String get evidenceSufficiency        => _t('evidenceSufficiency');
   String get statusUpdateFailed         => _t('statusUpdateFailed');
+  String get cannotApproveWithoutEvidenceApproval => _t('cannotApproveWithoutEvidenceApproval');
   String get failedToSave               => _t('failedToSave');
   String get evidenceReviewFailed       => _t('evidenceReviewFailed');
   String get workflowLabel              => _t('workflowLabel');
@@ -653,6 +654,7 @@ class AppLocalizations {
       'onlyChangeStatusIfAssigned': 'You can only change the status if you are assigned to this task.',
       'evidenceSufficiency': 'Evidence Sufficiency',
       'statusUpdateFailed': 'Status update failed',
+      'cannotApproveWithoutEvidenceApproval': 'Cannot approve this task: the evidence has not been approved by the reviewer.',
       'failedToSave': 'Failed to save',
       'evidenceReviewFailed': 'Evidence review failed',
       'workflowLabel': 'Workflow',
@@ -963,6 +965,7 @@ class AppLocalizations {
       'onlyChangeStatusIfAssigned': 'ניתן לשנות סטטוס רק אם המשימה מוקצית לך.',
       'evidenceSufficiency': 'מידת הראיות',
       'statusUpdateFailed': 'עדכון הסטטוס נכשל',
+      'cannotApproveWithoutEvidenceApproval': 'לא ניתן לאשר את המשימה: הראיות לא אושרו על ידי הבודק.',
       'failedToSave': 'השמירה נכשלה',
       'evidenceReviewFailed': 'בדיקת הראיות נכשלה',
       'workflowLabel': 'תהליך עבודה',
@@ -1273,6 +1276,7 @@ class AppLocalizations {
       'onlyChangeStatusIfAssigned': 'Solo puedes cambiar el estado si estás asignado a esta tarea.',
       'evidenceSufficiency': 'Suficiencia de evidencia',
       'statusUpdateFailed': 'Error al actualizar estado',
+      'cannotApproveWithoutEvidenceApproval': 'No se puede aprobar esta tarea: las pruebas no han sido aprobadas por el revisor.',
       'failedToSave': 'Error al guardar',
       'evidenceReviewFailed': 'Error al revisar evidencia',
       'workflowLabel': 'Flujo de trabajo',
@@ -1583,6 +1587,7 @@ class AppLocalizations {
       'onlyChangeStatusIfAssigned': 'Vous ne pouvez changer le statut que si cette tâche vous est assignée.',
       'evidenceSufficiency': 'Suffisance des preuves',
       'statusUpdateFailed': 'Échec de la mise à jour du statut',
+      'cannotApproveWithoutEvidenceApproval': 'Impossible d\'approuver cette tâche : les preuves n\'ont pas été approuvées par le réviseur.',
       'failedToSave': 'Échec de l\'enregistrement',
       'evidenceReviewFailed': 'Échec de la révision des preuves',
       'workflowLabel': 'Flux de travail',
@@ -1893,6 +1898,7 @@ class AppLocalizations {
       'onlyChangeStatusIfAssigned': 'Изменить статус можно только если задача назначена вам.',
       'evidenceSufficiency': 'Достаточность доказательств',
       'statusUpdateFailed': 'Ошибка обновления статуса',
+      'cannotApproveWithoutEvidenceApproval': 'Невозможно одобрить задачу: доказательства не одобрены проверяющим.',
       'failedToSave': 'Ошибка сохранения',
       'evidenceReviewFailed': 'Ошибка проверки доказательств',
       'workflowLabel': 'Рабочий процесс',

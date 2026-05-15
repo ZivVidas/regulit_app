@@ -58,6 +58,9 @@ class WorkflowTask {
   final DateTime modifiedAt;
   final int evidenceCount;
   final int? evidenceSufficiencyPcntg;
+  final String? evidenceDecision;   // 'APPROVE' | 'INSUFFICIENT'
+  final String? evidenceSummary;
+  final String? evidenceReason;
 
   const WorkflowTask({
     required this.id,
@@ -78,6 +81,9 @@ class WorkflowTask {
     required this.modifiedAt,
     this.evidenceCount = 0,
     this.evidenceSufficiencyPcntg,
+    this.evidenceDecision,
+    this.evidenceSummary,
+    this.evidenceReason,
   });
 
   WorkflowTaskStatus get status => WorkflowTaskStatus.fromId(statusId);
@@ -107,6 +113,9 @@ class WorkflowTask {
       evidenceCount: (j['evidenceCount'] as num?)?.toInt() ?? 0,
       evidenceSufficiencyPcntg:
           (j['evidenceSufficiencyPcntg'] as num?)?.toInt(),
+      evidenceDecision: j['evidenceDecision'] as String?,
+      evidenceSummary:  j['evidenceSummary']  as String?,
+      evidenceReason:   j['evidenceReason']   as String?,
     );
   }
 }

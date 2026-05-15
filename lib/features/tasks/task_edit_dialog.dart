@@ -172,9 +172,12 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
 
     try {
       final dio = ref.read(dioProvider);
+      final customerId =
+          ref.read(customerContextProvider)?['customerId'] as String?;
 
       final formData = FormData.fromMap({
         'file': MultipartFile.fromBytes(bytes, filename: picked.name),
+        if (customerId != null) 'customer_id': customerId,
       });
       final uploadRes = await dio.post<Map<String, dynamic>>(
         '/files/upload',
@@ -245,6 +248,21 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Guard: cannot move to Approved (4) without APPROVE evidence_decision.
+    // Exception: if the task is not required (is_required = false), skip the guard.
+    if (_statusId == WorkflowTaskStatus.approved.id &&
+        widget.task.isRequired &&
+        (widget.task.evidenceDecision?.toUpperCase() ?? '') != 'APPROVE') {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.cannotApproveWithoutEvidenceApproval),
+        backgroundColor: AppColors.danger,
+        behavior: SnackBarBehavior.floating,
+      ));
+      setState(() => _statusId = widget.task.statusId);
+      return;
+    }
+
     setState(() => _saving = true);
 
     try {
@@ -280,6 +298,20 @@ class _TaskEditDialogState extends ConsumerState<TaskEditDialog> {
 
   /// Saves only the status field (used in read-only mode when canChangeStatus).
   Future<void> _saveStatus() async {
+    // Guard: cannot move to Approved (4) without APPROVE evidence_decision.
+    // Exception: if the task is not required (is_required = false), skip the guard.
+    if (_statusId == WorkflowTaskStatus.approved.id &&
+        widget.task.isRequired &&
+        (widget.task.evidenceDecision?.toUpperCase() ?? '') != 'APPROVE') {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.cannotApproveWithoutEvidenceApproval),
+        backgroundColor: AppColors.danger,
+        behavior: SnackBarBehavior.floating,
+      ));
+      setState(() => _statusId = widget.task.statusId);
+      return;
+    }
+
     setState(() => _saving = true);
     try {
       final dio = ref.read(dioProvider);

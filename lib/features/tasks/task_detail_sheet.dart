@@ -16,6 +16,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
+import '../../core/customer/customer_context_provider.dart';
 import '../../core/models/workflow_task.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -83,8 +84,11 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
     setState(() { _uploading = true; _uploadProgress = 0.0; });
     try {
       final dio = ref.read(dioProvider);
+      final customerId =
+          ref.read(customerContextProvider)?['customerId'] as String?;
       final formData = FormData.fromMap({
         'file': MultipartFile.fromBytes(bytes, filename: picked.name),
+        if (customerId != null) 'customer_id': customerId,
       });
       final uploadRes = await dio.post<Map<String, dynamic>>(
         '/files/upload',
@@ -126,6 +130,25 @@ class _TaskDetailSheetState extends ConsumerState<TaskDetailSheet> {
 
   Future<void> _saveStatus() async {
     if (_statusId == widget.task.statusId) return;
+
+    // Guard: cannot move to Approved (4) unless evidence_decision == 'APPROVE'.
+    // Exception: if the task is not required (is_required = false), skip the guard.
+    if (_statusId == WorkflowTaskStatus.approved.id &&
+        widget.task.isRequired &&
+        (widget.task.evidenceDecision?.toUpperCase() ?? '') != 'APPROVE') {
+      final l10n = AppLocalizations.of(context);
+      setState(() {
+        _statusId = widget.task.statusId; // revert dropdown
+        _error = l10n.cannotApproveWithoutEvidenceApproval;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.cannotApproveWithoutEvidenceApproval),
+        backgroundColor: AppColors.danger,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+
     setState(() { _saving = true; _error = null; });
     try {
       final dio = ref.read(dioProvider);
