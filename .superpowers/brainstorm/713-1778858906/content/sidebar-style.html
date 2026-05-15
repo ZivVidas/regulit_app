@@ -1,0 +1,183 @@
+<style>
+  .split { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 16px; }
+  .panel { flex: 1; min-width: 280px; cursor: pointer; border-radius: 12px; overflow: hidden;
+    border: 2px solid transparent; transition: border-color 0.2s, transform 0.15s; }
+  .panel:hover { transform: translateY(-2px); }
+  .panel.selected { border-color: #0078D4; }
+  .panel-label { background: white; padding: 12px 14px; border-top: 1px solid #eee; }
+  .panel-label h3 { margin: 0 0 3px; font-size: 13px; font-weight: 700; }
+  .panel-label p { margin: 0; font-size: 11px; color: #666; line-height: 1.4; }
+
+  /* App shell mockup frame */
+  .app-frame { display: flex; height: 220px; background: #F0F2F5; overflow: hidden; }
+  .content-area { flex: 1; padding: 14px; }
+  .content-header {
+    background: linear-gradient(135deg,#0078D4,#005A9E);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+  }
+  .content-header-title { color: white; font-size: 13px; font-weight: 700; }
+  .content-header-sub { color: rgba(255,255,255,0.7); font-size: 10px; margin-top: 2px; }
+  .mini-cards { display: flex; gap: 8px; }
+  .mini-card {
+    flex: 1; border-radius: 8px; padding: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .mini-card-val { font-size: 16px; font-weight: 800; color: white; }
+  .mini-card-label { font-size: 9px; color: rgba(255,255,255,0.75); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
+
+  /* Sidebar A — Icon only, polished */
+  .sidebar-a {
+    width: 52px; background: #0078D4; display: flex; flex-direction: column;
+    align-items: center; padding: 12px 0; gap: 4px; flex-shrink: 0;
+    border-right: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-a-logo { width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 8px; margin-bottom: 10px; }
+  .sidebar-a-item {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: rgba(255,255,255,0.5); transition: all 0.15s;
+  }
+  .sidebar-a-item.active {
+    background: rgba(255,185,0,0.25);
+    color: white;
+    box-shadow: 0 0 0 1px rgba(255,185,0,0.5);
+  }
+  .sidebar-a-item.active::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 20px;
+    background: #FFB900; border-radius: 0 2px 2px 0;
+  }
+  .sidebar-a-item { position: relative; }
+  .sidebar-a-divider { width: 28px; height: 1px; background: rgba(255,255,255,0.12); margin: 6px 0; }
+  .sidebar-a-spacer { flex: 1; }
+  .sidebar-a-avatar { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.25); font-size: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; }
+
+  /* Sidebar B — Expanded with labels */
+  .sidebar-b {
+    width: 160px; background: #0078D4; display: flex; flex-direction: column;
+    padding: 12px 8px; gap: 2px; flex-shrink: 0;
+    border-right: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-b-logo-row { display: flex; align-items: center; gap: 8px; padding: 0 6px; margin-bottom: 14px; }
+  .sidebar-b-logo { width: 26px; height: 26px; background: rgba(255,255,255,0.2); border-radius: 7px; flex-shrink: 0; }
+  .sidebar-b-app-name { color: white; font-size: 13px; font-weight: 800; letter-spacing: 0.3px; }
+  .sidebar-b-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 10px;
+    color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 600;
+    transition: all 0.15s;
+  }
+  .sidebar-b-item.active {
+    background: rgba(255,255,255,0.12);
+    color: white;
+  }
+  .sidebar-b-item-icon { font-size: 15px; flex-shrink: 0; width: 18px; text-align: center; }
+  .sidebar-b-section-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.35); padding: 8px 10px 4px;
+  }
+  .sidebar-b-spacer { flex: 1; }
+  .sidebar-b-user { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-top: 1px solid rgba(255,255,255,0.12); margin-top: 4px; }
+  .sidebar-b-avatar { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.25); font-size: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; flex-shrink: 0; }
+  .sidebar-b-user-name { font-size: 10px; color: rgba(255,255,255,0.7); font-weight: 600; }
+</style>
+
+<h2>How should the sidebar navigation look?</h2>
+<p class="subtitle">This appears on every screen on desktop. Both stay Azure Blue.</p>
+
+<div class="split">
+
+  <div class="panel" data-choice="a" onclick="toggleSelect(this)" style="border-color:#ddd">
+    <div class="app-frame">
+      <div class="sidebar-a">
+        <div class="sidebar-a-logo"></div>
+        <div class="sidebar-a-item active">⊞</div>
+        <div class="sidebar-a-item">👥</div>
+        <div class="sidebar-a-item">✓</div>
+        <div class="sidebar-a-divider"></div>
+        <div class="sidebar-a-item">📊</div>
+        <div class="sidebar-a-item">💬</div>
+        <div class="sidebar-a-spacer"></div>
+        <div class="sidebar-a-avatar">Z</div>
+      </div>
+      <div class="content-area">
+        <div class="content-header">
+          <div class="content-header-title">Executive Dashboard</div>
+          <div class="content-header-sub">Q2 2026 · Session active</div>
+        </div>
+        <div class="mini-cards">
+          <div class="mini-card" style="background:linear-gradient(135deg,#0078D4,#005A9E)">
+            <div class="mini-card-val">84%</div><div class="mini-card-label">Compliance</div>
+          </div>
+          <div class="mini-card" style="background:linear-gradient(135deg,#D97C0A,#FFB900)">
+            <div class="mini-card-val">₪2.4M</div><div class="mini-card-label">Exposure</div>
+          </div>
+          <div class="mini-card" style="background:linear-gradient(135deg,#107C10,#0A5C0A)">
+            <div class="mini-card-val">12</div><div class="mini-card-label">Closed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel-label">
+      <h3>A — Slim icon-only (52px)</h3>
+      <p>Current approach, polished. Active item gets yellow glow ring + orange left indicator. Maximizes content area. Tooltips on hover.</p>
+    </div>
+  </div>
+
+  <div class="panel" data-choice="b" onclick="toggleSelect(this)" style="border-color:#ddd">
+    <div class="app-frame">
+      <div class="sidebar-b">
+        <div class="sidebar-b-logo-row">
+          <div class="sidebar-b-logo"></div>
+          <div class="sidebar-b-app-name">ReguLit</div>
+        </div>
+        <div class="sidebar-b-section-label">Main</div>
+        <div class="sidebar-b-item active">
+          <span class="sidebar-b-item-icon">⊞</span> Dashboard
+        </div>
+        <div class="sidebar-b-item">
+          <span class="sidebar-b-item-icon">👥</span> Customers
+        </div>
+        <div class="sidebar-b-item">
+          <span class="sidebar-b-item-icon">✓</span> Tasks
+        </div>
+        <div class="sidebar-b-section-label">Tools</div>
+        <div class="sidebar-b-item">
+          <span class="sidebar-b-item-icon">📊</span> Reports
+        </div>
+        <div class="sidebar-b-item">
+          <span class="sidebar-b-item-icon">💬</span> AI Chat
+        </div>
+        <div class="sidebar-b-spacer"></div>
+        <div class="sidebar-b-user">
+          <div class="sidebar-b-avatar">Z</div>
+          <div class="sidebar-b-user-name">Ziv V.</div>
+        </div>
+      </div>
+      <div class="content-area">
+        <div class="content-header">
+          <div class="content-header-title">Executive Dashboard</div>
+          <div class="content-header-sub">Q2 2026 · Session active</div>
+        </div>
+        <div class="mini-cards">
+          <div class="mini-card" style="background:linear-gradient(135deg,#0078D4,#005A9E)">
+            <div class="mini-card-val">84%</div><div class="mini-card-label">Compliance</div>
+          </div>
+          <div class="mini-card" style="background:linear-gradient(135deg,#D97C0A,#FFB900)">
+            <div class="mini-card-val">₪2.4M</div><div class="mini-card-label">Exposure</div>
+          </div>
+          <div class="mini-card" style="background:linear-gradient(135deg,#107C10,#0A5C0A)">
+            <div class="mini-card-val">12</div><div class="mini-card-label">Closed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel-label">
+      <h3>B — Expanded with labels (160px)</h3>
+      <p>App name + grouped nav labels always visible. User name at bottom. More SaaS-like, easier to navigate, takes more horizontal space.</p>
+    </div>
+  </div>
+
+</div>

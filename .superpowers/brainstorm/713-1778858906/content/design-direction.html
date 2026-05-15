@@ -1,0 +1,213 @@
+<style>
+  .dir-cards { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 16px; }
+  .dir-card {
+    flex: 1; min-width: 260px; border-radius: 12px; overflow: hidden;
+    cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s, transform 0.15s;
+  }
+  .dir-card:hover { transform: translateY(-2px); }
+  .dir-card.selected { border-color: #0078D4 !important; }
+
+  /* Direction A — Executive Dark */
+  .dark-preview {
+    background: #0D1117; padding: 16px; height: 200px; position: relative; overflow: hidden;
+  }
+  .dark-sidebar {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 44px;
+    background: #161B22; border-right: 1px solid #30363D;
+    display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 14px;
+  }
+  .dark-dot { width: 8px; height: 8px; border-radius: 50%; background: #0078D4; }
+  .dark-dot.active { background: #FFB900; width: 22px; border-radius: 4px; }
+  .dark-content { margin-left: 54px; }
+  .dark-metric {
+    display: inline-block; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+    padding: 8px 12px; margin: 0 6px 6px 0;
+    backdrop-filter: blur(8px);
+  }
+  .dark-metric-val { font-size: 18px; font-weight: 800; color: #58A6FF; line-height: 1; }
+  .dark-metric-label { font-size: 9px; color: #8B949E; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+  .dark-chart { margin-top: 8px; display: flex; align-items: flex-end; gap: 4px; height: 50px; }
+  .dark-bar { flex: 1; background: linear-gradient(to top, #0078D4, #2899E0); border-radius: 3px 3px 0 0; opacity: 0.8; }
+  .dark-bar.highlight { background: linear-gradient(to top, #FFB900, #FFD700); }
+
+  /* Direction B — Modern SaaS */
+  .saas-preview {
+    background: #F8FAFC; padding: 16px; height: 200px; position: relative; overflow: hidden;
+  }
+  .saas-header {
+    background: linear-gradient(135deg, #0078D4 0%, #005A9E 60%, #004080 100%);
+    margin: -16px -16px 12px -16px; padding: 12px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .saas-title { color: white; font-size: 13px; font-weight: 700; }
+  .saas-badge { background: rgba(255,255,255,0.2); color: white; font-size: 9px; padding: 2px 8px; border-radius: 20px; }
+  .saas-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .saas-card {
+    background: white; border-radius: 10px; padding: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,120,212,0.06);
+    border-top: 3px solid;
+  }
+  .saas-card.blue { border-color: #0078D4; }
+  .saas-card.green { border-color: #107C10; }
+  .saas-card.orange { border-color: #FFB900; }
+  .saas-card-val { font-size: 20px; font-weight: 800; color: #201F1E; line-height: 1; }
+  .saas-card-sub { font-size: 8px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+  .saas-spark { height: 24px; display: flex; align-items: flex-end; gap: 2px; margin-top: 6px; }
+  .saas-s { flex: 1; background: #E8F4FD; border-radius: 1px; }
+  .saas-s.hi { background: #0078D4; }
+
+  /* Direction C — Glassmorphism + Vivid */
+  .glass-preview {
+    background: linear-gradient(135deg, #0a1628 0%, #1a0a3c 50%, #0a2040 100%);
+    padding: 16px; height: 200px; position: relative; overflow: hidden;
+  }
+  .glass-orb1 {
+    position: absolute; width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,120,212,0.4), transparent);
+    top: -30px; right: 20px;
+  }
+  .glass-orb2 {
+    position: absolute; width: 80px; height: 80px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,185,0,0.3), transparent);
+    bottom: 0; left: 40px;
+  }
+  .glass-card {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; padding: 10px; backdrop-filter: blur(10px);
+    display: inline-block; margin: 0 6px 6px 0; vertical-align: top;
+  }
+  .glass-val { font-size: 20px; font-weight: 800; color: white; line-height: 1; }
+  .glass-val.accent { color: #FFB900; }
+  .glass-label { font-size: 9px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+  .glass-row { display: flex; gap: 6px; margin-top: 6px; }
+  .glass-pill {
+    background: rgba(0,120,212,0.3); border: 1px solid rgba(0,120,212,0.5);
+    border-radius: 20px; padding: 3px 10px; font-size: 9px; color: #58A6FF; font-weight: 600;
+  }
+  .glass-pill.warn { background: rgba(255,185,0,0.2); border-color: rgba(255,185,0,0.4); color: #FFD700; }
+
+  .dir-label {
+    padding: 12px 14px; background: white;
+    border-top: 1px solid #eee;
+  }
+  .dir-label h3 { margin: 0 0 3px; font-size: 13px; font-weight: 700; color: #201F1E; }
+  .dir-label p { margin: 0; font-size: 11px; color: #666; line-height: 1.4; }
+</style>
+
+<h2>What direction feels right for "more fancy"?</h2>
+<p class="subtitle">All three use your existing brand colors — Azure Blue + Kinetic Yellow. Pick the vibe that excites you most.</p>
+
+<div class="dir-cards">
+
+  <div class="dir-card" data-choice="a" onclick="toggleSelect(this)" style="border-color:#2d2d2d">
+    <div class="dark-preview">
+      <div class="dark-sidebar">
+        <div class="dark-dot active"></div>
+        <div class="dark-dot"></div>
+        <div class="dark-dot"></div>
+        <div class="dark-dot"></div>
+      </div>
+      <div class="dark-content">
+        <div style="display:flex;flex-wrap:wrap">
+          <div class="dark-metric"><div class="dark-metric-val">84%</div><div class="dark-metric-label">Compliance</div></div>
+          <div class="dark-metric"><div class="dark-metric-val" style="color:#FFB900">₪2.4M</div><div class="dark-metric-label">Exposure</div></div>
+          <div class="dark-metric"><div class="dark-metric-val" style="color:#3FB950">12</div><div class="dark-metric-label">Closed</div></div>
+        </div>
+        <div class="dark-chart">
+          <div class="dark-bar" style="height:30%"></div>
+          <div class="dark-bar" style="height:55%"></div>
+          <div class="dark-bar highlight" style="height:80%"></div>
+          <div class="dark-bar" style="height:65%"></div>
+          <div class="dark-bar" style="height:45%"></div>
+          <div class="dark-bar" style="height:70%"></div>
+          <div class="dark-bar highlight" style="height:90%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="dir-label">
+      <h3>A — Executive Dark</h3>
+      <p>Dark charcoal + navy, frosted glass cards, glowing accents. Premium, Bloomberg-style.</p>
+    </div>
+  </div>
+
+  <div class="dir-card" data-choice="b" onclick="toggleSelect(this)" style="border-color:#e0e0e0">
+    <div class="saas-preview">
+      <div class="saas-header">
+        <span class="saas-title">Executive Dashboard</span>
+        <span class="saas-badge">Q2 2026</span>
+      </div>
+      <div class="saas-grid">
+        <div class="saas-card blue">
+          <div class="saas-card-val">84%</div>
+          <div class="saas-card-sub">Compliance</div>
+          <div class="saas-spark">
+            <div class="saas-s" style="height:40%"></div><div class="saas-s" style="height:60%"></div>
+            <div class="saas-s hi" style="height:85%"></div><div class="saas-s" style="height:70%"></div>
+          </div>
+        </div>
+        <div class="saas-card orange">
+          <div class="saas-card-val">₪2.4M</div>
+          <div class="saas-card-sub">Exposure</div>
+          <div class="saas-spark">
+            <div class="saas-s hi" style="height:90%;background:#FFB900"></div>
+            <div class="saas-s" style="height:70%"></div>
+            <div class="saas-s" style="height:50%"></div>
+            <div class="saas-s" style="height:65%"></div>
+          </div>
+        </div>
+        <div class="saas-card green">
+          <div class="saas-card-val">12</div>
+          <div class="saas-card-sub">Closed Tasks</div>
+          <div class="saas-spark">
+            <div class="saas-s" style="height:20%"></div>
+            <div class="saas-s" style="height:45%"></div>
+            <div class="saas-s hi" style="height:75%;background:#107C10"></div>
+            <div class="saas-s hi" style="height:90%;background:#107C10"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dir-label">
+      <h3>B — Modern SaaS</h3>
+      <p>Light, sharp, bold accent tops on cards, sparkline mini-charts, rich depth. Linear/Vercel-style.</p>
+    </div>
+  </div>
+
+  <div class="dir-card" data-choice="c" onclick="toggleSelect(this)" style="border-color:#1a0a3c">
+    <div class="glass-preview">
+      <div class="glass-orb1"></div>
+      <div class="glass-orb2"></div>
+      <div style="position:relative;z-index:1">
+        <div>
+          <div class="glass-card" style="width:90px">
+            <div class="glass-val accent">84%</div>
+            <div class="glass-label">Compliance</div>
+          </div>
+          <div class="glass-card" style="width:90px">
+            <div class="glass-val">₪2.4M</div>
+            <div class="glass-label">Exposure</div>
+          </div>
+        </div>
+        <div class="glass-row" style="margin-top:10px">
+          <div class="glass-pill">↑ 3 gaps closed</div>
+          <div class="glass-pill warn">⚠ 5 tasks due</div>
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:flex-end;gap:3px;height:45px">
+          <div style="flex:1;background:rgba(0,120,212,0.4);border-radius:3px 3px 0 0;height:40%"></div>
+          <div style="flex:1;background:rgba(0,120,212,0.5);border-radius:3px 3px 0 0;height:60%"></div>
+          <div style="flex:1;background:rgba(255,185,0,0.7);border-radius:3px 3px 0 0;height:85%"></div>
+          <div style="flex:1;background:rgba(0,120,212,0.4);border-radius:3px 3px 0 0;height:70%"></div>
+          <div style="flex:1;background:rgba(0,120,212,0.3);border-radius:3px 3px 0 0;height:50%"></div>
+          <div style="flex:1;background:rgba(255,185,0,0.6);border-radius:3px 3px 0 0;height:90%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="dir-label">
+      <h3>C — Glassmorphism</h3>
+      <p>Deep navy/purple background, frosted glass cards, glowing orbs, translucent overlays. Ultra-premium.</p>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,140 @@
+<style>
+  .split { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 16px; }
+  .panel { flex: 1; min-width: 280px; cursor: pointer; border-radius: 12px; overflow: hidden;
+    border: 2px solid transparent; transition: border-color 0.2s, transform 0.15s; }
+  .panel:hover { transform: translateY(-2px); }
+  .panel.selected { border-color: #0078D4 !important; }
+  .panel-bg { background: #F0F2F5; padding: 20px; }
+  .panel-label { background: white; padding: 12px 14px; border-top: 1px solid #eee; }
+  .panel-label h3 { margin: 0 0 3px; font-size: 13px; font-weight: 700; }
+  .panel-label p { margin: 0; font-size: 11px; color: #666; line-height: 1.4; }
+
+  /* Current cards */
+  .card-current {
+    background: white; border-radius: 12px; padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 2px rgba(0,0,0,0.03);
+    margin-bottom: 10px;
+  }
+  .card-label-cur { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; color: #888; text-transform: uppercase; }
+  .card-val-cur { font-size: 24px; font-weight: 800; color: #0078D4; margin: 4px 0 2px; line-height: 1; }
+  .card-sub-cur { font-size: 11px; color: #888; }
+
+  /* Option A — Accent tops */
+  .card-accent {
+    background: white; border-radius: 12px; overflow: hidden; margin-bottom: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08), 0 0 2px rgba(0,0,0,0.04);
+  }
+  .card-accent-top { height: 4px; }
+  .card-accent-body { padding: 14px 16px; }
+  .card-accent-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .card-accent-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .card-accent-label { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; color: #888; text-transform: uppercase; }
+  .card-accent-val { font-size: 26px; font-weight: 800; line-height: 1; margin: 2px 0; }
+  .card-accent-trend { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; }
+  .card-spark { display: flex; align-items: flex-end; gap: 2px; height: 20px; }
+  .card-spark-bar { width: 4px; border-radius: 2px; background: #E8F4FD; }
+  .card-spark-bar.hi { background: #0078D4; }
+
+  /* Option B — Gradient fills */
+  .card-gradient {
+    border-radius: 12px; overflow: hidden; margin-bottom: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+  .card-gradient-inner { padding: 16px; position: relative; overflow: hidden; }
+  .card-gradient-glow {
+    position: absolute; width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); top: -20px; right: -10px;
+  }
+  .card-gradient-label { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+  .card-gradient-val { font-size: 28px; font-weight: 800; color: white; line-height: 1; margin: 6px 0 4px; }
+  .card-gradient-sub { font-size: 11px; color: rgba(255,255,255,0.75); }
+</style>
+
+<h2>How should metric cards look?</h2>
+<p class="subtitle">Both use your Azure Blue + Yellow brand. Pick what feels more premium.</p>
+
+<div class="split">
+
+  <div class="panel" data-choice="a" onclick="toggleSelect(this)" style="border-color:#ddd">
+    <div class="panel-bg">
+
+      <div class="card-accent">
+        <div class="card-accent-top" style="background: linear-gradient(90deg,#0078D4,#2899E0)"></div>
+        <div class="card-accent-body">
+          <div class="card-accent-row">
+            <div class="card-accent-label">Compliance Score</div>
+            <div class="card-accent-icon" style="background:#E8F4FD">📊</div>
+          </div>
+          <div class="card-accent-val" style="color:#0078D4">84%</div>
+          <div class="card-accent-row" style="margin-top:6px;margin-bottom:0">
+            <div class="card-accent-trend" style="color:#107C10">↑ +3% this month</div>
+            <div class="card-spark">
+              <div class="card-spark-bar" style="height:40%"></div>
+              <div class="card-spark-bar" style="height:55%"></div>
+              <div class="card-spark-bar hi" style="height:70%"></div>
+              <div class="card-spark-bar hi" style="height:85%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-accent">
+        <div class="card-accent-top" style="background: linear-gradient(90deg,#FFB900,#D97C0A)"></div>
+        <div class="card-accent-body">
+          <div class="card-accent-row">
+            <div class="card-accent-label">Total Exposure</div>
+            <div class="card-accent-icon" style="background:#FFF8E7">💰</div>
+          </div>
+          <div class="card-accent-val" style="color:#D97C0A">₪2.4M</div>
+          <div class="card-accent-row" style="margin-top:6px;margin-bottom:0">
+            <div class="card-accent-trend" style="color:#D13438">↑ +₪200K</div>
+            <div class="card-spark">
+              <div class="card-spark-bar hi" style="height:90%;background:#FFB900"></div>
+              <div class="card-spark-bar" style="height:60%;background:#FFF8E7"></div>
+              <div class="card-spark-bar" style="height:75%;background:#FFF8E7"></div>
+              <div class="card-spark-bar hi" style="height:85%;background:#FFB900"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="panel-label">
+      <h3>A — Accent top + sparkline</h3>
+      <p>White card, colored 4px accent bar on top, icon chip, sparkline mini-chart. Builds on current design.</p>
+    </div>
+  </div>
+
+  <div class="panel" data-choice="b" onclick="toggleSelect(this)" style="border-color:#ddd">
+    <div class="panel-bg">
+
+      <div class="card-gradient">
+        <div class="card-gradient-inner" style="background: linear-gradient(135deg,#0078D4,#005A9E)">
+          <div class="card-gradient-glow"></div>
+          <div style="position:relative;z-index:1">
+            <div class="card-gradient-label">Compliance Score</div>
+            <div class="card-gradient-val">84%</div>
+            <div class="card-gradient-sub">↑ +3% vs last month</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-gradient">
+        <div class="card-gradient-inner" style="background: linear-gradient(135deg,#D97C0A,#FFB900)">
+          <div class="card-gradient-glow"></div>
+          <div style="position:relative;z-index:1">
+            <div class="card-gradient-label">Total Exposure</div>
+            <div class="card-gradient-val">₪2.4M</div>
+            <div class="card-gradient-sub">↑ +₪200K vs last month</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="panel-label">
+      <h3>B — Full gradient fill</h3>
+      <p>Each card filled with its semantic gradient, white text. Vivid, bold, visual punch.</p>
+    </div>
+  </div>
+
+</div>
