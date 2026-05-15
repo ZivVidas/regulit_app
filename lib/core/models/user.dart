@@ -3,6 +3,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'user.freezed.dart';
 part 'user.g.dart';
 
+enum CustomerTier { starter, professional, enterprise }
+
 /// Roles that exist in the system.
 /// Used in router.dart for redirect logic and in UI for conditional rendering.
 enum UserRole {

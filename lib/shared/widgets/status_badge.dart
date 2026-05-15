@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../core/models/gap.dart';
 import '../../core/models/task.dart';
+import '../../core/models/user.dart';
 
 /// Status pill widget for gap and task statuses
 class StatusBadge extends StatelessWidget {
@@ -70,12 +71,12 @@ class StatusBadge extends StatelessWidget {
   // ── Requirement type ─────────────────────────────────────────
   factory StatusBadge.requirementType(RequirementType type) {
     return switch (type) {
-      RequirementType.required_ => StatusBadge._(
+      RequirementType.required_ => const StatusBadge._(
           label: 'Required',
           backgroundColor: AppColors.dangerLight,
           textColor: AppColors.danger,
         ),
-      RequirementType.bestPractice => StatusBadge._(
+      RequirementType.bestPractice => const StatusBadge._(
           label: 'Best Practice',
           backgroundColor: AppColors.infoLight,
           textColor: AppColors.blue,
@@ -83,10 +84,24 @@ class StatusBadge extends StatelessWidget {
     };
   }
 
+  // ── Customer Tier ────────────────────────────────────────────
+  factory StatusBadge.tier(CustomerTier tier) {
+    final (bg, fg, label) = switch (tier) {
+      CustomerTier.starter      => (AppColors.surface,     AppColors.muted,  'Starter'),
+      CustomerTier.professional => (AppColors.infoLight,   AppColors.blue,   'Professional'),
+      CustomerTier.enterprise   => (AppColors.orangeLight, AppColors.orange, 'Enterprise'),
+    };
+    return StatusBadge._(
+      label: label,
+      backgroundColor: bg,
+      textColor: fg,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: AppRadius.pill_,
