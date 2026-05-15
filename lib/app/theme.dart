@@ -105,13 +105,100 @@ abstract class AppRadius {
 }
 
 /// ═══════════════════════════════════════════════════════════
+/// AppShadows — elevation tokens (no Material elevation, pure BoxShadow)
+/// ═══════════════════════════════════════════════════════════
+abstract class AppShadows {
+  static const List<BoxShadow> none = [];
+
+  static const List<BoxShadow> sm = [
+    BoxShadow(color: Color(0x0A000000), blurRadius: 4, offset: Offset(0, 1)),
+  ];
+
+  static const List<BoxShadow> md = [
+    BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x05000000), blurRadius: 2, offset: Offset(0, 0)),
+  ];
+
+  static const List<BoxShadow> lg = [
+    BoxShadow(color: Color(0x14000000), blurRadius: 16, offset: Offset(0, 4)),
+    BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 0)),
+  ];
+
+  static const List<BoxShadow> xl = [
+    BoxShadow(color: Color(0x1A000000), blurRadius: 24, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 0)),
+  ];
+}
+
+/// ═══════════════════════════════════════════════════════════
+/// AppSurfaces — layered background colors for depth hierarchy
+/// ═══════════════════════════════════════════════════════════
+abstract class AppSurfaces {
+  static const Color page          = Color(0xFFF0F2F5); // App scaffold background
+  static const Color card          = Color(0xFFFFFFFF); // Card / panel surface
+  static const Color subtle        = Color(0xFFF8F9FA); // Subtle section background
+  static const Color primaryTint   = Color(0xFFE8F4FD); // Blue tint (info/primary)
+  static const Color secondaryTint = Color(0xFFFFF8E7); // Yellow tint (secondary)
+  static const Color successTint   = Color(0xFFEBF7EB); // Green tint
+  static const Color dangerTint    = Color(0xFFFDEBEC); // Red tint
+  static const Color warningTint   = Color(0xFFFEF3E2); // Amber tint
+}
+
+/// ═══════════════════════════════════════════════════════════
+/// AppGradients — brand gradients for headers and accents
+/// ═══════════════════════════════════════════════════════════
+abstract class AppGradients {
+  static const LinearGradient primaryHeader = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF0078D4), Color(0xFF005A9E)],
+  );
+
+  static const LinearGradient secondaryHeader = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFFFB900), Color(0xFFD97C0A)],
+  );
+
+  static const LinearGradient primarySubtle = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFE8F4FD), Color(0xFFD0E9FA)],
+  );
+
+  static const LinearGradient successSubtle = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFEBF7EB), Color(0xFFD5F0D5)],
+  );
+
+  static const LinearGradient dangerSubtle = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFFDEBEC), Color(0xFFFAD4D6)],
+  );
+}
+
+/// ═══════════════════════════════════════════════════════════
+/// AppDurations — animation timing constants
+/// ═══════════════════════════════════════════════════════════
+abstract class AppDurations {
+  static const Duration instant = Duration(milliseconds: 100);
+  static const Duration fast    = Duration(milliseconds: 150);
+  static const Duration normal  = Duration(milliseconds: 250);
+  static const Duration slow    = Duration(milliseconds: 400);
+  static const Duration stagger = Duration(milliseconds: 60);
+  static const Duration page    = Duration(milliseconds: 300);
+}
+
+/// ═══════════════════════════════════════════════════════════
 /// AppTheme — MaterialTheme built from design tokens
 /// ═══════════════════════════════════════════════════════════
 abstract class AppTheme {
   static final ThemeData light = ThemeData(
     useMaterial3: true,
     fontFamily: 'Heebo',
-    scaffoldBackgroundColor: AppColors.background,
+    scaffoldBackgroundColor: AppSurfaces.page,
 
     colorScheme: const ColorScheme(
       brightness: Brightness.light,
@@ -141,13 +228,15 @@ abstract class AppTheme {
 
     // Cards
     cardTheme: CardThemeData(
-      color: AppColors.white,
+      color: AppSurfaces.card,
       elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.card,
-        side: const BorderSide(color: AppColors.border, width: 1),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
     ),
 
     // Elevated Buttons — primary action (azure blue)
@@ -185,22 +274,26 @@ abstract class AppTheme {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
-        borderRadius: AppRadius.button,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: const BorderSide(color: AppColors.border, width: 1),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: AppRadius.button,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: const BorderSide(color: AppColors.border, width: 1),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: AppRadius.button,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: const BorderSide(color: AppColors.blue, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: AppRadius.button,
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: const BorderSide(color: AppColors.danger, width: 2),
       ),
       labelStyle: AppTextStyles.label,
       hintStyle: AppTextStyles.body.copyWith(color: AppColors.muted),
