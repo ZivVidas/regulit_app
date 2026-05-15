@@ -12,6 +12,9 @@ import '../../core/auth/auth_provider.dart';
 import '../../core/customer/customer_context_provider.dart';
 import '../../core/models/workflow_task.dart';
 import '../../l10n/app_localizations.dart';
+import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/page_header.dart';
+import '../../shared/widgets/section_header.dart';
 import 'task_edit_dialog.dart';
 
 // CustomerUserItem and customerUsersProvider are now in task_edit_dialog.dart
@@ -128,6 +131,12 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
 
           return Column(
             children: [
+              // ── Page Header ──────────────────────────────────────────────
+              PageHeader(
+                title: l10n.navMyTasks,
+                variant: PageHeaderVariant.gradient,
+              ),
+
               // ── Session selector bar ─────────────────────────────────────
               _SessionBar(
                 sessions: sessions,
@@ -204,9 +213,6 @@ class _SessionBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(l10n.navMyTasks, style: AppTextStyles.h3),
-          const Gap(16),
-
           // Session dropdown
           if (sessions.isNotEmpty)
             Expanded(
@@ -856,32 +862,31 @@ class _KanbanColState extends State<_KanbanCol> {
                     borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(10)),
                   ),
-                  child: Row(
-                    children: [
-                      if (isHovering)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: Icon(Icons.move_down_rounded,
-                              size: 13, color: widget.headerColor),
+                  child: SectionHeader(
+                    title: widget.title.toUpperCase(),
+                    padding: EdgeInsets.zero,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isHovering)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Icon(Icons.move_down_rounded,
+                                size: 13, color: widget.headerColor),
+                          ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: widget.headerColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                          child: Text('${widget.tasks.length}',
+                              style: AppTextStyles.tag
+                                  .copyWith(color: widget.headerColor)),
                         ),
-                      Text(
-                        widget.title.toUpperCase(),
-                        style: AppTextStyles.label.copyWith(
-                            color: widget.headerColor, fontSize: 11),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: widget.headerColor.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text('${widget.tasks.length}',
-                            style: AppTextStyles.tag
-                                .copyWith(color: widget.headerColor)),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
 
@@ -976,32 +981,12 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
       cursor: widget.canDrag
           ? SystemMouseCursors.grab
           : SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          margin: const EdgeInsets.only(bottom: 2),
-          padding: const EdgeInsets.all(11),
-          decoration: BoxDecoration(
-            color: dragging
-                ? Colors.white.withOpacity(0.6)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: _hovered && !dragging
-                  ? _accent.withOpacity(0.5)
-                  : AppColors.border,
-            ),
-            boxShadow: _hovered && !dragging
-                ? [
-                    BoxShadow(
-                      color: _accent.withOpacity(0.12),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    )
-                  ]
-                : null,
-          ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: AppCard(
+          variant: AppCardVariant.elevated,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          onTap: dragging ? null : widget.onTap,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

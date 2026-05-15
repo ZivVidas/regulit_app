@@ -19,6 +19,9 @@ import '../../core/models/user.dart';
 import '../../core/models/workflow_task.dart';
 import '../../core/api/api_client.dart';
 import '../../l10n/app_localizations.dart';
+import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/page_header.dart';
 import 'task_edit_dialog.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -133,50 +136,47 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(l10n.allTasks),
-        actions: [
-          // Refresh — always visible
-          IconButton(
-            icon: const Icon(Icons.refresh_outlined, size: 20),
-            color: AppColors.muted,
-            tooltip: l10n.retry,
-            onPressed: () {
-              if (customerId != null) {
-                ref.invalidate(_listSessionsProvider(customerId));
-              }
-              if (_selectedSessionId != null) {
-                ref.invalidate(
-                    _sessionTasksListProvider(_selectedSessionId!));
-              }
-            },
-          ),
-          // Switch to Kanban — hidden for employee (router also blocks them)
-          if (!isEmployee)
-            Tooltip(
-              message: l10n.switchToKanban,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: IconButton(
-                  icon: const Icon(Icons.view_kanban_outlined, size: 22),
-                  color: AppColors.blue,
-                  onPressed: () => context.go(AppRoutes.tasks),
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.blue.withOpacity(0.08),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
       body: customerId == null
           ? Center(
               child: Text(l10n.noCustomerSelected,
                   style: const TextStyle(color: AppColors.muted)))
           : Column(
               children: [
+                // ── Page Header ──────────────────────────────────────
+                PageHeader(
+                  title: l10n.myTasks,
+                  variant: PageHeaderVariant.flat,
+                  actions: [
+                    // Refresh — always visible
+                    IconButton(
+                      icon: const Icon(Icons.refresh_outlined, size: 20),
+                      color: AppColors.muted,
+                      tooltip: l10n.retry,
+                      onPressed: () {
+                        ref.invalidate(_listSessionsProvider(customerId));
+                        if (_selectedSessionId != null) {
+                          ref.invalidate(
+                              _sessionTasksListProvider(_selectedSessionId!));
+                        }
+                      },
+                    ),
+                    // Switch to Kanban — hidden for employee (router also blocks them)
+                    if (!isEmployee)
+                      Tooltip(
+                        message: l10n.switchToKanban,
+                        child: IconButton(
+                          icon: const Icon(Icons.view_kanban_outlined, size: 22),
+                          color: AppColors.blue,
+                          onPressed: () => context.go(AppRoutes.tasks),
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppColors.blue.withOpacity(0.08),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 // ── Session picker ─────────────────────────────
                 _SessionBar(
                   customerId: customerId,
@@ -398,21 +398,12 @@ class _TaskListBody extends ConsumerWidget {
                 .toList();
 
         if (tasks.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.task_outlined, size: 48, color: AppColors.muted),
-                const Gap(12),
-                Text(
-                  search.isNotEmpty
-                      ? l10n.noTasksMatch(search)
-                      : l10n.noTasksForSession,
-                  style: const TextStyle(color: AppColors.muted, fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+          return EmptyState(
+            icon: Icons.task_alt_rounded,
+            title: search.isNotEmpty
+                ? l10n.noTasksMatch(search)
+                : l10n.noTasksForSession,
+            description: search.isNotEmpty ? null : 'All caught up!',
           );
         }
 
@@ -590,19 +581,11 @@ class _TaskListTile extends StatelessWidget {
         task.dueDate!.isBefore(DateTime.now()) &&
         status != WorkflowTaskStatus.approved;
 
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: () => _openDetail(context),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border),
-          ),
-          padding: const EdgeInsets.all(12),
-          child: Row(
+    return AppCard(
+      variant: AppCardVariant.flat,
+      padding: AppSpacing.listTilePadding,
+      onTap: () => _openDetail(context),
+      child: Row(
             children: [
               // Status dot
               Container(
@@ -663,9 +646,7 @@ class _TaskListTile extends StatelessWidget {
               const Icon(Icons.chevron_right, color: AppColors.muted),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   void _openDetail(BuildContext context) {
