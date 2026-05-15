@@ -609,7 +609,10 @@ class _MetricsGrid extends StatelessWidget {
                     : MetricVariant.danger,
             icon: Icons.verified_rounded,
           ),
-        ]),
+        ])
+            .animate()
+            .fadeIn(duration: 400.ms, delay: 80.ms)
+            .slideY(begin: 0.12, curve: Curves.easeOut, duration: 400.ms, delay: 80.ms),
         const Gap(AppSpacing.md),
         MetricRow(cards: [
           MetricCard(
@@ -628,7 +631,10 @@ class _MetricsGrid extends StatelessWidget {
             variant: MetricVariant.neutral,
             icon: Icons.check_circle_rounded,
           ),
-        ]),
+        ])
+            .animate()
+            .fadeIn(duration: 400.ms, delay: 180.ms)
+            .slideY(begin: 0.12, curve: Curves.easeOut, duration: 400.ms, delay: 180.ms),
       ],
     );
   }
@@ -722,6 +728,11 @@ class _TrendChartState extends ConsumerState<_TrendChart> {
                       .fold(0.0, max);
                   final maxY = maxVal > 0 ? maxVal * 1.2 : 1000000.0;
 
+                  // Average exposure — bars >130% of avg get warning colour
+                  final avgVal = points.isNotEmpty
+                      ? points.map((p) => p.totalExposure ?? 0.0).fold(0.0, (a, b) => a + b) / points.length
+                      : 0.0;
+
                   // Bar width scales with number of points (fewer = wider)
                   final barWidth = (points.length <= 4
                       ? 32.0
@@ -791,14 +802,26 @@ class _TrendChartState extends ConsumerState<_TrendChart> {
                       ),
                       barGroups: points.asMap().entries.map((e) {
                         final isLatest = e.key == points.length - 1;
+                        final rawVal = e.value.totalExposure ?? 0.0;
+                        final isHigh = rawVal > 0 && rawVal > avgVal * 1.3;
+                        final baseColor = isLatest
+                            ? AppColors.orange
+                            : isHigh
+                                ? AppColors.warning
+                                : AppColors.blue;
                         return BarChartGroupData(
                           x: e.key,
                           barRods: [
                             BarChartRodData(
-                              toY: e.value.totalExposure ?? 0,
-                              color: isLatest
-                                  ? AppColors.orange
-                                  : AppColors.blue,
+                              toY: rawVal,
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  baseColor.withValues(alpha: 0.55),
+                                  baseColor,
+                                ],
+                              ),
                               width: barWidth,
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(4),
@@ -808,7 +831,9 @@ class _TrendChartState extends ConsumerState<_TrendChart> {
                         );
                       }).toList(),
                     ),
-                  );
+                    swapAnimationDuration: const Duration(milliseconds: 500),
+                    swapAnimationCurve: Curves.easeOutCubic,
+                  ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.08, duration: 500.ms);
                 },
               ),
             ),
