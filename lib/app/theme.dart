@@ -29,7 +29,7 @@ abstract class AppColors {
   static const border     = Color(0xFFE1DFDD); // office-style border
   static const surface    = Color(0xFFF3F2F1); // Office Gray — contrast neutral
   static const white      = Color(0xFFFFFFFF); // Pure White
-  static const background = Color(0xFFF3F2F1); // Office Gray — app background
+  static const background = Color(0xFFF0F2F5); // Cool grey — app background (matches AppSurfaces.page)
 
   // Sidebar
   static const sidebarBg           = blue;
@@ -116,17 +116,17 @@ abstract class AppShadows {
 
   static const List<BoxShadow> md = [
     BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
-    BoxShadow(color: Color(0x05000000), blurRadius: 2, offset: Offset(0, 0)),
+    BoxShadow(color: Color(0x08000000), blurRadius: 3, offset: Offset(0, 0)),
   ];
 
   static const List<BoxShadow> lg = [
     BoxShadow(color: Color(0x14000000), blurRadius: 16, offset: Offset(0, 4)),
-    BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 0)),
+    BoxShadow(color: Color(0x0A000000), blurRadius: 6, offset: Offset(0, 0)),
   ];
 
   static const List<BoxShadow> xl = [
     BoxShadow(color: Color(0x1A000000), blurRadius: 24, offset: Offset(0, 8)),
-    BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 0)),
+    BoxShadow(color: Color(0x0D000000), blurRadius: 10, offset: Offset(0, 0)),
   ];
 }
 
@@ -183,7 +183,7 @@ abstract class AppGradients {
 /// AppDurations — animation timing constants
 /// ═══════════════════════════════════════════════════════════
 abstract class AppDurations {
-  static const Duration instant = Duration(milliseconds: 100);
+  static const Duration instant = Duration(milliseconds: 50);
   static const Duration fast    = Duration(milliseconds: 150);
   static const Duration normal  = Duration(milliseconds: 250);
   static const Duration slow    = Duration(milliseconds: 400);
