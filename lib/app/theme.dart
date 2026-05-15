@@ -177,6 +177,24 @@ abstract class AppGradients {
     end: Alignment.bottomRight,
     colors: [Color(0xFFFDEBEC), Color(0xFFFAD4D6)],
   );
+
+  static const LinearGradient successHeader = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF107C10), Color(0xFF0A5C0A)],
+  );
+
+  static const LinearGradient warningHeader = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFCA8A04), Color(0xFFD97C0A)],
+  );
+
+  static const LinearGradient dangerHeader = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFD13438), Color(0xFFA01010)],
+  );
 }
 
 /// ═══════════════════════════════════════════════════════════
