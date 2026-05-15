@@ -6,6 +6,9 @@ import 'package:gap/gap.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
+import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/page_header.dart';
+import '../../shared/widgets/section_header.dart';
 
 // ── Data model ────────────────────────────────────────────────
 class _DashData {
@@ -70,7 +73,18 @@ class AdminDashboardScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          _Header(onRefresh: () => ref.invalidate(_dashProvider)),
+          PageHeader(
+            title: 'Admin Dashboard',
+            subtitle: 'System overview',
+            variant: PageHeaderVariant.gradient,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                onPressed: () => ref.invalidate(_dashProvider),
+                tooltip: 'Refresh',
+              ),
+            ],
+          ),
           Expanded(
             child: async.when(
               loading: () => const Center(
@@ -104,60 +118,6 @@ class AdminDashboardScreen extends ConsumerWidget {
   }
 }
 
-// ── Header ────────────────────────────────────────────────────
-class _Header extends StatelessWidget {
-  final VoidCallback onRefresh;
-  const _Header({required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x401E3A8A),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 16, 18),
-          child: Row(
-            children: [
-              const Icon(Icons.dashboard_rounded,
-                  color: Colors.white, size: 28),
-              const Gap(10),
-              Text(
-                'Regulit Dashboard',
-                style: AppTextStyles.h2.copyWith(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded,
-                    color: Colors.white),
-                tooltip: 'Refresh',
-                onPressed: onRefresh,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ── Dashboard body ────────────────────────────────────────────
 class _DashBody extends StatelessWidget {
   final _DashData data;
@@ -166,7 +126,8 @@ class _DashBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xxl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -205,15 +166,11 @@ class _DashBody extends StatelessWidget {
             final panels = [
               _RecentPanel(
                 title: 'Recent Users',
-                icon: Icons.people_outlined,
-                color: const Color(0xFF3B82F6),
                 items: data.recentUsers,
                 itemBuilder: (item) => _RecentUserTile(item: item),
               ),
               _RecentPanel(
                 title: 'Recent Customers',
-                icon: Icons.business_outlined,
-                color: const Color(0xFFEA580C),
                 items: data.recentCustomers,
                 itemBuilder: (item) =>
                     _RecentCustomerTile(item: item),
@@ -616,33 +573,20 @@ class _ChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return AppCard(
+      padding: EdgeInsets.zero,
+      header: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.md, AppSpacing.md, AppSpacing.md),
+        child: SectionHeader(
+          title: title,
+          padding: EdgeInsets.zero,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Icon(icon, color: color, size: 18),
-            const Gap(8),
-            Text(title,
-                style: AppTextStyles.body
-                    .copyWith(fontWeight: FontWeight.w600)),
-          ]),
-          const Gap(14),
-          child,
-        ],
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sm, 0, AppSpacing.sm, AppSpacing.md),
+        child: child,
       ),
     ).animate().fadeIn(delay: 200.ms, duration: 400.ms);
   }
@@ -651,54 +595,30 @@ class _ChartCard extends StatelessWidget {
 // ── Recent panel ──────────────────────────────────────────────
 class _RecentPanel extends StatelessWidget {
   final String title;
-  final IconData icon;
-  final Color color;
   final List<Map<String, dynamic>> items;
   final Widget Function(Map<String, dynamic>) itemBuilder;
 
   const _RecentPanel({
     required this.title,
-    required this.icon,
-    required this.color,
     required this.items,
     required this.itemBuilder,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return AppCard(
+      padding: EdgeInsets.zero,
+      header: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.md, AppSpacing.md, AppSpacing.md),
+        child: SectionHeader(
+          title: title,
+          padding: EdgeInsets.zero,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.07),
-              borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12)),
-              border: Border(
-                  bottom: BorderSide(color: color.withOpacity(0.2))),
-            ),
-            child: Row(children: [
-              Icon(icon, color: color, size: 16),
-              const Gap(8),
-              Text(title,
-                  style: AppTextStyles.body
-                      .copyWith(fontWeight: FontWeight.w600)),
-            ]),
-          ),
           if (items.isEmpty)
             Padding(
               padding: const EdgeInsets.all(20),
