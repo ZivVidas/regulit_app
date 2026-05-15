@@ -74,27 +74,33 @@ class AppCard extends StatelessWidget {
       ],
     );
 
-    Widget card = DecoratedBox(
-      decoration: BoxDecoration(
+    Widget content = ClipRRect(
+      borderRadius: _radius,
+      child: SizedBox(width: width, height: height, child: inner),
+    );
+
+    if (onTap != null) {
+      // Material provides the ink canvas so the ripple is visible
+      content = Material(
         color: _surface,
+        borderRadius: _radius,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: _radius,
+          child: content,
+        ),
+      );
+    }
+
+    // DecoratedBox paints only the shadow + optional border outside the clip
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: onTap == null ? _surface : null, // Material handles color when tappable
         borderRadius: _radius,
         boxShadow: _shadows,
         border: _border,
       ),
-      child: ClipRRect(
-        borderRadius: _radius,
-        child: SizedBox(width: width, height: height, child: inner),
-      ),
+      child: content,
     );
-
-    if (onTap != null) {
-      card = InkWell(
-        onTap: onTap,
-        borderRadius: _radius,
-        child: card,
-      );
-    }
-
-    return card;
   }
 }
