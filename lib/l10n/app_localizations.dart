@@ -66,6 +66,12 @@ class AppLocalizations {
   String get loginTagline       => _t('loginTagline');
   String get loginFooter        => _t('loginFooter');
   String get demoLabel          => _t('demoLabel');
+  String get welcomeBack        => _t('welcomeBack');
+  String get signInToAccount    => _t('signInToAccount');
+  String get loginHeadline      => _t('loginHeadline');
+  String get loginFeature1      => _t('loginFeature1');
+  String get loginFeature2      => _t('loginFeature2');
+  String get loginFeature3      => _t('loginFeature3');
 
   // ── Navigation labels ─────────────────────────────────────────────────────
   String get navUsers         => _t('navUsers');
@@ -408,6 +414,12 @@ class AppLocalizations {
       'loginTagline': 'Compliance that protects. Clarity that moves.',
       'loginFooter': 'Regulit · Privacy compliant by design\nData stored in Israel / EU',
       'demoLabel': 'Demo — no backend needed',
+      'welcomeBack': 'Welcome back',
+      'signInToAccount': 'Sign in to your account',
+      'loginHeadline': 'Compliance made\nclear and simple.',
+      'loginFeature1': 'Risk assessment & tracking',
+      'loginFeature2': 'Workflow automation',
+      'loginFeature3': 'Audit-ready reports',
       // Nav
       'navUsers': 'Users',
       'navCustomers': 'Customers',
@@ -719,6 +731,12 @@ class AppLocalizations {
       'loginTagline': 'ציות שמגן. בהירות שמניעה.',
       'loginFooter': 'רגוליט · פרטיות כבסיס עיצובי\nנתונים מאוחסנים בישראל / אירופה',
       'demoLabel': 'הדגמה — ללא שרת',
+      'welcomeBack': 'ברוך שובך',
+      'signInToAccount': 'התחבר לחשבונך',
+      'loginHeadline': 'ציות ברור\nופשוט ליישום.',
+      'loginFeature1': 'הערכה ומעקב סיכונים',
+      'loginFeature2': 'אוטומציה של תהליכי עבודה',
+      'loginFeature3': 'דוחות מוכנים לביקורת',
       // Nav
       'navUsers': 'משתמשים',
       'navCustomers': 'לקוחות',
@@ -1030,6 +1048,12 @@ class AppLocalizations {
       'loginTagline': 'Cumplimiento que protege. Claridad que avanza.',
       'loginFooter': 'Regulit · Privacidad por diseño\nDatos almacenados en Israel / UE',
       'demoLabel': 'Demo — sin backend',
+      'welcomeBack': 'Bienvenido de nuevo',
+      'signInToAccount': 'Inicia sesión en tu cuenta',
+      'loginHeadline': 'Cumplimiento claro\ny simple.',
+      'loginFeature1': 'Evaluación y seguimiento de riesgos',
+      'loginFeature2': 'Automatización de flujos de trabajo',
+      'loginFeature3': 'Informes listos para auditoría',
       // Nav
       'navUsers': 'Usuarios',
       'navCustomers': 'Clientes',
@@ -1341,6 +1365,12 @@ class AppLocalizations {
       'loginTagline': 'Conformité qui protège. Clarté qui avance.',
       'loginFooter': 'Regulit · Respect de la vie privée par conception\nDonnées stockées en Israël / UE',
       'demoLabel': 'Démo — sans backend',
+      'welcomeBack': 'Bon retour',
+      'signInToAccount': 'Connectez-vous à votre compte',
+      'loginHeadline': 'Conformité claire\net simple.',
+      'loginFeature1': 'Évaluation et suivi des risques',
+      'loginFeature2': 'Automatisation des workflows',
+      'loginFeature3': 'Rapports prêts pour audit',
       // Nav
       'navUsers': 'Utilisateurs',
       'navCustomers': 'Clients',
@@ -1652,6 +1682,12 @@ class AppLocalizations {
       'loginTagline': 'Соответствие, которое защищает. Ясность, которая движет.',
       'loginFooter': 'Regulit · Конфиденциальность по дизайну\nДанные хранятся в Израиле / ЕС',
       'demoLabel': 'Демо — без сервера',
+      'welcomeBack': 'С возвращением',
+      'signInToAccount': 'Войдите в свой аккаунт',
+      'loginHeadline': 'Соответствие\nпросто и ясно.',
+      'loginFeature1': 'Оценка и отслеживание рисков',
+      'loginFeature2': 'Автоматизация рабочих процессов',
+      'loginFeature3': 'Отчёты для аудита',
       // Nav
       'navUsers': 'Пользователи',
       'navCustomers': 'Клиенты',

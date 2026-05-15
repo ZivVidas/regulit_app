@@ -21,6 +21,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _loginSucceeded = false;
   String? _errorMessage;
 
   @override
@@ -52,9 +53,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
-      // GoRouter's redirect handles navigation automatically
+      if (mounted) setState(() => _loginSucceeded = true);
+      // GoRouter's redirect fires on the next frame after state change
     } on Exception catch (e) {
-      setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
@@ -65,14 +67,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       backgroundColor: AppSurfaces.page,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final form = _buildForm(isLoading, l10n, context);
-          if (constraints.maxWidth >= 700) {
-            return _DesktopLayout(form: form, l10n: l10n);
-          }
-          return _MobileLayout(form: form, l10n: l10n);
-        },
+      body: Stack(
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final form = _buildForm(isLoading, l10n, context);
+              if (constraints.maxWidth >= 700) {
+                return _DesktopLayout(form: form, l10n: l10n);
+              }
+              return _MobileLayout(form: form, l10n: l10n);
+            },
+          ),
+          if (_loginSucceeded) const _SuccessOverlay(),
+        ],
       ),
     );
   }
@@ -159,31 +166,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           const Gap(AppSpacing.lg),
 
           // Sign-in button
-          SizedBox(
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
             width: double.infinity,
+            height: 48,
+            decoration: BoxDecoration(
+              color: _loginSucceeded
+                  ? const Color(0xFF107C10)
+                  : isLoading
+                      ? AppColors.orange.withValues(alpha: 0.7)
+                      : AppColors.orange,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
             child: FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.orange,
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
-              onPressed: isLoading ? null : _submit,
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.white,
-                      ),
-                    )
-                  : Text(
-                      '${l10n.signIn} →',
-                      style:
-                          AppTextStyles.button.copyWith(color: AppColors.white),
-                    ),
+              onPressed: (isLoading || _loginSucceeded) ? null : _submit,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: _loginSucceeded
+                    ? const Icon(
+                        key: ValueKey('check'),
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ).animate().scale(
+                          begin: const Offset(0.3, 0.3),
+                          duration: 400.ms,
+                          curve: Curves.elasticOut,
+                        )
+                    : isLoading
+                        ? const SizedBox(
+                            key: ValueKey('loading'),
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.white,
+                            ),
+                          )
+                        : Text(
+                            key: const ValueKey('label'),
+                            '${l10n.signIn} →',
+                            style: AppTextStyles.button
+                                .copyWith(color: AppColors.white),
+                          ),
+              ),
             ),
           ),
           const Gap(AppSpacing.lg),
@@ -236,14 +270,14 @@ class _DesktopLayout extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Welcome back',
+                      l10n.welcomeBack,
                       style: AppTextStyles.h2.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const Gap(AppSpacing.xs),
                     Text(
-                      'Sign in to your account',
+                      l10n.signInToAccount,
                       style: AppTextStyles.bodySmall
                           .copyWith(color: AppColors.muted),
                     ),
@@ -397,9 +431,9 @@ class _BrandPanel extends StatelessWidget {
                 ),
                 const Gap(40),
                 // Headline
-                const Text(
-                  'Compliance made\nclear and simple.',
-                  style: TextStyle(
+                Text(
+                  l10n.loginHeadline,
+                  style: const TextStyle(
                     fontFamily: 'Heebo',
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -420,11 +454,11 @@ class _BrandPanel extends StatelessWidget {
                 ),
                 const Gap(28),
                 // Feature bullets
-                const _FeatureBullet(label: 'Risk assessment & tracking'),
+                _FeatureBullet(label: l10n.loginFeature1),
                 const Gap(10),
-                const _FeatureBullet(label: 'Workflow automation'),
+                _FeatureBullet(label: l10n.loginFeature2),
                 const Gap(10),
-                const _FeatureBullet(label: 'Audit-ready reports'),
+                _FeatureBullet(label: l10n.loginFeature3),
               ],
             ),
           ),
@@ -505,6 +539,43 @@ class _MobileHeader extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ── Success Overlay ───────────────────────────────────────────
+class _SuccessOverlay extends StatelessWidget {
+  const _SuccessOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.25),
+      child: Center(
+        child: Container(
+          width: 88,
+          height: 88,
+          decoration: BoxDecoration(
+            color: const Color(0xFF107C10),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF107C10).withValues(alpha: 0.40),
+                blurRadius: 28,
+                spreadRadius: 4,
+              ),
+            ],
+          ),
+          child: const Icon(Icons.check_rounded, color: Colors.white, size: 44),
+        )
+            .animate()
+            .scale(
+              begin: const Offset(0.3, 0.3),
+              duration: 500.ms,
+              curve: Curves.elasticOut,
+            )
+            .fadeIn(duration: 200.ms),
+      ),
+    ).animate().fadeIn(duration: 200.ms);
   }
 }
 
