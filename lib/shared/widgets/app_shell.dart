@@ -193,7 +193,7 @@ class _DesktopSidebar extends ConsumerWidget {
           const SizedBox(height: 4),
           const Divider(color: Color(0x1FFFFFFF), height: 1),
           // User footer
-          _UserFooter(user: user, ref: ref),
+          _UserFooter(user: user),
           const SizedBox(height: 8),
         ],
       ),
@@ -298,8 +298,8 @@ class _LanguagePickerRow extends ConsumerWidget {
       tooltip: '',
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 9, 16, 9),
-        child: Row(
-          children: const [
+        child: const Row(
+          children: [
             Icon(Icons.translate, size: 18, color: Color(0x8CFFFFFF)),
             SizedBox(width: 10),
             Text(
@@ -343,19 +343,18 @@ class _LanguagePickerRow extends ConsumerWidget {
 }
 
 // ── User Footer ──────────────────────────────────────────────────────────────
-class _UserFooter extends StatelessWidget {
+class _UserFooter extends ConsumerWidget {
   final AppUser user;
-  final WidgetRef ref;
-  const _UserFooter({required this.user, required this.ref});
+  const _UserFooter({required this.user});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final initials = user.name.isNotEmpty
         ? user.name.trim().split(' ').map((w) => w[0]).take(2).join()
         : '?';
 
     return GestureDetector(
-      onTap: () => _showLogoutMenu(context),
+      onTap: () => _showLogoutMenu(context, ref),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Row(
@@ -408,7 +407,7 @@ class _UserFooter extends StatelessWidget {
     );
   }
 
-  void _showLogoutMenu(BuildContext context) {
+  void _showLogoutMenu(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
