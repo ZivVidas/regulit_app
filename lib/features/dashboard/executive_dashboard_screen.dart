@@ -13,7 +13,10 @@ import '../../core/customer/customer_context_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/models/gap.dart' hide Gap;
 import '../../shared/utils/currency_formatter.dart';
+import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/metric_card.dart';
+import '../../shared/widgets/page_header.dart';
+import '../../shared/widgets/section_header.dart';
 import 'widgets/risk_meter_widget.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -232,35 +235,40 @@ class _ExecutiveDashboardScreenState
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(l10n.complianceDashboard),
-        actions: [
-          // ── Audit Pack shortcut ──────────────────────────────
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilledButton.icon(
-              icon: const Icon(Icons.inventory_2_outlined, size: 16),
-              label: Text(l10n.navAuditPack),
-              onPressed: () => context.go(AppRoutes.auditPack),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.blue,
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                textStyle: AppTextStyles.bodySmall
-                    .copyWith(fontWeight: FontWeight.w600),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PageHeader(
+            title: l10n.complianceDashboard,
+            variant: PageHeaderVariant.gradient,
+            actions: [
+              FilledButton.icon(
+                icon: const Icon(Icons.inventory_2_outlined, size: 16),
+                label: Text(l10n.navAuditPack),
+                onPressed: () => context.go(AppRoutes.auditPack),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  textStyle: AppTextStyles.bodySmall
+                      .copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          if (customerId == null)
+            Expanded(child: Center(child: Text(l10n.noCustomerContextSelected)))
+          else
+            Expanded(
+              child: _DashboardWithSession(
+                customerId: customerId,
+                selectedSessionId: _selectedSessionId,
+                onSessionChanged: (id) =>
+                    setState(() => _selectedSessionId = id),
               ),
             ),
-          ),
         ],
       ),
-      body: customerId == null
-          ? Center(child: Text(l10n.noCustomerContextSelected))
-          : _DashboardWithSession(
-              customerId: customerId,
-              selectedSessionId: _selectedSessionId,
-              onSessionChanged: (id) =>
-                  setState(() => _selectedSessionId = id),
-            ),
     );
   }
 }
@@ -523,17 +531,17 @@ class _ActionBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.warningLight,
-        borderRadius: AppRadius.card,
-        border: Border.all(color: AppColors.warning.withOpacity(0.4)),
-      ),
+    final l10n = AppLocalizations.of(context);
+    return AppCard(
+      variant: AppCardVariant.flat,
+      tint: AppCardTint.warning,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: Row(
         children: [
-          const Icon(Icons.bolt, color: AppColors.warning, size: 18),
-          const Gap(AppSpacing.sm),
+          const Icon(Icons.warning_amber_rounded,
+              color: AppColors.warning, size: 20),
+          const Gap(AppSpacing.md),
           Expanded(
             child: RichText(
               text: TextSpan(
@@ -541,9 +549,9 @@ class _ActionBanner extends StatelessWidget {
                     AppTextStyles.bodySmall.copyWith(color: AppColors.warning),
                 children: [
                   TextSpan(
-                      text: '${AppLocalizations.of(context).actionRequired} ',
+                      text: '${l10n.actionRequired} ',
                       style: const TextStyle(fontWeight: FontWeight.w700)),
-                  TextSpan(text: AppLocalizations.of(context).tasksNeedApproval(openTasks)),
+                  TextSpan(text: l10n.tasksNeedApproval(openTasks)),
                 ],
               ),
             ),
@@ -554,7 +562,7 @@ class _ActionBanner extends StatelessWidget {
               padding: EdgeInsets.zero,
             ),
             onPressed: () => context.go(AppRoutes.taskList),
-            child: Text(AppLocalizations.of(context).reviewNow),
+            child: Text(l10n.reviewNow),
           ),
         ],
       ),
@@ -588,6 +596,7 @@ class _MetricsGrid extends StatelessWidget {
             variant: (exec.totalExposure ?? 0) > 0
                 ? MetricVariant.danger
                 : MetricVariant.neutral,
+            icon: Icons.account_balance_wallet_rounded,
           ),
           MetricCard.percent(
             label: l10n.complianceScore,
@@ -598,6 +607,7 @@ class _MetricsGrid extends StatelessWidget {
                 : summary.complianceScore >= 0.5
                     ? MetricVariant.warning
                     : MetricVariant.danger,
+            icon: Icons.verified_rounded,
           ),
         ]),
         const Gap(AppSpacing.md),
@@ -609,12 +619,14 @@ class _MetricsGrid extends StatelessWidget {
             variant: exec.openTasks > 0
                 ? MetricVariant.warning
                 : MetricVariant.success,
+            icon: Icons.task_alt_rounded,
           ),
           MetricCard(
             label: l10n.tasksClosedLabel,
             value: '${exec.closedTasks}',
             sub: l10n.ofNTotal(exec.totalTasks),
             variant: MetricVariant.neutral,
+            icon: Icons.check_circle_rounded,
           ),
         ]),
       ],
@@ -639,49 +651,44 @@ class _TrendChartState extends ConsumerState<_TrendChart> {
     final trendAsync =
         ref.watch(_riskTrendProvider((widget.customerId, _period)));
 
-    return Card(
-      child: Padding(
-        padding: AppSpacing.cardPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header row: title + period toggle ─────────────
-            Row(
-              children: [
-                Expanded(
-                  child: Text(AppLocalizations.of(context).riskExposureTrend,
-                      style: AppTextStyles.h4),
-                ),
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(
-                      value: 'monthly',
-                      label: Text(AppLocalizations.of(context).monthly),
-                      icon: const Icon(Icons.calendar_month_outlined, size: 14),
-                    ),
-                    ButtonSegment(
-                      value: 'weekly',
-                      label: Text(AppLocalizations.of(context).weekly),
-                      icon: const Icon(Icons.calendar_view_week_outlined, size: 14),
-                    ),
-                  ],
-                  selected: {_period},
-                  onSelectionChanged: (set) =>
-                      setState(() => _period = set.first),
-                  style: SegmentedButton.styleFrom(
-                    textStyle: const TextStyle(fontSize: 11),
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                  ),
-                ),
-              ],
+    return AppCard(
+      padding: EdgeInsets.zero,
+      header: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.md, AppSpacing.md, AppSpacing.md),
+        child: SectionHeader(
+          title: AppLocalizations.of(context).riskExposureTrend,
+          padding: EdgeInsets.zero,
+          trailing: SegmentedButton<String>(
+            segments: [
+              ButtonSegment(
+                value: 'monthly',
+                label: Text(AppLocalizations.of(context).monthly),
+                icon: const Icon(Icons.calendar_month_outlined, size: 14),
+              ),
+              ButtonSegment(
+                value: 'weekly',
+                label: Text(AppLocalizations.of(context).weekly),
+                icon: const Icon(Icons.calendar_view_week_outlined, size: 14),
+              ),
+            ],
+            selected: {_period},
+            onSelectionChanged: (set) =>
+                setState(() => _period = set.first),
+            style: SegmentedButton.styleFrom(
+              textStyle: const TextStyle(fontSize: 11),
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
             ),
-            const Gap(AppSpacing.lg),
-
-            // ── Bar chart ─────────────────────────────────────
-            SizedBox(
-              height: 160,
-              child: trendAsync.when(
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sm, 0, AppSpacing.sm, AppSpacing.md),
+        child: SizedBox(
+          height: 160,
+          child: trendAsync.when(
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
@@ -805,9 +812,7 @@ class _TrendChartState extends ConsumerState<_TrendChart> {
                 },
               ),
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }
@@ -924,29 +929,28 @@ class _CategoryBreakdown extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(_categoryBreakdownProvider(sessionId));
 
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
+      header: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+        child: SectionHeader(
+          title: AppLocalizations.of(context).riskByCategory,
+          padding: EdgeInsets.zero,
+          trailing: IconButton(
+            icon: const Icon(Icons.refresh, size: 16),
+            color: AppColors.muted,
+            visualDensity: VisualDensity.compact,
+            tooltip: AppLocalizations.of(context).retry,
+            onPressed: () =>
+                ref.invalidate(_categoryBreakdownProvider(sessionId)),
+          ),
+        ),
+      ),
       child: Padding(
         padding: AppSpacing.cardPadding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(AppLocalizations.of(context).riskByCategory, style: AppTextStyles.h4),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.refresh, size: 16),
-                  color: AppColors.muted,
-                  visualDensity: VisualDensity.compact,
-                  tooltip: AppLocalizations.of(context).retry,
-                  onPressed: () =>
-                      ref.invalidate(_categoryBreakdownProvider(sessionId)),
-                ),
-              ],
-            ),
-            const Gap(AppSpacing.md),
-            async.when(
-              loading: () => const Center(
+        child: async.when(
+          loading: () => const Center(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: CircularProgressIndicator(strokeWidth: 2),
@@ -1049,9 +1053,7 @@ class _CategoryBreakdown extends ConsumerWidget {
                 );
               },
             ),
-          ],
         ),
-      ),
     );
   }
 }
