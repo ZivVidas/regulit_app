@@ -6,6 +6,7 @@ import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
+import '../../shared/widgets/app_card.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -63,58 +64,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.blue, AppColors.blueLight],
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 380),
-              child: Card(
-                elevation: 24,
-                shadowColor: Colors.black38,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+      backgroundColor: AppSurfaces.page,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Logo ───────────────────────────────────────────────────
+                Center(
+                  child: Image.asset(
+                    'assets/images/newlogo.png',
+                    width: 160,
+                    filterQuality: FilterQuality.high,
+                  ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
+                const Gap(AppSpacing.sm),
+                Center(
+                  child: Text(
+                    l10n.loginTagline,
+                    style: AppTextStyles.caption,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const Gap(AppSpacing.xxl),
+
+                // ── Form Card ─────────────────────────────────────────────
+                AppCard(
+                  variant: AppCardVariant.elevated,
+                  padding: const EdgeInsets.all(AppSpacing.xxl),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // ── Logo ─────────────────────────────────────────────
-                        Center(
-                          child: Image.asset(
-                            'assets/images/newlogo.png',
-                            width: 160,
-                            filterQuality: FilterQuality.high,
-                          ),
-                        ),
-                        const Gap(AppSpacing.sm),
-                        Center(
-                          child: Text(
-                            l10n.loginTagline,
-                            style: AppTextStyles.caption,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const Gap(AppSpacing.xxxl),
-
-                        // ── Error Banner ──────────────────────────────────────
+                        // ── Error Banner ────────────────────────────────────
                         if (_errorMessage != null) ...[
                           _ErrorBanner(message: _errorMessage!),
                           const Gap(AppSpacing.lg),
                         ],
 
-                        // ── Email Field ───────────────────────────────────────
+                        // ── Email Field ─────────────────────────────────────
                         Text(l10n.emailAddress, style: AppTextStyles.label),
                         const Gap(AppSpacing.xs),
                         TextFormField(
@@ -136,7 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const Gap(AppSpacing.lg),
 
-                        // ── Password Field ────────────────────────────────────
+                        // ── Password Field ──────────────────────────────────
                         Text(l10n.password, style: AppTextStyles.label),
                         const Gap(AppSpacing.xs),
                         TextFormField(
@@ -168,7 +161,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           },
                         ),
 
-                        // ── Forgot Password ───────────────────────────────────
+                        // ── Forgot Password ─────────────────────────────────
                         Align(
                           alignment: AlignmentDirectional.centerEnd,
                           child: TextButton(
@@ -186,36 +179,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const Gap(AppSpacing.lg),
 
-                        // ── Sign In Button ────────────────────────────────────
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.orange,
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.sm),
+                        // ── Sign In Button ──────────────────────────────────
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.orange,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                              ),
                             ),
-                          ),
-                          onPressed: isLoading ? null : _submit,
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.white,
+                            onPressed: isLoading ? null : _submit,
+                            child: isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    '${l10n.signIn} →',
+                                    style: AppTextStyles.button
+                                        .copyWith(color: AppColors.white),
                                   ),
-                                )
-                              : Text(
-                                  '${l10n.signIn} →',
-                                  style: AppTextStyles.button
-                                      .copyWith(color: AppColors.white),
-                                ),
+                          ),
                         ),
                         const Gap(AppSpacing.lg),
 
-                        // ── Footer ────────────────────────────────────────────
+                        // ── Footer ──────────────────────────────────────────
                         Text(
                           l10n.loginFooter,
                           style: AppTextStyles.caption,
@@ -225,7 +221,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -253,7 +249,7 @@ class _ErrorBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.dangerLight,
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: AppColors.danger.withOpacity(0.3)),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
