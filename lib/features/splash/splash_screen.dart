@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:regulit_app/app/theme.dart';
 
 /// Full-screen splash shown while the app restores the auth session.
 class SplashScreen extends StatelessWidget {
@@ -17,31 +18,20 @@ class SplashScreen extends StatelessWidget {
 class _SplashView extends StatelessWidget {
   const _SplashView();
 
-  // Deep navy palette — matches the blue logo tones
-  static const _bg      = Color(0xFF04091A);
-  static const _grad1   = Color(0xFF06102A);
-  static const _grad2   = Color(0xFF0A1840);
-  static const _accent  = Color(0xFF0078D4); // Azure Blue (Kinetic Corporate)
-  static const _accentL = Color(0xFF58C2F0); // Light blue
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.blueDark,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [_bg, _grad1, _grad2],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+        decoration: BoxDecoration(
+          gradient: AppGradients.primaryHeader,
         ),
         child: Stack(
           children: [
             // ── Decorative glow circles ─────────────────────────
             Positioned(
               top: -100, right: -100,
-              child: _GlowCircle(size: 320, color: _accent, opacity: 0.07)
+              child: _GlowCircle(size: 320, color: Colors.white, opacity: 0.07)
                   .animate().scale(
                     begin: const Offset(0.5, 0.5),
                     end:   const Offset(1.0, 1.0),
@@ -51,7 +41,7 @@ class _SplashView extends StatelessWidget {
             ),
             Positioned(
               bottom: -80, left: -80,
-              child: _GlowCircle(size: 260, color: _accentL, opacity: 0.05)
+              child: _GlowCircle(size: 260, color: Colors.white, opacity: 0.05)
                   .animate().scale(
                     begin: const Offset(0.4, 0.4),
                     end:   const Offset(1.0, 1.0),
@@ -61,7 +51,7 @@ class _SplashView extends StatelessWidget {
             ),
             Positioned(
               top: 160, left: -40,
-              child: _GlowCircle(size: 140, color: _accent, opacity: 0.04),
+              child: _GlowCircle(size: 140, color: Colors.white, opacity: 0.04),
             ),
 
             // ── Centre content ──────────────────────────────────
@@ -246,7 +236,7 @@ class _GlowCircle extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: color.withOpacity(opacity),
+        color: color.withValues(alpha: opacity),
       ),
     );
   }
