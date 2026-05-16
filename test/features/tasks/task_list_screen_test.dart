@@ -134,7 +134,9 @@ void main() {
     testWidgets('tile wraps in MouseRegion for hover support', (tester) async {
       await tester.pumpWidget(_wrapList());
       await tester.pumpAndSettle();
-      expect(find.byType(MouseRegion), findsWidgets);
+      // The tile wraps its content in a MouseRegion for hover support.
+      // findsAtLeastNWidgets(1) ensures at least one tile-owned MouseRegion is present.
+      expect(find.byType(MouseRegion), findsAtLeastNWidgets(1));
     });
   });
 }

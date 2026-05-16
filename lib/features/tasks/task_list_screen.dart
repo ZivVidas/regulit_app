@@ -572,6 +572,14 @@ class _TaskListTile extends StatefulWidget {
     required this.onRefresh,
   });
 
+  static Color _statusColor(WorkflowTaskStatus s) => switch (s) {
+        WorkflowTaskStatus.todo          => AppColors.muted,
+        WorkflowTaskStatus.inProgress    => AppColors.warning,
+        WorkflowTaskStatus.pendingReview => AppColors.orange,
+        WorkflowTaskStatus.approved      => AppColors.success,
+        WorkflowTaskStatus.overdue       => AppColors.danger,
+      };
+
   @override
   State<_TaskListTile> createState() => _TaskListTileState();
 }
@@ -582,7 +590,7 @@ class _TaskListTileState extends State<_TaskListTile> {
   @override
   Widget build(BuildContext context) {
     final status = widget.task.status;
-    final accent = _statusColor(status);
+    final accent = _TaskListTile._statusColor(status);
     final overdue = widget.task.dueDate != null &&
         widget.task.dueDate!.isBefore(DateTime.now()) &&
         status != WorkflowTaskStatus.approved;
@@ -698,13 +706,6 @@ class _TaskListTileState extends State<_TaskListTile> {
     }
   }
 
-  static Color _statusColor(WorkflowTaskStatus s) => switch (s) {
-        WorkflowTaskStatus.todo          => AppColors.muted,
-        WorkflowTaskStatus.inProgress    => AppColors.warning,
-        WorkflowTaskStatus.pendingReview => AppColors.orange,
-        WorkflowTaskStatus.approved      => AppColors.success,
-        WorkflowTaskStatus.overdue       => AppColors.danger,
-      };
 }
 
 // ─────────────────────────────────────────────────────────────
