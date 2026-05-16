@@ -85,5 +85,24 @@ void main() {
 
       expect(find.text('Test Task'), findsOneWidget);
     });
+
+    testWidgets('done column task renders at reduced opacity', (tester) async {
+      // Put a task in the Done (approved, statusId=4) column
+      await tester.pumpWidget(
+        _wrapBoard(tasks: [_task(statusId: 4, name: 'Done Task')]),
+      );
+      await tester.pumpAndSettle();
+
+      // The 'Done Task' card must exist
+      expect(find.text('Done Task'), findsOneWidget);
+
+      // The card must be inside an Opacity widget with opacity < 1.0
+      final opacityFinder = find.ancestor(
+        of: find.text('Done Task'),
+        matching: find.byType(Opacity),
+      );
+      final opacityWidget = tester.widget<Opacity>(opacityFinder.first);
+      expect(opacityWidget.opacity, lessThan(1.0));
+    });
   });
 }

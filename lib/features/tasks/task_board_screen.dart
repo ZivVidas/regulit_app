@@ -12,7 +12,6 @@ import '../../core/auth/auth_provider.dart';
 import '../../core/customer/customer_context_provider.dart';
 import '../../core/models/workflow_task.dart';
 import '../../l10n/app_localizations.dart';
-import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/page_header.dart';
 import 'task_edit_dialog.dart';
 
@@ -978,155 +977,180 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final task = widget.task;
     final isOverdue = task.status == WorkflowTaskStatus.overdue;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: widget.canDrag
-          ? SystemMouseCursors.grab
-          : SystemMouseCursors.click,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 2),
-        child: AppCard(
-          variant: AppCardVariant.elevated,
-          padding: const EdgeInsets.all(AppSpacing.md),
-          onTap: dragging ? null : widget.onTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Task name row — drag handle on the right when permitted
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      task.taskName.isEmpty ? widget.l10n.noTaskName : task.taskName,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.text),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (widget.canDrag) ...[
-                    const Gap(4),
-                    Tooltip(
-                      message: widget.l10n.dragToChangeStatus,
-                      child: Icon(
-                        Icons.drag_indicator_rounded,
-                        size: 15,
-                        color: _hovered
-                            ? _accent
-                            : AppColors.muted.withOpacity(0.5),
-                      ),
-                    ),
-                  ],
-                ],
+    // Card body — unchanged content, just extracted to a local variable
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                task.taskName.isEmpty ? widget.l10n.noTaskName : task.taskName,
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.text),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              if (task.whatToDo != null && task.whatToDo!.isNotEmpty) ...[
-                const Gap(4),
-                Text(
-                  task.whatToDo!,
-                  style: AppTextStyles.caption,
+            ),
+            if (widget.canDrag) ...[
+              const Gap(4),
+              Tooltip(
+                message: widget.l10n.dragToChangeStatus,
+                child: Icon(
+                  Icons.drag_indicator_rounded,
+                  size: 15,
+                  color: _hovered
+                      ? _accent
+                      : AppColors.muted.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (task.whatToDo != null && task.whatToDo!.isNotEmpty) ...[
+          const Gap(4),
+          Text(
+            task.whatToDo!,
+            style: AppTextStyles.caption,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+        if (task.risk != null && task.risk!.isNotEmpty) ...[
+          const Gap(4),
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  size: 11, color: AppColors.orange),
+              const Gap(3),
+              Expanded(
+                child: Text(
+                  task.risk!,
+                  style: AppTextStyles.caption.copyWith(
+                      color: AppColors.orange, fontStyle: FontStyle.italic),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ],
-              if (task.risk != null && task.risk!.isNotEmpty) ...[
-                const Gap(4),
-                Row(
-                  children: [
-                    const Icon(Icons.warning_amber_rounded,
-                        size: 11, color: AppColors.orange),
-                    const Gap(3),
-                    Expanded(
-                      child: Text(
-                        task.risk!,
-                        style: AppTextStyles.caption.copyWith(
-                            color: AppColors.orange,
-                            fontStyle: FontStyle.italic),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const Gap(8),
-              // Due date row
-              if (task.dueDate != null)
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today_outlined,
-                        size: 11,
-                        color:
-                            isOverdue ? AppColors.danger : AppColors.muted),
-                    const Gap(3),
-                    Expanded(
-                      child: Text(
-                        '${widget.l10n.taskDueLabel} ${_fmtDate(task.dueDate!)}',
-                        style: AppTextStyles.caption.copyWith(
-                          color:
-                              isOverdue ? AppColors.danger : AppColors.muted,
-                          fontWeight: isOverdue
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              // Assignee row
-              if (task.assignedToUserName != null &&
-                  task.assignedToUserName!.isNotEmpty) ...[
-                const Gap(4),
-                Row(
-                  children: [
-                    const Icon(Icons.person_outline,
-                        size: 11, color: AppColors.muted),
-                    const Gap(3),
-                    Expanded(
-                      child: Text(
-                        task.assignedToUserName!,
-                        style: AppTextStyles.caption,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              // Footer: required badge + evidence count
-              const Gap(6),
-              Row(
-                children: [
-                  if (task.isRequired)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: AppColors.dangerLight,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        widget.l10n.taskRequired,
-                        style: AppTextStyles.caption.copyWith(
-                            color: AppColors.danger, fontSize: 9),
-                      ),
-                    ),
-                  const Spacer(),
-                  if (task.evidenceCount > 0) ...[
-                    Icon(Icons.attach_file_rounded,
-                        size: 11, color: AppColors.muted),
-                    Text('${task.evidenceCount}',
-                        style: AppTextStyles.caption),
-                  ],
-                  if (_hovered && widget.onTap != null && !widget.canDrag)
-                    Icon(Icons.edit_outlined,
-                        size: 11, color: _accent.withOpacity(0.7)),
-                ],
               ),
             ],
+          ),
+        ],
+        const Gap(8),
+        if (task.dueDate != null)
+          Row(
+            children: [
+              Icon(Icons.calendar_today_outlined,
+                  size: 11,
+                  color: isOverdue ? AppColors.danger : AppColors.muted),
+              const Gap(3),
+              Expanded(
+                child: Text(
+                  '${widget.l10n.taskDueLabel} ${_fmtDate(task.dueDate!)}',
+                  style: AppTextStyles.caption.copyWith(
+                    color: isOverdue ? AppColors.danger : AppColors.muted,
+                    fontWeight:
+                        isOverdue ? FontWeight.w700 : FontWeight.w400,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        if (task.assignedToUserName != null &&
+            task.assignedToUserName!.isNotEmpty) ...[
+          const Gap(4),
+          Row(
+            children: [
+              const Icon(Icons.person_outline,
+                  size: 11, color: AppColors.muted),
+              const Gap(3),
+              Expanded(
+                child: Text(
+                  task.assignedToUserName!,
+                  style: AppTextStyles.caption,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ],
+        const Gap(6),
+        Row(
+          children: [
+            if (task.isRequired)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: AppColors.dangerLight,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  widget.l10n.taskRequired,
+                  style: AppTextStyles.caption
+                      .copyWith(color: AppColors.danger, fontSize: 9),
+                ),
+              ),
+            const Spacer(),
+            if (task.evidenceCount > 0) ...[
+              Icon(Icons.attach_file_rounded,
+                  size: 11, color: AppColors.muted),
+              Text('${task.evidenceCount}', style: AppTextStyles.caption),
+            ],
+            if (_hovered && widget.onTap != null && !widget.canDrag)
+              Icon(Icons.edit_outlined,
+                  size: 11, color: _accent.withValues(alpha: 0.7)),
+          ],
+        ),
+      ],
+    );
+
+    return Opacity(
+      opacity: widget.dimmed ? 0.72 : 1.0,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        cursor: widget.canDrag
+            ? SystemMouseCursors.grab
+            : SystemMouseCursors.click,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 2),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              boxShadow: _hovered ? AppShadows.lg : AppShadows.md,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: IntrinsicHeight(
+              child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(width: 3, color: _accent),
+                Expanded(
+                  child: widget.onTap != null
+                      ? Material(
+                          color: Colors.white,
+                          child: InkWell(
+                            onTap: dragging ? null : widget.onTap,
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              child: body,
+                            ),
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: body,
+                        ),
+                ),
+              ],
+            ),
+            ),
           ),
         ),
       ),
