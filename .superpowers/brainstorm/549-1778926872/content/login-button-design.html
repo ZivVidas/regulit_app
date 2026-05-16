@@ -1,0 +1,340 @@
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; }
+
+  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 24px; margin-top: 16px; align-items: start; }
+
+  /* Phone */
+  .phone-frame { background: #1C1C1E; border-radius: 32px; padding: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+  .phone-screen {
+    border-radius: 22px; overflow: hidden;
+    aspect-ratio: 9/19.5; position: relative;
+    background: #F0F2F5;
+    display: flex; flex-direction: column;
+  }
+  .ph-header {
+    background: linear-gradient(135deg, #0078D4, #005A9E);
+    height: 64px; flex-shrink: 0;
+    display: flex; align-items: center; padding: 0 14px; gap: 8px;
+  }
+  .ph-logo { width: 20px; height: 20px; background: white; border-radius: 4px; }
+  .ph-brand { font-size: 12px; font-weight: 800; color: white; }
+  .ph-card {
+    margin: -8px 9px 0;
+    background: white; border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 12px 10px; flex: 1;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .ph-field { background: #F3F2F1; border-radius: 5px; height: 26px; }
+  .ph-gap { flex: 1; }
+
+  /* Animated button */
+  .ph-btn-wrap { position: relative; height: 34px; }
+  .ph-btn {
+    height: 34px; background: #E07200;
+    border-radius: 17px;
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    animation: fullLoop 6s ease-in-out infinite;
+  }
+  @keyframes fullLoop {
+    /* 0-8%: full width idle */
+    0%,8%    { width: 100%; border-radius: 5px; background: #E07200; }
+    /* 8-18%: morph to circle */
+    18%      { width: 34px; border-radius: 17px; background: #E07200; }
+    /* 18-52%: spinner (loading) */
+    52%      { width: 34px; border-radius: 17px; background: #E07200; }
+    /* 52-60%: turn green + check */
+    60%      { width: 34px; border-radius: 17px; background: #107C10; }
+    /* 60-72%: green circle (check visible) */
+    72%      { width: 34px; border-radius: 17px; background: #107C10; }
+    /* 72-85%: start expanding */
+    85%      { width: 500px; height: 500px; border-radius: 250px; background: #107C10; opacity: 0.6; }
+    90%,100% { width: 100%; border-radius: 5px; background: #E07200; height: 34px; opacity: 1; }
+  }
+
+  .ph-spinner {
+    width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+    border-radius: 50%; animation: spin 0.8s linear infinite, spinShow 6s infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spinShow {
+    0%,16%,55%,100% { opacity: 0; }
+    20%,50%         { opacity: 1; }
+  }
+
+  .ph-label {
+    font-size: 10px; font-weight: 700; color: white;
+    white-space: nowrap;
+    animation: labelShow 6s infinite;
+  }
+  @keyframes labelShow {
+    0%,7%   { opacity: 1; }
+    14%,100% { opacity: 0; }
+  }
+
+  .ph-check {
+    position: absolute; color: white; font-size: 14px; font-weight: 700;
+    animation: checkShow 6s infinite;
+  }
+  @keyframes checkShow {
+    0%,55%  { opacity: 0; transform: scale(0.3); }
+    63%,74% { opacity: 1; transform: scale(1); }
+    80%,100% { opacity: 0; transform: scale(1); }
+  }
+
+  /* Error shake demo */
+  .ph-btn-err {
+    height: 34px; background: #E07200;
+    border-radius: 17px;
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; justify-content: center;
+    animation: errLoop 5s ease-in-out infinite;
+  }
+  @keyframes errLoop {
+    0%,8%   { width: 100%; border-radius: 5px; }
+    18%     { width: 34px; border-radius: 17px; }
+    40%     { width: 34px; border-radius: 17px; background: #E07200; }
+    /* shake */
+    43%     { width: 34px; transform: translateX(calc(-50% - 6px)); background: #D13438; }
+    46%     { width: 34px; transform: translateX(calc(-50% + 6px)); }
+    49%     { width: 34px; transform: translateX(calc(-50% - 4px)); }
+    52%     { width: 34px; transform: translateX(calc(-50% + 4px)); }
+    55%     { width: 34px; transform: translateX(-50%); }
+    /* re-expand */
+    65%     { width: 100%; border-radius: 5px; background: #E07200; }
+    100%    { width: 100%; border-radius: 5px; background: #E07200; }
+  }
+
+  .ph-err-spinner {
+    width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+    border-radius: 50%; animation: spin 0.8s linear infinite, errSpinShow 5s infinite;
+  }
+  @keyframes errSpinShow {
+    0%,16%,58%,100% { opacity: 0; }
+    20%,55%         { opacity: 1; }
+  }
+  .ph-err-label {
+    font-size: 10px; font-weight: 700; color: white; white-space: nowrap;
+    animation: errLabelShow 5s infinite;
+    position: absolute;
+  }
+  @keyframes errLabelShow {
+    0%,7%  { opacity: 1; }
+    14%,63%,100% { opacity: 0; }
+    67%    { opacity: 1; }
+    100%   { opacity: 0; }
+  }
+  .ph-err-banner {
+    background: #FDE7E9; border-radius: 5px; height: 22px; margin-bottom: 6px;
+    display: flex; align-items: center; padding: 0 8px; gap: 5px;
+    animation: bannerShow 5s infinite;
+  }
+  @keyframes bannerShow {
+    0%,62%  { opacity: 0; height: 0; margin-bottom: 0; }
+    68%,100% { opacity: 1; height: 22px; margin-bottom: 6px; }
+  }
+  .err-dot { width: 8px; height: 8px; background: #D13438; border-radius: 50%; flex-shrink: 0; }
+  .err-text { font-size: 8px; color: #D13438; }
+
+  /* Timeline */
+  .section-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #A19F9D; margin: 16px 0 8px;
+  }
+  .timeline { display: flex; flex-direction: column; gap: 8px; }
+  .t-row { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; font-size: 11px; }
+  .t-label { font-weight: 600; color: #201F1E; }
+  .t-bar-wrap { background: #F3F2F1; border-radius: 4px; height: 20px; position: relative; overflow: hidden; }
+  .t-bar {
+    position: absolute; top: 0; bottom: 0; border-radius: 4px;
+    display: flex; align-items: center; padding-left: 6px;
+    font-size: 9px; color: white; font-weight: 600; white-space: nowrap;
+  }
+  .t-orange { background: #E07200; }
+  .t-blue   { background: #0078D4; }
+  .t-green  { background: #107C10; }
+  .t-muted  { background: #A19F9D; }
+
+  /* Spec pills */
+  .spec-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .spec-pill {
+    background: #F3F2F1; border-radius: 8px; padding: 7px 11px;
+    font-size: 11px; color: #605E5C; line-height: 1.5; flex: 1; min-width: 150px;
+  }
+  .spec-pill strong { display: block; color: #201F1E; font-size: 11px; margin-bottom: 1px; }
+
+  .two-phones { display: flex; gap: 12px; }
+  .phone-sub { font-size: 9px; color: #A19F9D; text-align: center; margin-top: 6px; }
+</style>
+
+<h2>Login button animation — Design A</h2>
+<p class="subtitle">Button morphs to circle → spinner → green check → ripple expands → app navigates in.</p>
+
+<div class="layout">
+
+  <!-- Phones -->
+  <div>
+    <div class="two-phones">
+      <div style="flex:1">
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="ph-header">
+              <div class="ph-logo"></div>
+              <div class="ph-brand">ReguLit</div>
+            </div>
+            <div class="ph-card">
+              <div class="ph-field"></div>
+              <div class="ph-field"></div>
+              <div style="height:6px"></div>
+              <div class="ph-gap"></div>
+              <div class="ph-btn-wrap">
+                <div class="ph-btn">
+                  <div class="ph-label">Sign In →</div>
+                  <div class="ph-spinner"></div>
+                  <div class="ph-check">✓</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-sub">Success path</div>
+      </div>
+
+      <div style="flex:1">
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="ph-header">
+              <div class="ph-logo"></div>
+              <div class="ph-brand">ReguLit</div>
+            </div>
+            <div class="ph-card">
+              <div class="ph-err-banner">
+                <div class="err-dot"></div>
+                <div class="err-text">Invalid credentials</div>
+              </div>
+              <div class="ph-field"></div>
+              <div class="ph-field"></div>
+              <div style="height:6px"></div>
+              <div class="ph-gap"></div>
+              <div class="ph-btn-wrap">
+                <div class="ph-btn-err">
+                  <div class="ph-err-label">Sign In →</div>
+                  <div class="ph-err-spinner"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-sub">Error path</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Details -->
+  <div>
+    <div class="section-label">Animation timeline (success path)</div>
+    <div class="timeline">
+      <div class="t-row">
+        <div class="t-label">Tap</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar t-orange" style="left:0;width:5%">0 ms</div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-label">Morph → circle</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar t-orange" style="left:0;width:18%">300 ms, easeInOut</div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-label">Spinner (waiting)</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar t-blue" style="left:18%;width:40%">API call duration</div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-label">→ Green + check</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar t-green" style="left:58%;width:10%">200 ms</div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-label">Hold</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar t-green" style="left:68%;width:8%">150 ms</div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-label">Ripple expand</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar t-green" style="left:76%;width:18%">500 ms, easeIn</div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-label">Navigate</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar t-muted" style="left:85%;width:15%">at 75% expand</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Error path</div>
+    <div class="timeline">
+      <div class="t-row">
+        <div class="t-label">Morph → circle</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar t-orange" style="left:0;width:20%">300 ms</div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-label">Spinner</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar t-blue" style="left:20%;width:35%">API call</div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-label">Flash red + shake</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar" style="left:55%;width:15%;background:#D13438">300 ms</div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-label">Re-expand</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar t-orange" style="left:70%;width:15%">300 ms</div>
+        </div>
+      </div>
+      <div class="t-row">
+        <div class="t-label">Error banner</div>
+        <div class="t-bar-wrap">
+          <div class="t-bar" style="left:85%;width:15%;background:#D13438">fade in</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Architecture changes</div>
+    <div class="spec-grid">
+      <div class="spec-pill"><strong>auth_provider.dart</strong>Split login into loginAndHold() (API + tokens, hold state in AsyncLoading) + completeLogin(user) (set AsyncData → GoRouter fires)</div>
+      <div class="spec-pill"><strong>Button (login_screen.dart)</strong>AnimatedContainer: width double.infinity→48, borderRadius sm→24. GlobalKey to locate button position for ripple origin.</div>
+      <div class="spec-pill"><strong>_RippleOverlay (new widget)</strong>Stack child. Positioned at button centre. Scales from 48 px circle to screen diagonal. Green. After 75% expansion → completeLogin().</div>
+      <div class="spec-pill"><strong>Error shake</strong>flutter_animate .shake() or custom slideX on the circle when auth fails, then AnimatedContainer re-expands.</div>
+      <div class="spec-pill"><strong>Non-changes</strong>_SuccessOverlay removed (replaced by ripple). GoRouter config unchanged. Form logic, providers, routes unchanged.</div>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top:20px">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content"><h3>Looks good — write the spec</h3><p>Proceed with this design</p></div>
+  </div>
+  <div class="option" data-choice="tweak" onclick="toggleSelect(this)">
+    <div class="letter">~</div>
+    <div class="content"><h3>I want a change</h3><p>Tell me what to adjust</p></div>
+  </div>
+</div>

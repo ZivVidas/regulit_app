@@ -1,0 +1,259 @@
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 24px;
+    align-items: start;
+    margin-top: 16px;
+  }
+
+  /* Phone frame */
+  .phone-frame {
+    background: #1C1C1E;
+    border-radius: 36px;
+    padding: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  .phone-screen {
+    border-radius: 24px;
+    overflow: hidden;
+    aspect-ratio: 9/19.5;
+    position: relative;
+    background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+  }
+
+  /* Glow circles */
+  .glow {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .glow-tr {
+    width: 280px; height: 280px;
+    top: -100px; right: -100px;
+    background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 65%);
+  }
+  .glow-bl {
+    width: 200px; height: 200px;
+    bottom: 80px; left: -80px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 65%);
+  }
+
+  /* Logo area */
+  .logo-area { display: flex; flex-direction: column; align-items: center; margin-bottom: 48px; }
+  .logo-halo {
+    width: 144px; height: 144px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.16) 0%, transparent 70%);
+    display: flex; align-items: center; justify-content: center;
+    animation: breathe 2.8s ease-in-out infinite alternate;
+  }
+  .logo-ring {
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.28);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 20px rgba(255,255,255,0.1);
+  }
+  .logo-gif {
+    width: 78px; height: 78px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #0078D4;
+    text-align: center; line-height: 1.2;
+  }
+  @keyframes breathe { from { transform: scale(1); } to { transform: scale(1.03); } }
+
+  /* Progress area */
+  .progress-area { width: 100%; display: flex; flex-direction: column; align-items: center; }
+  .prog-track {
+    width: 85%; height: 3px; border-radius: 2px;
+    background: rgba(255,255,255,0.18);
+    overflow: hidden; margin-bottom: 8px;
+  }
+  .prog-fill {
+    width: 65%; height: 100%;
+    background: rgba(255,255,255,0.88);
+    border-radius: 2px;
+    animation: prog 2.4s ease-in-out forwards;
+  }
+  @keyframes prog { from { width: 0% } to { width: 65% } }
+  .prog-label {
+    font-size: 10px; color: rgba(255,255,255,0.5);
+    animation: pulse 1.4s ease-in-out infinite alternate;
+  }
+  @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+
+  /* Footer */
+  .splash-footer {
+    position: absolute; bottom: 16px;
+    font-size: 9px; color: rgba(255,255,255,0.35);
+    letter-spacing: 0.2px;
+  }
+
+  /* Animation timeline */
+  .timeline { display: flex; flex-direction: column; gap: 10px; }
+  .anim-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 10px;
+    align-items: center;
+    font-size: 12px;
+  }
+  .anim-label {
+    font-weight: 600; color: #201F1E; font-size: 11px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .anim-bar-wrap {
+    background: #F3F2F1; border-radius: 4px; height: 22px;
+    position: relative; overflow: hidden;
+  }
+  .anim-bar {
+    position: absolute; top: 0; bottom: 0;
+    border-radius: 4px; display: flex; align-items: center;
+    padding-left: 6px; font-size: 10px; color: white; font-weight: 600;
+    white-space: nowrap;
+  }
+  .anim-bar.blue { background: #0078D4; }
+  .anim-bar.light { background: #2899E0; }
+  .anim-bar.muted { background: #A19F9D; }
+
+  /* Spec pills */
+  .spec-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .spec-pill {
+    background: #F3F2F1; border-radius: 8px;
+    padding: 7px 11px; font-size: 11px; color: #605E5C; line-height: 1.5;
+  }
+  .spec-pill strong { display: block; color: #201F1E; font-size: 11px; margin-bottom: 1px; }
+
+  .section-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #A19F9D; margin: 18px 0 8px;
+  }
+
+  .approve-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+  .btn {
+    padding: 9px 18px; border-radius: 8px; border: none;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn-primary { background: #0078D4; color: white; }
+  .btn-secondary { background: #F3F2F1; color: #201F1E; }
+</style>
+
+<h2>Splash Screen — Option A: Blue Gradient</h2>
+<p class="subtitle">The app's primary header gradient becomes the splash background, making it feel like a natural intro to the app's visual language.</p>
+
+<div class="layout">
+
+  <!-- Phone mockup -->
+  <div>
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="glow glow-tr"></div>
+        <div class="glow glow-bl"></div>
+
+        <div class="logo-area">
+          <div class="logo-halo">
+            <div class="logo-ring">
+              <div class="logo-gif">GIF<br>logo</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="progress-area">
+          <div class="prog-track">
+            <div class="prog-fill"></div>
+          </div>
+          <div class="prog-label">Loading…</div>
+        </div>
+
+        <div class="splash-footer">© 2025 Regulit · Privacy by design</div>
+      </div>
+    </div>
+    <p style="font-size:10px;color:#A19F9D;text-align:center;margin-top:8px">Breathing pulse loops on the logo; progress bar fills over 2.4 s</p>
+  </div>
+
+  <!-- Details panel -->
+  <div>
+
+    <div class="section-label">Animation sequence</div>
+    <div class="timeline">
+      <div class="anim-row">
+        <div class="anim-label">🔵 Glow circles</div>
+        <div class="anim-bar-wrap">
+          <div class="anim-bar muted" style="left:0;width:55%">fadeIn 600 ms</div>
+        </div>
+      </div>
+      <div class="anim-row">
+        <div class="anim-label">🖼 Logo halo</div>
+        <div class="anim-bar-wrap">
+          <div class="anim-bar blue" style="left:0;width:45%">scale 0.8→1 + fade, 500 ms, easeOutBack</div>
+        </div>
+      </div>
+      <div class="anim-row">
+        <div class="anim-label">🔁 Breathe (loop)</div>
+        <div class="anim-bar-wrap">
+          <div class="anim-bar light" style="left:10%;width:88%">scale 1.0 ↔ 1.03, 2800 ms, repeat reverse</div>
+        </div>
+      </div>
+      <div class="anim-row">
+        <div class="anim-label">📊 Progress bar</div>
+        <div class="anim-bar-wrap">
+          <div class="anim-bar blue" style="left:15%;width:65%">fadeIn + slideY 0.3→0, delay 400 ms</div>
+        </div>
+      </div>
+      <div class="anim-row">
+        <div class="anim-label">📄 Footer</div>
+        <div class="anim-bar-wrap">
+          <div class="anim-bar muted" style="left:22%;width:40%">fadeIn, delay 600 ms</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Colour changes</div>
+    <div class="spec-grid">
+      <div class="spec-pill"><strong>Background</strong>AppGradients.primaryHeader<br>(#0078D4 → #005A9E)</div>
+      <div class="spec-pill"><strong>Glow circles</strong>rgba(white, 0.12) / 0.08<br>replaces teal halo</div>
+      <div class="spec-pill"><strong>Logo ring border</strong>white withValues(alpha:0.28)</div>
+      <div class="spec-pill"><strong>Progress track</strong>white withValues(alpha:0.18)</div>
+      <div class="spec-pill"><strong>Progress fill</strong>white withValues(alpha:0.88)</div>
+      <div class="spec-pill"><strong>Footer text</strong>white withValues(alpha:0.35)</div>
+    </div>
+
+    <div class="section-label">Code changes</div>
+    <div class="spec-grid">
+      <div class="spec-pill"><strong>Remove</strong>_bg, _grad1, _grad2, _accent, _accentL constants</div>
+      <div class="spec-pill"><strong>Add</strong>AppGradients, AppColors imports</div>
+      <div class="spec-pill"><strong>Cleanup</strong>withOpacity → withValues(alpha:) throughout</div>
+      <div class="spec-pill"><strong>New</strong>logo + progress bar flutter_animate entrance</div>
+    </div>
+
+    <div class="section-label">Non-changes</div>
+    <div class="spec-grid">
+      <div class="spec-pill">GIF asset (regulit_shine.gif) unchanged</div>
+      <div class="spec-pill">Progress bar logic (TweenAnimationBuilder 0→1, 2400 ms) unchanged</div>
+      <div class="spec-pill">No new dependencies</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="options" style="margin-top:20px">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content"><h3>Looks good — write the spec</h3><p>Proceed with this design</p></div>
+  </div>
+  <div class="option" data-choice="tweak" onclick="toggleSelect(this)">
+    <div class="letter">~</div>
+    <div class="content"><h3>I want a change</h3><p>Tell me what to adjust in the terminal</p></div>
+  </div>
+</div>
