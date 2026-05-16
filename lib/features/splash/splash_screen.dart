@@ -76,7 +76,7 @@ class _SplashView extends StatelessWidget {
                   Text(
                     'Compliance that protects.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.45),
+                      color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 15,
                       fontWeight: FontWeight.w400,
                       letterSpacing: 0.4,
@@ -104,7 +104,7 @@ class _SplashView extends StatelessWidget {
                 '© 2025 Regulit · Privacy by design',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.35),
                   fontSize: 11,
                   letterSpacing: 0.3,
                 ),
