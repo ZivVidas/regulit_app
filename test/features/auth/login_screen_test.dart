@@ -79,7 +79,7 @@ class _ErrorAuthState extends AuthState {
   }
 
   @override
-  void completeLogin() {}
+  void completeLogin() {} // never called on the error path
 }
 
 Widget _wrap(WidgetTester tester, {required Size size}) {
@@ -307,6 +307,7 @@ void main() {
 
       // Pump past the 500 ms delay in _submit's error path
       await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(); // flush pending setState rebuild
 
       // Error banner should now be visible
       expect(find.text('Invalid credentials'), findsOneWidget);
@@ -326,6 +327,7 @@ void main() {
       // After error delay + AnimatedContainer re-expand animation
       await tester.pump(const Duration(milliseconds: 600));
       await tester.pump(const Duration(milliseconds: 350)); // container re-expand
+      await tester.pump(); // flush pending setState rebuild
 
       // Button text label should be back
       expect(find.textContaining('Sign in'), findsOneWidget);
