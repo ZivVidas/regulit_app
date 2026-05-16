@@ -876,33 +876,42 @@ class _KanbanColState extends State<_KanbanCol> {
                       Expanded(
                         child: Text(
                           widget.title.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: isHovering
+                                ? widget.gradient.colors.first
+                                : Colors.white,
                             letterSpacing: 0.6,
                           ),
                         ),
                       ),
                       if (isHovering)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 6),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
                           child: Icon(
                             Icons.move_down_rounded,
                             size: 13,
-                            color: Colors.white,
+                            color: widget.gradient.colors.first,
                           ),
                         ),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 7, vertical: 1),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.22),
+                          color: isHovering
+                              ? widget.gradient.colors.first
+                                  .withValues(alpha: 0.15)
+                              : Colors.white.withValues(alpha: 0.22),
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text(
                           '${widget.tasks.length}',
-                          style: AppTextStyles.tag.copyWith(color: Colors.white),
+                          style: AppTextStyles.tag.copyWith(
+                            color: isHovering
+                                ? widget.gradient.colors.first
+                                : Colors.white,
+                          ),
                         ),
                       ),
                     ],
