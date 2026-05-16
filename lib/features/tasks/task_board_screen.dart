@@ -637,11 +637,17 @@ class _MetricTile extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                  color: bgColor, borderRadius: BorderRadius.circular(8)),
+                color: bgColor,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: color.withValues(alpha: 0.40),
+                  width: 1.5,
+                ),
+              ),
               child: Text('$value',
                   style: AppTextStyles.h3.copyWith(color: color)),
             ),
