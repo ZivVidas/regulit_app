@@ -123,7 +123,7 @@ void main() {
 
       await expectLater(
         notifier.loginAndHold(email: 'alice@test.com', password: 'wrong'),
-        throwsException,
+        throwsA(isA<DioException>()),
       );
 
       final state = container.read(authStateProvider);

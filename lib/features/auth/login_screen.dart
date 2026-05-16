@@ -49,10 +49,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _errorMessage = null);
     try {
-      await ref.read(authStateProvider.notifier).login(
+      await ref.read(authStateProvider.notifier).loginAndHold(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
+      if (mounted) ref.read(authStateProvider.notifier).completeLogin();
       if (mounted) setState(() => _loginSucceeded = true);
       // GoRouter's redirect fires on the next frame after state change
     } on Exception catch (e) {
