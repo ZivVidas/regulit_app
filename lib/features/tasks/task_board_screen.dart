@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
@@ -717,7 +718,9 @@ class _KanbanBoard extends StatelessWidget {
                   currentUserId: currentUserId,
                   onStatusChange: onStatusChange,
                   onTaskTap: onTaskTap,
-                ),
+                ).animate(delay: 0.ms)
+                    .fadeIn(duration: 250.ms)
+                    .slideY(begin: 0.05, curve: Curves.easeOut),
                 const Gap(_gap),
                 _KanbanCol(
                   title: l10n.taskInProgress,
@@ -729,7 +732,9 @@ class _KanbanBoard extends StatelessWidget {
                   currentUserId: currentUserId,
                   onStatusChange: onStatusChange,
                   onTaskTap: onTaskTap,
-                ),
+                ).animate(delay: 50.ms)
+                    .fadeIn(duration: 250.ms)
+                    .slideY(begin: 0.05, curve: Curves.easeOut),
                 const Gap(_gap),
                 _KanbanCol(
                   title: l10n.taskPendingReview,
@@ -741,7 +746,9 @@ class _KanbanBoard extends StatelessWidget {
                   currentUserId: currentUserId,
                   onStatusChange: onStatusChange,
                   onTaskTap: onTaskTap,
-                ),
+                ).animate(delay: 100.ms)
+                    .fadeIn(duration: 250.ms)
+                    .slideY(begin: 0.05, curve: Curves.easeOut),
                 const Gap(_gap),
                 _KanbanCol(
                   title: l10n.taskDone,
@@ -754,7 +761,9 @@ class _KanbanBoard extends StatelessWidget {
                   currentUserId: currentUserId,
                   onStatusChange: onStatusChange,
                   onTaskTap: onTaskTap,
-                ),
+                ).animate(delay: 150.ms)
+                    .fadeIn(duration: 250.ms)
+                    .slideY(begin: 0.05, curve: Curves.easeOut),
                 const Gap(_gap),
                 _KanbanCol(
                   title: l10n.taskOverdue,
@@ -766,7 +775,9 @@ class _KanbanBoard extends StatelessWidget {
                   currentUserId: currentUserId,
                   onStatusChange: onStatusChange,
                   onTaskTap: onTaskTap,
-                ),
+                ).animate(delay: 200.ms)
+                    .fadeIn(duration: 250.ms)
+                    .slideY(begin: 0.05, curve: Curves.easeOut),
               ],
             ),
           ),
@@ -915,7 +926,9 @@ class _KanbanColState extends State<_KanbanCol> {
                             onTap: widget.onTaskTap == null
                                 ? null
                                 : () => widget.onTaskTap!(widget.tasks[i]),
-                          ),
+                          ).animate(delay: Duration(milliseconds: i * 30))
+                              .fadeIn(duration: 200.ms)
+                              .slideY(begin: 0.04, curve: Curves.easeOut),
                           if (i < widget.tasks.length - 1) const Gap(6),
                         ],
                       ],
