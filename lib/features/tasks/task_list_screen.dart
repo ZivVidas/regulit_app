@@ -19,7 +19,6 @@ import '../../core/models/user.dart';
 import '../../core/models/workflow_task.dart';
 import '../../core/api/api_client.dart';
 import '../../l10n/app_localizations.dart';
-import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/page_header.dart';
 import 'task_edit_dialog.dart';
@@ -556,7 +555,7 @@ class _SectionHeader extends StatelessWidget {
 // Task tile
 // ─────────────────────────────────────────────────────────────
 
-class _TaskListTile extends StatelessWidget {
+class _TaskListTile extends StatefulWidget {
   final WorkflowTask task;
   /// True when current user is it_executor — tap opens full edit dialog.
   final bool isItExecutor;
@@ -574,105 +573,127 @@ class _TaskListTile extends StatelessWidget {
   });
 
   @override
+  State<_TaskListTile> createState() => _TaskListTileState();
+}
+
+class _TaskListTileState extends State<_TaskListTile> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final status = task.status;
+    final status = widget.task.status;
     final accent = _statusColor(status);
-    final overdue = task.dueDate != null &&
-        task.dueDate!.isBefore(DateTime.now()) &&
+    final overdue = widget.task.dueDate != null &&
+        widget.task.dueDate!.isBefore(DateTime.now()) &&
         status != WorkflowTaskStatus.approved;
 
-    return AppCard(
-      variant: AppCardVariant.flat,
-      padding: AppSpacing.listTilePadding,
-      onTap: () => _openDetail(context),
-      child: Row(
+    final body = Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Status dot
-              Container(
-                width: 10,
-                height: 10,
-                margin: const EdgeInsets.only(right: 12, top: 2),
-                decoration: BoxDecoration(
-                  color: accent,
-                  shape: BoxShape.circle,
-                ),
+              Text(
+                widget.task.taskName,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 14),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-
-              // Title + meta
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.taskName,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+              const Gap(4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  _Chip(label: status.label, color: accent),
+                  if (widget.task.assignedToUserName != null)
+                    _Chip(
+                      label: widget.task.assignedToUserName!,
+                      color: AppColors.blue,
+                      icon: Icons.person_outline,
                     ),
-                    const Gap(4),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        _Chip(label: status.label, color: accent),
-                        if (task.assignedToUserName != null)
-                          _Chip(
-                            label: task.assignedToUserName!,
-                            color: AppColors.blue,
-                            icon: Icons.person_outline,
-                          ),
-                        if (task.dueDate != null)
-                          _Chip(
-                            label: DateFormat('dd MMM yyyy')
-                                .format(task.dueDate!),
-                            color: overdue ? AppColors.danger : AppColors.muted,
-                            icon: Icons.calendar_today_outlined,
-                          ),
-                        if (task.estimatedFine != null)
-                          _Chip(
-                            label:
-                                '₪${NumberFormat.compact().format(task.estimatedFine)}',
-                            color: AppColors.orange,
-                            icon: Icons.account_balance_outlined,
-                          ),
-                      ],
+                  if (widget.task.dueDate != null)
+                    _Chip(
+                      label: DateFormat('dd MMM yyyy')
+                          .format(widget.task.dueDate!),
+                      color: overdue ? AppColors.danger : AppColors.muted,
+                      icon: Icons.calendar_today_outlined,
                     ),
-                  ],
-                ),
+                  if (widget.task.estimatedFine != null)
+                    _Chip(
+                      label:
+                          '₪${NumberFormat.compact().format(widget.task.estimatedFine)}',
+                      color: AppColors.orange,
+                      icon: Icons.account_balance_outlined,
+                    ),
+                ],
               ),
-
-              // Chevron
-              const Icon(Icons.chevron_right, color: AppColors.muted),
             ],
           ),
-        );
+        ),
+        const Icon(Icons.chevron_right, color: AppColors.muted),
+      ],
+    );
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: _hovered ? AppShadows.lg : AppShadows.md,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 3 px accent stripe — status colour
+              Container(width: 3, color: accent),
+              // Card body
+              Expanded(
+                child: Material(
+                  color: Colors.white,
+                  child: InkWell(
+                    onTap: () => _openDetail(context),
+                    child: Padding(
+                      padding: AppSpacing.listTilePadding,
+                      child: body,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _openDetail(BuildContext context) {
-    if (isItExecutor) {
-      // it_executor always opens the full edit dialog.
+    if (widget.isItExecutor) {
       showDialog<bool>(
         context: context,
-        builder: (_) => TaskEditDialog(task: task, l10n: l10n),
+        builder: (_) => TaskEditDialog(task: widget.task, l10n: widget.l10n),
       ).then((refreshed) {
-        if (refreshed == true) onRefresh();
+        if (refreshed == true) widget.onRefresh();
       });
     } else {
-      // client_admin / employee: read-only detail sheet.
-      // Status change is enabled only if this task is assigned to them.
       showDialog<bool>(
         context: context,
         builder: (_) => TaskEditDialog(
-          task: task,
-          l10n: l10n,
+          task: widget.task,
+          l10n: widget.l10n,
           readOnly: true,
-          canChangeStatus: canChangeStatus,
-          canUploadEvidence: canChangeStatus,
-          onStatusChanged: onRefresh,
+          canChangeStatus: widget.canChangeStatus,
+          canUploadEvidence: widget.canChangeStatus,
+          onStatusChanged: widget.onRefresh,
         ),
       ).then((refreshed) {
-        if (refreshed == true) onRefresh();
+        if (refreshed == true) widget.onRefresh();
       });
     }
   }
