@@ -230,5 +230,25 @@ void main() {
       // In idle state the overlay must be invisible
       expect(overlay.opacity, 0.0);
     });
+
+    testWidgets('white overlay visible after successful login', (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_wrapSuccess(tester, size: const Size(400, 800)));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'alice@test.com');
+      await tester.enterText(find.byType(TextFormField).last, 'password1');
+      await tester.tap(find.byType(FilledButton));
+      await tester.pump(); // flush microtask + setState(_phase = succeeded)
+
+      // AnimatedOpacity animates to 1.0 over 400 ms
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final overlay = tester.widget<AnimatedOpacity>(
+        find.byKey(const Key('fadeToWhiteOverlay')),
+      );
+      expect(overlay.opacity, 1.0);
+    });
   });
 }

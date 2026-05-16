@@ -62,8 +62,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             password: _passwordController.text,
           );
       if (!mounted) return;
-      // Turn button green — _FadeToWhiteOverlay.onFadeComplete will call
-      // completeLogin() in Task 3. For now, navigation is deferred.
       setState(() => _phase = _ButtonPhase.succeeded);
     } on Exception catch (e) {
       if (!mounted) return;
