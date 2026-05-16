@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -436,7 +437,9 @@ class _TaskListBody extends ConsumerWidget {
                       canChangeStatus: canChangeStatus,
                       l10n: l10n,
                       onRefresh: refresh,
-                    ),
+                    ).animate(delay: Duration(milliseconds: i * 40))
+                        .fadeIn(duration: 200.ms)
+                        .slideX(begin: -0.04, curve: Curves.easeOut),
                   );
                 },
                 childCount: items.length,

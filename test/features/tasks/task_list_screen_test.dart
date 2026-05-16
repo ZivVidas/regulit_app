@@ -139,4 +139,18 @@ void main() {
       expect(find.byType(MouseRegion), findsAtLeastNWidgets(1));
     });
   });
+
+  group('TaskListScreen animations', () {
+    testWidgets('multiple tiles all render after settle', (tester) async {
+      await tester.pumpWidget(_wrapList(
+        tasks: [
+          _taskJson(),
+          _taskJson(id: 'task-2', taskName: 'Vendor risk assessment'),
+        ],
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('GDPR data mapping audit'), findsOneWidget);
+      expect(find.text('Vendor risk assessment'), findsOneWidget);
+    });
+  });
 }
