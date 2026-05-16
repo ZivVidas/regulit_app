@@ -8,7 +8,10 @@ void main() {
 
   testWidgets('SplashScreen renders without error', (tester) async {
     await tester.pumpWidget(const SplashScreen());
-    await tester.pump(const Duration(milliseconds: 100));
+    // Pump past the latest entrance delay (footer at 800 ms) so all
+    // flutter_animate delay Timers fire and no pending timers remain at
+    // widget disposal.
+    await tester.pump(const Duration(milliseconds: 1500));
     expect(find.byType(SplashScreen), findsOneWidget);
   });
 
