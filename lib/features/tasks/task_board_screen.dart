@@ -14,7 +14,7 @@ import '../../core/models/workflow_task.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/page_header.dart';
-import '../../shared/widgets/section_header.dart';
+// section_header removed — gradient header is used instead;
 import 'task_edit_dialog.dart';
 
 // CustomerUserItem and customerUsersProvider are now in task_edit_dialog.dart
@@ -707,8 +707,7 @@ class _KanbanBoard extends StatelessWidget {
                   title: l10n.taskToDo,
                   status: WorkflowTaskStatus.todo,
                   tasks: todo,
-                  headerColor: AppColors.muted,
-                  headerBg: AppColors.surface,
+                  gradient: AppGradients.neutralHeader,
                   l10n: l10n,
                   isItExecutor: isItExecutor,
                   currentUserId: currentUserId,
@@ -720,8 +719,7 @@ class _KanbanBoard extends StatelessWidget {
                   title: l10n.taskInProgress,
                   status: WorkflowTaskStatus.inProgress,
                   tasks: inProgress,
-                  headerColor: AppColors.warning,
-                  headerBg: AppColors.warningLight,
+                  gradient: AppGradients.warningHeader,
                   l10n: l10n,
                   isItExecutor: isItExecutor,
                   currentUserId: currentUserId,
@@ -733,8 +731,7 @@ class _KanbanBoard extends StatelessWidget {
                   title: l10n.taskPendingReview,
                   status: WorkflowTaskStatus.pendingReview,
                   tasks: pendingReview,
-                  headerColor: AppColors.orange,
-                  headerBg: AppColors.orangeLight,
+                  gradient: AppGradients.secondaryHeader,
                   l10n: l10n,
                   isItExecutor: isItExecutor,
                   currentUserId: currentUserId,
@@ -746,8 +743,7 @@ class _KanbanBoard extends StatelessWidget {
                   title: l10n.taskDone,
                   status: WorkflowTaskStatus.approved,
                   tasks: done,
-                  headerColor: AppColors.success,
-                  headerBg: AppColors.successLight,
+                  gradient: AppGradients.successHeader,
                   dimmed: true,
                   l10n: l10n,
                   isItExecutor: isItExecutor,
@@ -760,8 +756,7 @@ class _KanbanBoard extends StatelessWidget {
                   title: l10n.taskOverdue,
                   status: WorkflowTaskStatus.overdue,
                   tasks: overdue,
-                  headerColor: AppColors.danger,
-                  headerBg: AppColors.dangerLight,
+                  gradient: AppGradients.dangerHeader,
                   l10n: l10n,
                   isItExecutor: isItExecutor,
                   currentUserId: currentUserId,
@@ -783,8 +778,7 @@ class _KanbanCol extends StatefulWidget {
   final String title;
   final WorkflowTaskStatus status;
   final List<WorkflowTask> tasks;
-  final Color headerColor;
-  final Color headerBg;
+  final LinearGradient gradient;
   final bool dimmed;
   final AppLocalizations l10n;
   final bool isItExecutor;
@@ -796,8 +790,7 @@ class _KanbanCol extends StatefulWidget {
     required this.title,
     required this.status,
     required this.tasks,
-    required this.headerColor,
-    required this.headerBg,
+    required this.gradient,
     this.dimmed = false,
     required this.l10n,
     this.isItExecutor = false,
@@ -838,13 +831,13 @@ class _KanbanColState extends State<_KanbanCol> {
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: isHovering
-                  ? widget.headerColor.withOpacity(0.06)
+                  ? widget.gradient.colors.first.withValues(alpha: 0.06)
                   : AppColors.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isHovering
-                    ? widget.headerColor.withOpacity(0.65)
-                    : widget.headerColor.withOpacity(0.3),
+                    ? widget.gradient.colors.first.withValues(alpha: 0.65)
+                    : widget.gradient.colors.first.withValues(alpha: 0.30),
                 width: isHovering ? 2 : 1,
               ),
             ),
@@ -856,37 +849,48 @@ class _KanbanColState extends State<_KanbanCol> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                   decoration: BoxDecoration(
+                    gradient: isHovering ? null : widget.gradient,
                     color: isHovering
-                        ? widget.headerColor.withOpacity(0.12)
-                        : widget.headerBg,
+                        ? widget.gradient.colors.first.withValues(alpha: 0.12)
+                        : null,
                     borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(10)),
                   ),
-                  child: SectionHeader(
-                    title: widget.title.toUpperCase(),
-                    padding: EdgeInsets.zero,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isHovering)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: Icon(Icons.move_down_rounded,
-                                size: 13, color: widget.headerColor),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.title.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 0.6,
                           ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: widget.headerColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                          ),
-                          child: Text('${widget.tasks.length}',
-                              style: AppTextStyles.tag
-                                  .copyWith(color: widget.headerColor)),
                         ),
-                      ],
-                    ),
+                      ),
+                      if (isHovering)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 6),
+                          child: Icon(
+                            Icons.move_down_rounded,
+                            size: 13,
+                            color: Colors.white,
+                          ),
+                        ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: Text(
+                          '${widget.tasks.length}',
+                          style: AppTextStyles.tag.copyWith(color: Colors.white),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
