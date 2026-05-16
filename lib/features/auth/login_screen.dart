@@ -52,17 +52,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _errorMessage = null);
+    setState(() {
+      _phase = _ButtonPhase.loading;
+      _errorMessage = null;
+    });
     try {
       await ref.read(authStateProvider.notifier).loginAndHold(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
-      if (mounted) ref.read(authStateProvider.notifier).completeLogin();
-      if (mounted) setState(() => _phase = _ButtonPhase.succeeded);
-      // GoRouter's redirect fires on the next frame after state change
+      if (!mounted) return;
+      // Turn button green — _FadeToWhiteOverlay.onFadeComplete will call
+      // completeLogin() in Task 3. For now, navigation is deferred.
+      setState(() => _phase = _ButtonPhase.succeeded);
     } on Exception catch (e) {
-      if (mounted) setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
+      if (!mounted) return;
+      setState(() {
+        _phase = _ButtonPhase.error;
+        _errorShakeVersion++;
+      });
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      setState(() {
+        _phase = _ButtonPhase.idle;
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
     }
   }
 

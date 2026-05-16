@@ -20,6 +20,24 @@ class _LoggedOutAuthState extends AuthState {
   Future<AppUser?> build() async => null;
 }
 
+class _SlowAuthState extends AuthState {
+  @override
+  Future<AppUser?> build() async => null;
+
+  @override
+  Future<void> loginAndHold({
+    required String email,
+    required String password,
+  }) async {
+    state = const AsyncLoading();
+    // Never completes — simulates a slow API call
+    await Future<void>.delayed(const Duration(hours: 1));
+  }
+
+  @override
+  void completeLogin() {}
+}
+
 Widget _wrap(WidgetTester tester, {required Size size}) {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -29,6 +47,29 @@ Widget _wrap(WidgetTester tester, {required Size size}) {
     overrides: [
       secureStorageProvider.overrideWithValue(storage),
       authStateProvider.overrideWith(_LoggedOutAuthState.new),
+    ],
+    child: MaterialApp(
+      theme: AppTheme.light,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en')],
+      home: const LoginScreen(),
+    ),
+  );
+}
+
+Widget _wrapSlow(WidgetTester tester, {required Size size}) {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1.0;
+  final storage = _MockStorage();
+  when(() => storage.read(key: any(named: 'key'))).thenAnswer((_) async => null);
+  return ProviderScope(
+    overrides: [
+      secureStorageProvider.overrideWithValue(storage),
+      authStateProvider.overrideWith(_SlowAuthState.new),
     ],
     child: MaterialApp(
       theme: AppTheme.light,
@@ -101,6 +142,27 @@ void main() {
 
       expect(find.textContaining('Sign in'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('loading phase: spinner visible, label gone', (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_wrapSlow(tester, size: const Size(400, 800)));
+      await tester.pumpAndSettle();
+
+      // Fill form to pass validation
+      await tester.enterText(find.byType(TextFormField).first, 'alice@test.com');
+      await tester.enterText(find.byType(TextFormField).last, 'password1');
+      await tester.tap(find.byType(FilledButton));
+      await tester.pump(); // process the tap + setState — spinner enters tree
+      await tester.pump(const Duration(milliseconds: 250)); // finish AnimatedSwitcher fade
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.textContaining('Sign in'), findsNothing);
+
+      // Drain the pending 1-hour timer so the test framework doesn't complain
+      // about pending timers when the widget tree is disposed.
+      await tester.pump(const Duration(hours: 1));
     });
   });
 }
