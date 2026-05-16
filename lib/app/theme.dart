@@ -154,6 +154,12 @@ abstract class AppGradients {
     colors: [Color(0xFF0078D4), Color(0xFF005A9E)],
   );
 
+  static const LinearGradient neutralHeader = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF8A8886), Color(0xFF605E5C)],
+  );
+
   static const LinearGradient secondaryHeader = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
