@@ -14,7 +14,6 @@ import '../../core/models/workflow_task.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/page_header.dart';
-// section_header removed — gradient header is used instead;
 import 'task_edit_dialog.dart';
 
 // CustomerUserItem and customerUsersProvider are now in task_edit_dialog.dart
@@ -731,7 +730,7 @@ class _KanbanBoard extends StatelessWidget {
                   title: l10n.taskPendingReview,
                   status: WorkflowTaskStatus.pendingReview,
                   tasks: pendingReview,
-                  gradient: AppGradients.secondaryHeader,
+                  gradient: AppGradients.secondaryHeader, // amber — matches pendingReview orange palette
                   l10n: l10n,
                   isItExecutor: isItExecutor,
                   currentUserId: currentUserId,

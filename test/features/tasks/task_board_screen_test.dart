@@ -39,7 +39,7 @@ Widget _wrapBoard({List<WorkflowTask>? tasks}) {
       // state setter is @visibleForTesting so it is valid to call from test files.
       customerContextProvider.overrideWith((ref) {
         final n = CustomerContextNotifier(ref);
-        n.state = {'customerId': 'customer-1', 'role': 'employee'};
+        n.state = {'customerId': 'customer-1', 'role': 'it_executor'};
         return n;
       }),
       activeSessionsProvider.overrideWith(
