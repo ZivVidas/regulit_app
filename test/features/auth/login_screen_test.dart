@@ -91,4 +91,16 @@ void main() {
       expect(find.byType(TextFormField), findsNWidgets(2));
     });
   });
+
+  group('LoginScreen — button phase transitions', () {
+    testWidgets('idle state: Sign In label visible, no spinner', (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_wrap(tester, size: const Size(400, 800)));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Sign in'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+  });
 }

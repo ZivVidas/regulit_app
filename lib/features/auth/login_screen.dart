@@ -1,4 +1,6 @@
 // lib/features/auth/login_screen.dart
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,8 @@ import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
+
+enum _ButtonPhase { idle, loading, succeeded, error }
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -21,7 +25,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _loginSucceeded = false;
+  _ButtonPhase _phase = _ButtonPhase.idle;
+  int _errorShakeVersion = 0;
   String? _errorMessage;
 
   @override
@@ -54,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             password: _passwordController.text,
           );
       if (mounted) ref.read(authStateProvider.notifier).completeLogin();
-      if (mounted) setState(() => _loginSucceeded = true);
+      if (mounted) setState(() => _phase = _ButtonPhase.succeeded);
       // GoRouter's redirect fires on the next frame after state change
     } on Exception catch (e) {
       if (mounted) setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', ''));
@@ -63,7 +68,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(authStateProvider).isLoading;
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
@@ -72,20 +76,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
-              final form = _buildForm(isLoading, l10n, context);
+              final form = _buildForm(l10n, context);
               if (constraints.maxWidth >= 700) {
                 return _DesktopLayout(form: form, l10n: l10n);
               }
               return _MobileLayout(form: form, l10n: l10n);
             },
           ),
-          if (_loginSucceeded) const _SuccessOverlay(),
+          // _FadeToWhiteOverlay is added in Task 3
         ],
       ),
     );
   }
 
-  Widget _buildForm(bool isLoading, AppLocalizations l10n, BuildContext context) {
+  Widget _buildForm(AppLocalizations l10n, BuildContext context) {
     return Form(
       key: _formKey,
       child: Column(
@@ -166,61 +170,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
           const Gap(AppSpacing.lg),
 
-          // Sign-in button
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: double.infinity,
-            height: 48,
-            decoration: BoxDecoration(
-              color: _loginSucceeded
-                  ? const Color(0xFF107C10)
-                  : isLoading
-                      ? AppColors.orange.withValues(alpha: 0.7)
-                      : AppColors.orange,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-              ),
-              onPressed: (isLoading || _loginSucceeded) ? null : _submit,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: _loginSucceeded
-                    ? const Icon(
-                        key: ValueKey('check'),
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ).animate().scale(
-                          begin: const Offset(0.3, 0.3),
-                          duration: 400.ms,
-                          curve: Curves.elasticOut,
-                        )
-                    : isLoading
-                        ? const SizedBox(
-                            key: ValueKey('loading'),
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.white,
-                            ),
-                          )
-                        : Text(
-                            key: const ValueKey('label'),
-                            '${l10n.signIn} →',
-                            style: AppTextStyles.button
-                                .copyWith(color: AppColors.white),
-                          ),
-              ),
-            ),
-          ),
+          // Sign-in button — morphs width and radius based on _phase
+          _buildButton(l10n),
           const Gap(AppSpacing.lg),
 
           // Footer
@@ -231,6 +182,81 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildButton(AppLocalizations l10n) {
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(_errorShakeVersion),
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 400),
+      builder: (context, t, child) => Transform.translate(
+        // Damped sine: ±8 px at start, decays to 0 by t=1
+        offset: Offset(8.0 * math.sin(t * math.pi * 4) * (1.0 - t), 0),
+        child: child,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCircle = _phase != _ButtonPhase.idle;
+          final btnColor = switch (_phase) {
+            _ButtonPhase.idle      => AppColors.orange,
+            _ButtonPhase.loading   => AppColors.orange,
+            _ButtonPhase.succeeded => const Color(0xFF107C10),
+            _ButtonPhase.error     => const Color(0xFFD13438),
+          };
+          final radius = isCircle ? 24.0 : AppRadius.sm;
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: Alignment.center,
+            width: isCircle ? 48.0 : constraints.maxWidth,
+            height: 48,
+            decoration: BoxDecoration(
+              color: btnColor,
+              borderRadius: BorderRadius.circular(radius),
+            ),
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(radius),
+                ),
+              ),
+              onPressed: _phase == _ButtonPhase.idle ? _submit : null,
+              child: _buildBtnChild(l10n),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBtnChild(AppLocalizations l10n) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: switch (_phase) {
+        _ButtonPhase.idle => Text(
+            key: const ValueKey('label'),
+            '${l10n.signIn} →',
+            style: AppTextStyles.button.copyWith(color: AppColors.white),
+          ),
+        _ButtonPhase.loading => const SizedBox(
+            key: ValueKey('spinner'),
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+          ),
+        _ButtonPhase.succeeded => const Icon(
+            key: ValueKey('check'),
+            Icons.check_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+        _ButtonPhase.error => const SizedBox.shrink(key: ValueKey('empty')),
+      },
     );
   }
 
