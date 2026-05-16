@@ -1,0 +1,251 @@
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; }
+
+  .preview-label { font-size: 11px; font-weight: 700; color: #605E5C; text-transform: uppercase; letter-spacing: 0.4px; margin: 6px 0 10px; }
+
+  /* shared tile chrome */
+  .tile-wrap { margin-bottom: 7px; border-radius: 8px; overflow: visible; }
+
+  /* ── Option A: same elevated card as Kanban ── */
+  .tile-a {
+    display: flex; align-items: stretch;
+    background: white; border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+  .tile-a-stripe { width: 3px; flex-shrink: 0; }
+  .tile-a-body { flex: 1; padding: 11px 12px; display: flex; align-items: center; gap: 12px; }
+
+  /* ── Option B: flat bordered + stripe ── */
+  .tile-b {
+    display: flex; align-items: stretch;
+    background: white; border-radius: 8px;
+    border: 1px solid #E1DFDD;
+    overflow: hidden;
+  }
+  .tile-b-stripe { width: 3px; flex-shrink: 0; }
+  .tile-b-body { flex: 1; padding: 11px 12px; display: flex; align-items: center; gap: 12px; }
+
+  /* ── Option C: row with divider (no card) ── */
+  .tile-c {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 0; border-bottom: 1px solid #EDEBE9;
+  }
+  .tile-c-stripe { width: 3px; height: 32px; border-radius: 2px; flex-shrink: 0; }
+
+  /* shared inner content */
+  .tile-info { flex: 1; }
+  .tile-name { font-size: 13.5px; font-weight: 600; color: #201F1E; margin-bottom: 5px; }
+  .tile-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: flex; align-items: center; gap: 3px;
+    padding: 2px 8px; border-radius: 20px;
+    font-size: 10.5px; font-weight: 600;
+  }
+  .chevron { color: #A19F9D; font-size: 18px; }
+
+  /* section header (shared across all options) */
+  .section-hdr {
+    display: flex; align-items: center; gap: 7px;
+    padding: 14px 0 8px; font-size: 13px; font-weight: 700;
+  }
+  .section-bar { width: 3px; height: 18px; border-radius: 2px; }
+
+  .list-area { padding: 0 14px; }
+  .list-area-c { padding: 0 14px; }
+</style>
+
+<h2>Task List Tile — which style fits best?</h2>
+<p class="subtitle">All 3 options use the 3 px status-colour left accent. Choose the card treatment.</p>
+
+<div class="options">
+  <div class="option" data-choice="A" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Elevated card (matches Kanban)</h3>
+      <p>White card with drop shadow, same as the Kanban task cards. Hover lifts the shadow. Most premium look.</p>
+
+      <div class="list-area" style="margin-top:12px">
+        <div class="section-hdr">
+          <div class="section-bar" style="background:#0078D4"></div>
+          <span style="color:#0078D4">MY TASKS</span>
+          <span style="background:#0078D41A;color:#0078D4;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">2</span>
+        </div>
+        <div class="tile-wrap">
+          <div class="tile-a">
+            <div class="tile-a-stripe" style="background:#D97C0A"></div>
+            <div class="tile-a-body">
+              <div class="tile-info">
+                <div class="tile-name">GDPR data mapping audit</div>
+                <div class="tile-chips">
+                  <span class="chip" style="background:#FEF9C3;color:#CA8A04">In Progress</span>
+                  <span class="chip" style="background:#DEECF9;color:#0078D4">👤 Yael Cohen</span>
+                  <span class="chip" style="background:#F3F2F1;color:#605E5C">📅 May 28</span>
+                </div>
+              </div>
+              <span class="chevron">›</span>
+            </div>
+          </div>
+        </div>
+        <div class="tile-wrap">
+          <div class="tile-a">
+            <div class="tile-a-stripe" style="background:#8A8886"></div>
+            <div class="tile-a-body">
+              <div class="tile-info">
+                <div class="tile-name">Review encryption policy</div>
+                <div class="tile-chips">
+                  <span class="chip" style="background:#F3F2F1;color:#605E5C">To Do</span>
+                  <span class="chip" style="background:#F3F2F1;color:#605E5C">📅 Jun 3</span>
+                </div>
+              </div>
+              <span class="chevron">›</span>
+            </div>
+          </div>
+        </div>
+        <div class="section-hdr">
+          <div class="section-bar" style="background:#605E5C"></div>
+          <span style="color:#605E5C">OTHER TASKS</span>
+          <span style="background:#605E5C1A;color:#605E5C;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">1</span>
+        </div>
+        <div class="tile-wrap">
+          <div class="tile-a">
+            <div class="tile-a-stripe" style="background:#D13438"></div>
+            <div class="tile-a-body">
+              <div class="tile-info">
+                <div class="tile-name">Penetration test sign-off</div>
+                <div class="tile-chips">
+                  <span class="chip" style="background:#FDE7E9;color:#D13438">⚠ Overdue — May 5</span>
+                  <span class="chip" style="background:#DEECF9;color:#0078D4">👤 Dan Levi</span>
+                </div>
+              </div>
+              <span class="chevron">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="B" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Flat bordered + stripe</h3>
+      <p>Keeps today's bordered card style, adds the left accent stripe. Lighter / more compact feel.</p>
+
+      <div class="list-area" style="margin-top:12px">
+        <div class="section-hdr">
+          <div class="section-bar" style="background:#0078D4"></div>
+          <span style="color:#0078D4">MY TASKS</span>
+          <span style="background:#0078D41A;color:#0078D4;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">2</span>
+        </div>
+        <div class="tile-wrap">
+          <div class="tile-b">
+            <div class="tile-b-stripe" style="background:#D97C0A"></div>
+            <div class="tile-b-body">
+              <div class="tile-info">
+                <div class="tile-name">GDPR data mapping audit</div>
+                <div class="tile-chips">
+                  <span class="chip" style="background:#FEF9C3;color:#CA8A04">In Progress</span>
+                  <span class="chip" style="background:#DEECF9;color:#0078D4">👤 Yael Cohen</span>
+                  <span class="chip" style="background:#F3F2F1;color:#605E5C">📅 May 28</span>
+                </div>
+              </div>
+              <span class="chevron">›</span>
+            </div>
+          </div>
+        </div>
+        <div class="tile-wrap">
+          <div class="tile-b">
+            <div class="tile-b-stripe" style="background:#8A8886"></div>
+            <div class="tile-b-body">
+              <div class="tile-info">
+                <div class="tile-name">Review encryption policy</div>
+                <div class="tile-chips">
+                  <span class="chip" style="background:#F3F2F1;color:#605E5C">To Do</span>
+                  <span class="chip" style="background:#F3F2F1;color:#605E5C">📅 Jun 3</span>
+                </div>
+              </div>
+              <span class="chevron">›</span>
+            </div>
+          </div>
+        </div>
+        <div class="section-hdr">
+          <div class="section-bar" style="background:#605E5C"></div>
+          <span style="color:#605E5C">OTHER TASKS</span>
+          <span style="background:#605E5C1A;color:#605E5C;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">1</span>
+        </div>
+        <div class="tile-wrap">
+          <div class="tile-b">
+            <div class="tile-b-stripe" style="background:#D13438"></div>
+            <div class="tile-b-body">
+              <div class="tile-info">
+                <div class="tile-name">Penetration test sign-off</div>
+                <div class="tile-chips">
+                  <span class="chip" style="background:#FDE7E9;color:#D13438">⚠ Overdue — May 5</span>
+                  <span class="chip" style="background:#DEECF9;color:#0078D4">👤 Dan Levi</span>
+                </div>
+              </div>
+              <span class="chevron">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="C" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Minimal rows with divider</h3>
+      <p>No card box. Accent stripe beside each row, separated by hairline dividers. Densest, most "list" feeling.</p>
+
+      <div class="list-area-c" style="margin-top:12px">
+        <div class="section-hdr">
+          <div class="section-bar" style="background:#0078D4"></div>
+          <span style="color:#0078D4">MY TASKS</span>
+          <span style="background:#0078D41A;color:#0078D4;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">2</span>
+        </div>
+        <div class="tile-c">
+          <div class="tile-c-stripe" style="background:#D97C0A"></div>
+          <div class="tile-info">
+            <div class="tile-name">GDPR data mapping audit</div>
+            <div class="tile-chips">
+              <span class="chip" style="background:#FEF9C3;color:#CA8A04">In Progress</span>
+              <span class="chip" style="background:#DEECF9;color:#0078D4">👤 Yael Cohen</span>
+              <span class="chip" style="background:#F3F2F1;color:#605E5C">📅 May 28</span>
+            </div>
+          </div>
+          <span class="chevron">›</span>
+        </div>
+        <div class="tile-c">
+          <div class="tile-c-stripe" style="background:#8A8886"></div>
+          <div class="tile-info">
+            <div class="tile-name">Review encryption policy</div>
+            <div class="tile-chips">
+              <span class="chip" style="background:#F3F2F1;color:#605E5C">To Do</span>
+              <span class="chip" style="background:#F3F2F1;color:#605E5C">📅 Jun 3</span>
+            </div>
+          </div>
+          <span class="chevron">›</span>
+        </div>
+        <div class="section-hdr">
+          <div class="section-bar" style="background:#605E5C"></div>
+          <span style="color:#605E5C">OTHER TASKS</span>
+          <span style="background:#605E5C1A;color:#605E5C;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">1</span>
+        </div>
+        <div class="tile-c" style="border-bottom:none">
+          <div class="tile-c-stripe" style="background:#D13438"></div>
+          <div class="tile-info">
+            <div class="tile-name">Penetration test sign-off</div>
+            <div class="tile-chips">
+              <span class="chip" style="background:#FDE7E9;color:#D13438">⚠ Overdue — May 5</span>
+              <span class="chip" style="background:#DEECF9;color:#0078D4">👤 Dan Levi</span>
+            </div>
+          </div>
+          <span class="chevron">›</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

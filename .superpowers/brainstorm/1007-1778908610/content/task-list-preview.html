@@ -1,0 +1,242 @@
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; }
+
+  .screen-wrap {
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 6px 28px rgba(0,0,0,0.14);
+    background: #F3F2F1;
+    animation: fadeUp 0.4s ease both;
+  }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
+
+  /* page header */
+  .page-header {
+    background: white; border-bottom: 1px solid #E1DFDD;
+    padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .page-title { font-size: 18px; font-weight: 700; color: #201F1E; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 8px; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px;
+  }
+  .icon-btn.muted { background: transparent; color: #A19F9D; }
+  .icon-btn.blue { background: #0078D414; color: #0078D4; }
+
+  /* session bar */
+  .session-bar {
+    background: white; border-bottom: 1px solid #E1DFDD;
+    padding: 10px 20px; display: flex; align-items: center; gap: 10px;
+    font-size: 13px;
+  }
+  .session-select {
+    flex: 1; padding: 5px 10px; border-radius: 8px;
+    border: 1px solid #E1DFDD; background: #FAF9F8;
+    font-size: 12px; color: #201F1E;
+  }
+
+  /* search */
+  .search-wrap { padding: 10px 16px; background: #F3F2F1; }
+  .search-box {
+    width: 100%; padding: 8px 14px 8px 36px; border-radius: 10px;
+    border: 1px solid #E1DFDD; background: white; font-size: 13px;
+    color: #605E5C; position: relative;
+  }
+  .search-container { position: relative; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #A19F9D; }
+
+  /* task list body */
+  .task-body { padding: 0 16px 24px; background: #F3F2F1; }
+
+  /* section header */
+  .section-hdr {
+    display: flex; align-items: center; gap: 7px;
+    padding: 14px 0 8px; font-size: 11.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .section-bar { width: 3px; height: 18px; border-radius: 2px; flex-shrink: 0; }
+  .section-count {
+    font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+  }
+
+  /* task tile */
+  .tile {
+    display: flex; align-items: stretch;
+    background: white; border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.06);
+    overflow: hidden; margin-bottom: 7px;
+    transition: box-shadow 0.15s, transform 0.12s;
+    animation: tileIn 0.22s ease both;
+  }
+  .tile:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.07);
+    transform: translateY(-1px);
+  }
+  .tile:nth-child(1) { animation-delay: 0ms }
+  .tile:nth-child(2) { animation-delay: 40ms }
+  .tile:nth-child(3) { animation-delay: 80ms }
+  @keyframes tileIn { from { opacity:0; transform:translateX(-6px) } to { opacity:1; transform:none } }
+
+  .tile-stripe { width: 3px; flex-shrink: 0; }
+  .tile-body { flex: 1; padding: 11px 13px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .tile-info { flex: 1; }
+  .tile-name { font-size: 13.5px; font-weight: 600; color: #201F1E; margin-bottom: 5px; line-height: 1.35; }
+  .tile-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px; border-radius: 20px;
+    font-size: 10.5px; font-weight: 600;
+  }
+  .chevron { color: #C8C6C4; font-size: 19px; flex-shrink: 0; }
+
+  /* spec chips */
+  .spec-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .spec-chip {
+    background: #F3F2F1; border-radius: 8px; padding: 8px 12px;
+    font-size: 11px; color: #605E5C; line-height: 1.5; flex: 1; min-width: 160px;
+  }
+  .spec-chip strong { display: block; font-size: 11px; color: #201F1E; margin-bottom: 2px; }
+</style>
+
+<h2>Task List — upgraded design</h2>
+<p class="subtitle">Hover over the tiles to see the lift effect. Tiles animate in from the left on load.</p>
+
+<div style="margin-top:14px;margin-bottom:6px" class="preview-label" style="font-size:11px;font-weight:700;color:#605E5C;text-transform:uppercase;letter-spacing:0.4px">Full screen preview</div>
+
+<div class="screen-wrap">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-title">My Tasks</div>
+    <div class="header-actions">
+      <button class="icon-btn muted">↺</button>
+      <button class="icon-btn blue">⊞</button>
+    </div>
+  </div>
+
+  <!-- Session bar -->
+  <div class="session-bar">
+    <span style="color:#A19F9D;font-size:15px">📋</span>
+    <span style="font-weight:600;color:#A19F9D">Session</span>
+    <select class="session-select">
+      <option>ISO 27001 Compliance Workflow — Q2 2026</option>
+    </select>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <div class="search-container">
+      <span class="search-icon">🔍</span>
+      <input class="search-box" placeholder="Search tasks…" readonly>
+    </div>
+  </div>
+
+  <!-- Task list body -->
+  <div class="task-body">
+    <!-- My Tasks section -->
+    <div class="section-hdr">
+      <div class="section-bar" style="background:#0078D4"></div>
+      <span style="color:#0078D4">My Tasks</span>
+      <span class="section-count" style="background:#0078D414;color:#0078D4">2</span>
+    </div>
+
+    <div class="tile">
+      <div class="tile-stripe" style="background:#D97C0A"></div>
+      <div class="tile-body">
+        <div class="tile-info">
+          <div class="tile-name">GDPR data mapping audit</div>
+          <div class="tile-chips">
+            <span class="chip" style="background:#FEF9C3;color:#CA8A04">In Progress</span>
+            <span class="chip" style="background:#DEECF9;color:#0078D4">👤 Yael Cohen</span>
+            <span class="chip" style="background:#F3F2F1;color:#605E5C">📅 May 28</span>
+          </div>
+        </div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <div class="tile">
+      <div class="tile-stripe" style="background:#8A8886"></div>
+      <div class="tile-body">
+        <div class="tile-info">
+          <div class="tile-name">Review encryption policy</div>
+          <div class="tile-chips">
+            <span class="chip" style="background:#F3F2F1;color:#605E5C">To Do</span>
+            <span class="chip" style="background:#F3F2F1;color:#605E5C">📅 Jun 3</span>
+          </div>
+        </div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <!-- Other Tasks section -->
+    <div class="section-hdr">
+      <div class="section-bar" style="background:#605E5C"></div>
+      <span style="color:#605E5C">Other Tasks</span>
+      <span class="section-count" style="background:#605E5C1A;color:#605E5C">3</span>
+    </div>
+
+    <div class="tile">
+      <div class="tile-stripe" style="background:#D13438"></div>
+      <div class="tile-body">
+        <div class="tile-info">
+          <div class="tile-name">Penetration test sign-off</div>
+          <div class="tile-chips">
+            <span class="chip" style="background:#FDE7E9;color:#D13438">⚠ Overdue — May 5</span>
+            <span class="chip" style="background:#DEECF9;color:#0078D4">👤 Dan Levi</span>
+          </div>
+        </div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <div class="tile">
+      <div class="tile-stripe" style="background:#107C10"></div>
+      <div class="tile-body">
+        <div class="tile-info">
+          <div class="tile-name">Security awareness training</div>
+          <div class="tile-chips">
+            <span class="chip" style="background:#DFF6DD;color:#107C10">Done</span>
+            <span class="chip" style="background:#DEECF9;color:#0078D4">👤 Yael Cohen</span>
+          </div>
+        </div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <div class="tile">
+      <div class="tile-stripe" style="background:#E07200"></div>
+      <div class="tile-body">
+        <div class="tile-info">
+          <div class="tile-name">ISO 27001 gap analysis</div>
+          <div class="tile-chips">
+            <span class="chip" style="background:#FFF4CC;color:#E07200">Pending Review</span>
+            <span class="chip" style="background:#DEECF9;color:#0078D4">👤 Dan Levi</span>
+            <span class="chip" style="background:#F3F2F1;color:#605E5C">📅 May 22</span>
+            <span class="chip" style="background:#FFF4CC;color:#E07200">💰 ₪50K</span>
+          </div>
+        </div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="spec-row">
+  <div class="spec-chip"><strong>Tile card</strong>Elevated white card, 3 px status-colour left stripe. Hover → lift + stronger shadow. Status dot removed — stripe carries the signal.</div>
+  <div class="spec-chip"><strong>Animations</strong>Each tile slides in from the left with a 40 ms stagger (flutter_animate, already in project). Columns match the Kanban 30 ms stagger.</div>
+  <div class="spec-chip"><strong>API cleanup</strong>withOpacity → withValues(alpha:) in _Chip and _SectionHeader. AppCard import removed.</div>
+  <div class="spec-chip"><strong>Non-changes</strong>Session picker, search box, tap handlers, dialogs, role logic — all untouched. One file: task_list_screen.dart.</div>
+</div>
+
+<div class="options" style="margin-top:20px">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content"><h3>Looks good — write the spec</h3><p>Proceed with this design</p></div>
+  </div>
+  <div class="option" data-choice="tweak" onclick="toggleSelect(this)">
+    <div class="letter">~</div>
+    <div class="content"><h3>I want a change</h3><p>Tell me what to adjust in the terminal</p></div>
+  </div>
+</div>

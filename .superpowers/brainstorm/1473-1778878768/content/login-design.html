@@ -1,0 +1,220 @@
+<style>
+  * { box-sizing: border-box; }
+
+  /* ── Page chrome ── */
+  .preview-label { font-size: 11px; font-weight: 700; color: #605E5C; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 6px; }
+
+  /* ══ DESKTOP MOCKUP ══ */
+  .desktop-mock {
+    display: flex; height: 360px; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    animation: fadeIn 0.4s ease both;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
+
+  /* Left panel */
+  .lp {
+    width: 42%; background: linear-gradient(145deg, #0078D4 0%, #004A80 100%);
+    display: flex; flex-direction: column; padding: 36px 32px;
+    position: relative; overflow: hidden; flex-shrink: 0;
+  }
+  .lp-orb1 {
+    position: absolute; width: 180px; height: 180px; border-radius: 50%;
+    background: rgba(255,255,255,0.07); top: -50px; right: -60px; pointer-events: none;
+  }
+  .lp-orb2 {
+    position: absolute; width: 110px; height: 110px; border-radius: 50%;
+    background: rgba(255,255,255,0.05); bottom: -30px; left: -30px; pointer-events: none;
+  }
+  .lp-orb3 {
+    position: absolute; width: 60px; height: 60px; border-radius: 50%;
+    background: rgba(255,255,255,0.06); bottom: 80px; right: 20px; pointer-events: none;
+  }
+  .lp-brand { display: flex; align-items: center; gap: 11px; z-index: 1; }
+  .lp-logo {
+    width: 44px; height: 44px; border-radius: 13px;
+    background: rgba(255,255,255,0.22); border: 1.5px solid rgba(255,255,255,0.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 900; color: white;
+  }
+  .lp-name { font-size: 22px; font-weight: 800; color: white; letter-spacing: 0.2px; }
+
+  .lp-body { margin-top: 36px; z-index: 1; flex: 1; }
+  .lp-headline { font-size: 18px; font-weight: 700; color: white; line-height: 1.35; margin-bottom: 12px; }
+  .lp-sub { font-size: 13px; color: rgba(255,255,255,0.65); line-height: 1.6; }
+
+  .lp-pills { display: flex; flex-direction: column; gap: 8px; margin-top: 24px; z-index: 1; }
+  .lp-pill {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 11px; color: rgba(255,255,255,0.80);
+  }
+  .lp-pill-dot {
+    width: 20px; height: 20px; border-radius: 6px;
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; flex-shrink: 0;
+  }
+
+  /* Right panel */
+  .rp {
+    flex: 1; background: #FAFAFA;
+    display: flex; align-items: center; justify-content: center;
+    padding: 36px 40px;
+  }
+  .rp-inner { width: 100%; max-width: 320px; }
+  .rp-title { font-size: 20px; font-weight: 800; color: #201F1E; margin-bottom: 4px; }
+  .rp-sub { font-size: 13px; color: #605E5C; margin-bottom: 24px; }
+
+  .field-group { margin-bottom: 16px; }
+  .field-label { font-size: 11px; font-weight: 700; color: #201F1E; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+  .field-mock {
+    background: white; border: 1.5px solid #E1DFDD; border-radius: 8px;
+    height: 40px; padding: 0 12px; display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: #A19F9D;
+  }
+  .field-mock svg { opacity: 0.45; flex-shrink: 0; }
+
+  .forgot { text-align: right; font-size: 11px; color: #FF8C00; font-weight: 600; margin: 6px 0 18px; }
+
+  .signin-btn {
+    width: 100%; height: 44px; border-radius: 8px;
+    background: linear-gradient(135deg, #FF8C00, #E07200);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: white;
+    box-shadow: 0 4px 14px rgba(255,140,0,0.35);
+  }
+
+  .rp-footer { font-size: 11px; color: #A19F9D; text-align: center; margin-top: 20px; }
+
+  /* ══ MOBILE MOCKUP ══ */
+  .mobile-row { display: flex; gap: 20px; margin-top: 20px; align-items: flex-start; }
+  .mobile-note { flex: 1; font-size: 12px; color: #605E5C; line-height: 1.6; padding-top: 8px; }
+  .mobile-note strong { color: #201F1E; }
+
+  .mobile-mock {
+    width: 160px; border-radius: 20px; overflow: hidden; flex-shrink: 0;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+  }
+  .m-header {
+    background: linear-gradient(135deg, #0078D4, #005A9E);
+    padding: 16px 14px 22px; display: flex; align-items: center; gap: 8px;
+  }
+  .m-logo {
+    width: 24px; height: 24px; border-radius: 7px;
+    background: rgba(255,255,255,0.25); font-size: 11px; font-weight: 900;
+    color: white; display: flex; align-items: center; justify-content: center;
+  }
+  .m-name { font-size: 13px; font-weight: 800; color: white; }
+  .m-body { background: #FAFAFA; padding: 0 12px 16px; margin-top: -8px; }
+  .m-card {
+    background: white; border-radius: 12px; padding: 14px 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.09);
+  }
+  .m-title { font-size: 12px; font-weight: 700; color: #201F1E; margin-bottom: 10px; }
+  .m-field {
+    background: #FAFAFA; border: 1px solid #E1DFDD; border-radius: 6px;
+    height: 24px; margin-bottom: 7px; padding: 0 8px;
+    font-size: 9px; color: #A19F9D; display: flex; align-items: center;
+  }
+  .m-btn {
+    background: linear-gradient(135deg, #FF8C00, #E07200);
+    border-radius: 6px; height: 26px; margin-top: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: white;
+  }
+
+  /* spec callouts */
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .spec-item { background: #F5F5F5; border-radius: 8px; padding: 10px 12px; font-size: 11px; color: #605E5C; line-height: 1.5; }
+  .spec-item strong { display: block; color: #201F1E; font-size: 11px; margin-bottom: 2px; }
+</style>
+
+<h2>Login page — split panel design</h2>
+<p class="subtitle">All details locked in. Does this look right?</p>
+
+<!-- ── DESKTOP ── -->
+<p class="preview-label" style="margin-top:18px">Desktop (≥ 700 px)</p>
+<div class="desktop-mock">
+  <div class="lp">
+    <div class="lp-orb1"></div>
+    <div class="lp-orb2"></div>
+    <div class="lp-orb3"></div>
+    <div class="lp-brand">
+      <div class="lp-logo">R</div>
+      <div class="lp-name">ReguLit</div>
+    </div>
+    <div class="lp-body">
+      <div class="lp-headline">Compliance made<br>clear and simple.</div>
+      <div class="lp-sub">GRC workflows, risk visibility,<br>and audit readiness — in one place.</div>
+      <div class="lp-pills">
+        <div class="lp-pill"><div class="lp-pill-dot">✓</div> Risk assessment &amp; tracking</div>
+        <div class="lp-pill"><div class="lp-pill-dot">✓</div> Workflow automation</div>
+        <div class="lp-pill"><div class="lp-pill-dot">✓</div> Audit-ready reports</div>
+      </div>
+    </div>
+  </div>
+  <div class="rp">
+    <div class="rp-inner">
+      <div class="rp-title">Welcome back</div>
+      <div class="rp-sub">Sign in to your account</div>
+      <div class="field-group">
+        <div class="field-label">Email address</div>
+        <div class="field-mock">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#605E5C" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+          you@company.com
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Password</div>
+        <div class="field-mock">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#605E5C" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          ••••••••••
+        </div>
+      </div>
+      <div class="forgot">Forgot password?</div>
+      <div class="signin-btn">Sign In →</div>
+      <div class="rp-footer">Secure sign-in · Protected by ReguLit</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MOBILE ── -->
+<div class="mobile-row">
+  <div class="mobile-mock">
+    <div class="m-header">
+      <div class="m-logo">R</div>
+      <div class="m-name">ReguLit</div>
+    </div>
+    <div class="m-body">
+      <div class="m-card">
+        <div class="m-title">Welcome back</div>
+        <div class="m-field">Email address</div>
+        <div class="m-field">Password</div>
+        <div class="m-btn">Sign In →</div>
+      </div>
+    </div>
+  </div>
+  <div class="mobile-note">
+    <strong>Mobile (&lt; 700 px)</strong><br>
+    Split collapses: gradient header bar with logo + name, form card overlapping below on a light background. Same content, no brand panel text.
+  </div>
+</div>
+
+<!-- ── SPEC NOTES ── -->
+<div class="spec-grid">
+  <div class="spec-item"><strong>Left panel</strong>primaryHeader gradient · 42% width · 3 glow orbs · feature bullets</div>
+  <div class="spec-item"><strong>Right panel</strong>White form · "Welcome back" h1 · existing fields unchanged · orange button</div>
+  <div class="spec-item"><strong>Animations</strong>Left panel fadeIn 400 ms · form card fadeIn + slideY 500 ms delay 200 ms</div>
+  <div class="spec-item"><strong>Mobile</strong>Gradient header bar · form card overlapping below · BottomSheet-style shadow</div>
+</div>
+
+<div class="options" style="margin-top:20px">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content"><h3>Looks good — write the spec</h3><p>Proceed with this design</p></div>
+  </div>
+  <div class="option" data-choice="tweak" onclick="toggleSelect(this)">
+    <div class="letter">~</div>
+    <div class="content"><h3>I want a change</h3><p>Tell me what to adjust in the terminal</p></div>
+  </div>
+</div>

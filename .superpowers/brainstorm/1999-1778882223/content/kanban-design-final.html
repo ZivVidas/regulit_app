@@ -1,0 +1,280 @@
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; }
+
+  .board-wrap {
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 6px 28px rgba(0,0,0,0.14);
+    animation: fadeUp 0.45s ease both;
+  }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
+
+  /* ── Metric bar ── */
+  .metric-bar {
+    display: flex; background: white; border-bottom: 1px solid #E1DFDD;
+  }
+  .metric-tile {
+    flex: 1; display: flex; align-items: center; gap: 9px;
+    padding: 11px 14px; border-right: 1px solid #E1DFDD;
+    transition: background 0.15s;
+  }
+  .metric-tile:last-child { border-right: none; }
+  .m-box {
+    width: 38px; height: 38px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800; flex-shrink: 0;
+    border: 1.5px solid;
+  }
+  .m-text .m-val { font-size: 15px; font-weight: 800; line-height: 1; }
+  .m-text .m-label { font-size: 10px; color: #605E5C; margin-top: 1px; }
+
+  /* ── Columns area ── */
+  .col-row {
+    display: flex; gap: 10px; padding: 10px;
+    background: #EBEDF0; min-height: 300px;
+  }
+  .col {
+    flex: 1; border-radius: 10px; overflow: hidden;
+    background: #F3F2F1;
+    border: 1px solid rgba(0,0,0,0.09);
+    display: flex; flex-direction: column;
+    animation: colIn 0.4s ease both;
+  }
+  .col:nth-child(1) { animation-delay: 0ms }
+  .col:nth-child(3) { animation-delay: 50ms }
+  .col:nth-child(5) { animation-delay: 100ms }
+  .col:nth-child(7) { animation-delay: 150ms }
+  .col:nth-child(9) { animation-delay: 200ms }
+  @keyframes colIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
+
+  /* ── Column headers — gradient ── */
+  .col-head {
+    padding: 9px 11px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .col-head.todo    { background: linear-gradient(135deg, #8A8886 0%, #605E5C 100%); }
+  .col-head.prog    { background: linear-gradient(135deg, #D97C0A 0%, #CA8A04 100%); }
+  .col-head.review  { background: linear-gradient(135deg, #FFB900 0%, #E07200 100%); }
+  .col-head.done    { background: linear-gradient(135deg, #16A316 0%, #107C10 100%); }
+  .col-head.overdue { background: linear-gradient(135deg, #D13438 0%, #A01010 100%); }
+
+  .col-title { font-size: 10px; font-weight: 800; color: white; letter-spacing: 0.6px; text-transform: uppercase; }
+  .col-badge {
+    background: rgba(255,255,255,0.22); color: white;
+    font-size: 10px; font-weight: 700; padding: 1px 8px;
+    border-radius: 20px;
+  }
+
+  /* ── Cards ── */
+  .col-body { padding: 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+
+  .card {
+    background: white; border-radius: 7px;
+    padding: 9px 10px 8px 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0px 1px rgba(0,0,0,0.06);
+    border-left: 3px solid;
+    font-size: 10px; color: #201F1E;
+    transition: box-shadow 0.15s, transform 0.12s;
+  }
+  .card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.13), 0 1px 3px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+  }
+  .card.todo    { border-left-color: #8A8886; }
+  .card.prog    { border-left-color: #D97C0A; }
+  .card.review  { border-left-color: #E07200; }
+  .card.done    { border-left-color: #107C10; opacity: 0.72; }
+  .card.overdue { border-left-color: #D13438; }
+
+  .card-name { font-weight: 700; font-size: 10.5px; margin-bottom: 3px; line-height: 1.35; }
+  .card-desc { color: #605E5C; font-size: 9px; margin-bottom: 5px; line-height: 1.4; }
+  .card-row  { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; font-size: 9px; color: #605E5C; }
+  .card-row.danger { color: #D13438; font-weight: 700; }
+  .card-row.risk   { color: #E07200; font-style: italic; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 5px; padding-top: 4px; border-top: 1px solid #F3F2F1; }
+  .badge-req {
+    font-size: 8px; padding: 1px 5px; border-radius: 3px;
+    background: #FDE7E9; color: #D13438; font-weight: 700;
+  }
+  .badge-attach { font-size: 9px; color: #A19F9D; display: flex; align-items: center; gap: 2px; }
+
+  .empty-col { padding: 24px 0; text-align: center; font-size: 10px; color: #A19F9D; font-style: italic; }
+
+  /* spec callouts */
+  .spec-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .spec-chip {
+    background: #F3F2F1; border-radius: 8px; padding: 8px 12px;
+    font-size: 11px; color: #605E5C; line-height: 1.5; flex: 1; min-width: 160px;
+  }
+  .spec-chip strong { display: block; font-size: 11px; color: #201F1E; margin-bottom: 2px; }
+
+  .preview-label { font-size: 11px; font-weight: 700; color: #605E5C; text-transform: uppercase; letter-spacing: 0.4px; margin: 6px 0; }
+</style>
+
+<h2>Kanban — Option A design</h2>
+<p class="subtitle">All details locked in. Does this look right?</p>
+
+<p class="preview-label" style="margin-top:16px">Full board preview</p>
+
+<div class="board-wrap">
+  <!-- Metric bar (unchanged structure, slightly polished sizing) -->
+  <div class="metric-bar">
+    <div class="metric-tile">
+      <div class="m-box" style="background:#DEECF9;color:#0078D4;border-color:#B8D9F5">12</div>
+      <div class="m-text"><div class="m-val" style="color:#0078D4">12</div><div class="m-label">Assigned</div></div>
+    </div>
+    <div class="metric-tile">
+      <div class="m-box" style="background:#FEF9C3;color:#CA8A04;border-color:#F5E580">4</div>
+      <div class="m-text"><div class="m-val" style="color:#CA8A04">4</div><div class="m-label">In Progress</div></div>
+    </div>
+    <div class="metric-tile">
+      <div class="m-box" style="background:#FFF4CC;color:#E07200;border-color:#FFD980">3</div>
+      <div class="m-text"><div class="m-val" style="color:#E07200">3</div><div class="m-label">Pending Review</div></div>
+    </div>
+    <div class="metric-tile">
+      <div class="m-box" style="background:#DFF6DD;color:#107C10;border-color:#B3E8B0">3</div>
+      <div class="m-text"><div class="m-val" style="color:#107C10">3</div><div class="m-label">Done</div></div>
+    </div>
+    <div class="metric-tile">
+      <div class="m-box" style="background:#FDE7E9;color:#D13438;border-color:#F5B8BA">2</div>
+      <div class="m-text"><div class="m-val" style="color:#D13438">2</div><div class="m-label">Overdue</div></div>
+    </div>
+  </div>
+
+  <!-- Columns -->
+  <div class="col-row">
+    <!-- To Do -->
+    <div class="col">
+      <div class="col-head todo">
+        <span class="col-title">To Do</span>
+        <span class="col-badge">3</span>
+      </div>
+      <div class="col-body">
+        <div class="card todo">
+          <div class="card-name">Define access control matrix</div>
+          <div class="card-desc">List all roles and permissions for the system…</div>
+          <div class="card-row">📅 May 20</div>
+          <div class="card-footer"><span class="badge-req">Required</span><span class="badge-attach">📎 2</span></div>
+        </div>
+        <div class="card todo">
+          <div class="card-name">Review encryption policy</div>
+          <div class="card-row">📅 Jun 3</div>
+          <div class="card-footer"><span></span><span class="badge-attach">📎 0</span></div>
+        </div>
+        <div class="card todo">
+          <div class="card-name">Document incident response plan</div>
+          <div class="card-row risk">⚠ High regulatory risk if overdue</div>
+          <div class="card-row">📅 May 30</div>
+          <div class="card-footer"><span class="badge-req">Required</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- In Progress -->
+    <div class="col">
+      <div class="col-head prog">
+        <span class="col-title">In Progress</span>
+        <span class="col-badge">2</span>
+      </div>
+      <div class="col-body">
+        <div class="card prog">
+          <div class="card-name">GDPR data mapping audit</div>
+          <div class="card-desc">Document all data flows across systems</div>
+          <div class="card-row">👤 Yael Cohen</div>
+          <div class="card-row">📅 May 28</div>
+          <div class="card-footer"><span class="badge-req">Required</span><span class="badge-attach">📎 3</span></div>
+        </div>
+        <div class="card prog">
+          <div class="card-name">Vendor risk assessment</div>
+          <div class="card-row">👤 Dan Levi</div>
+          <div class="card-row">📅 Jun 1</div>
+          <div class="card-footer"><span></span><span class="badge-attach">📎 1</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Review -->
+    <div class="col">
+      <div class="col-head review">
+        <span class="col-title">Pending Review</span>
+        <span class="col-badge">2</span>
+      </div>
+      <div class="col-body">
+        <div class="card review">
+          <div class="card-name">ISO 27001 gap analysis</div>
+          <div class="card-desc">Compare current posture to standard</div>
+          <div class="card-row">📅 May 22</div>
+          <div class="card-footer"><span class="badge-req">Required</span><span class="badge-attach">📎 5</span></div>
+        </div>
+        <div class="card review">
+          <div class="card-name">Network segmentation review</div>
+          <div class="card-row">👤 Yael Cohen</div>
+          <div class="card-footer"><span></span><span class="badge-attach">📎 2</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Done -->
+    <div class="col">
+      <div class="col-head done">
+        <span class="col-title">Done</span>
+        <span class="col-badge">3</span>
+      </div>
+      <div class="col-body">
+        <div class="card done">
+          <div class="card-name">Security awareness training</div>
+          <div class="card-footer"><span></span><span class="badge-attach">📎 1</span></div>
+        </div>
+        <div class="card done">
+          <div class="card-name">Backup policy review</div>
+          <div class="card-footer"><span></span></div>
+        </div>
+        <div class="card done">
+          <div class="card-name">Asset inventory update</div>
+          <div class="card-footer"><span></span><span class="badge-attach">📎 2</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overdue -->
+    <div class="col">
+      <div class="col-head overdue">
+        <span class="col-title">Overdue</span>
+        <span class="col-badge">2</span>
+      </div>
+      <div class="col-body">
+        <div class="card overdue">
+          <div class="card-name">Penetration test sign-off</div>
+          <div class="card-row danger">⚠ May 5 — overdue</div>
+          <div class="card-footer"><span class="badge-req">Required</span><span class="badge-attach">📎 0</span></div>
+        </div>
+        <div class="card overdue">
+          <div class="card-name">DR plan documentation</div>
+          <div class="card-row risk">⚠ Critical regulatory requirement</div>
+          <div class="card-row danger">⚠ May 1 — overdue</div>
+          <div class="card-footer"><span class="badge-req">Required</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Spec summary -->
+<div class="spec-row">
+  <div class="spec-chip"><strong>Column headers</strong>Gradient fill per status using app semantic colours (warningHeader, successHeader, dangerHeader, secondaryHeader). White text + semi-transparent badge.</div>
+  <div class="spec-chip"><strong>Task cards</strong>3 px left accent border in status colour. White card, existing shadow. Hover → slight lift + stronger shadow. Done column at 72% opacity.</div>
+  <div class="spec-chip"><strong>Card footer</strong>Thin divider line separating footer. Required badge + attachment count remain, same visual as today.</div>
+  <div class="spec-chip"><strong>Metric bar</strong>Same tiles, slightly taller box (38 px) with a coloured border outline. No structural change.</div>
+  <div class="spec-chip"><strong>Animations</strong>Columns stagger-fadeIn on load (0 → 200 ms). Cards within each column stagger 0 → 120 ms. Uses existing flutter_animate dep.</div>
+  <div class="spec-chip"><strong>Files changed</strong>task_board_screen.dart only. No new dependencies.</div>
+</div>
+
+<div class="options" style="margin-top:20px">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content"><h3>Looks good — write the spec</h3><p>Proceed with this design</p></div>
+  </div>
+  <div class="option" data-choice="tweak" onclick="toggleSelect(this)">
+    <div class="letter">~</div>
+    <div class="content"><h3>I want a change</h3><p>Tell me what to adjust in the terminal</p></div>
+  </div>
+</div>

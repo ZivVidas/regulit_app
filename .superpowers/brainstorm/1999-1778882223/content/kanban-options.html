@@ -1,0 +1,333 @@
+<style>
+  * { box-sizing: border-box; }
+
+  /* ── shared board chrome ── */
+  .board-wrap {
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.13);
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  /* metric bar */
+  .metric-bar {
+    display: flex; gap: 0; background: white;
+    border-bottom: 1px solid #E1DFDD;
+  }
+  .metric-tile {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-right: 1px solid #E1DFDD;
+  }
+  .metric-tile:last-child { border-right: none; }
+  .m-box {
+    width: 34px; height: 34px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; flex-shrink: 0;
+  }
+  .m-label { font-size: 10px; color: #605E5C; line-height: 1.3; }
+
+  /* metric bar — OPTION C: gradient tiles */
+  .metric-bar-c {
+    display: flex; gap: 8px; padding: 10px 12px;
+    background: white; border-bottom: 1px solid #E1DFDD;
+  }
+  .metric-grad {
+    flex: 1; border-radius: 8px; padding: 8px 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mg-icon { font-size: 18px; opacity: 0.9; }
+  .mg-num { font-size: 18px; font-weight: 800; color: white; }
+  .mg-label { font-size: 9px; color: rgba(255,255,255,0.85); margin-top: 1px; }
+
+  /* columns */
+  .col-row {
+    display: flex; gap: 10px; padding: 10px;
+    background: #F0F2F5; overflow: hidden;
+  }
+  .col {
+    flex: 1; border-radius: 8px; overflow: hidden;
+    min-height: 220px;
+  }
+  .col-body { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+
+  /* ── OPTION A: gradient headers ── */
+  .col-a { background: white; border: 1px solid rgba(0,0,0,0.1); }
+  .col-head-a {
+    padding: 8px 10px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .col-head-a.todo    { background: linear-gradient(135deg, #8A8886, #605E5C); }
+  .col-head-a.prog    { background: linear-gradient(135deg, #D97C0A, #CA8A04); }
+  .col-head-a.review  { background: linear-gradient(135deg, #FFB900, #E07200); }
+  .col-head-a.done    { background: linear-gradient(135deg, #16A316, #107C10); }
+  .col-head-a.overdue { background: linear-gradient(135deg, #D13438, #A01010); }
+  .col-head-title { font-size: 10px; font-weight: 800; color: white; letter-spacing: 0.5px; text-transform: uppercase; }
+  .col-head-badge {
+    background: rgba(255,255,255,0.25); color: white;
+    font-size: 10px; font-weight: 700; padding: 1px 7px;
+    border-radius: 20px;
+  }
+
+  /* ── OPTION B: subtle headers + tinted cards ── */
+  .col-b.todo    { background: #F3F2F1; border: 1.5px solid rgba(96,94,92,0.25); }
+  .col-b.prog    { background: #FFFCE8; border: 1.5px solid rgba(202,138,4,0.25); }
+  .col-b.review  { background: #FFF8E7; border: 1.5px solid rgba(255,185,0,0.35); }
+  .col-b.done    { background: #F0FBF0; border: 1.5px solid rgba(16,124,16,0.2); }
+  .col-b.overdue { background: #FFF0F0; border: 1.5px solid rgba(209,52,56,0.25); }
+  .col-head-b {
+    padding: 8px 10px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid;
+  }
+  .col-b.todo    .col-head-b { border-color: #605E5C; }
+  .col-b.prog    .col-head-b { border-color: #CA8A04; }
+  .col-b.review  .col-head-b { border-color: #FFB900; }
+  .col-b.done    .col-head-b { border-color: #107C10; }
+  .col-b.overdue .col-head-b { border-color: #D13438; }
+  .col-head-b-title { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+  .col-b.todo    .col-head-b-title { color: #605E5C; }
+  .col-b.prog    .col-head-b-title { color: #CA8A04; }
+  .col-b.review  .col-head-b-title { color: #E07200; }
+  .col-b.done    .col-head-b-title { color: #107C10; }
+  .col-b.overdue .col-head-b-title { color: #D13438; }
+
+  /* ── Shared: OPTION A plain white cards ── */
+  .card-a {
+    background: white; border-radius: 6px;
+    padding: 8px 10px; font-size: 10px; color: #201F1E;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border-left: 3px solid;
+  }
+  .card-a.todo    { border-left-color: #605E5C; }
+  .card-a.prog    { border-left-color: #CA8A04; }
+  .card-a.review  { border-left-color: #FFB900; }
+  .card-a.done    { border-left-color: #107C10; opacity: 0.75; }
+  .card-a.overdue { border-left-color: #D13438; }
+
+  /* ── OPTION B: tinted cards ── */
+  .card-b {
+    border-radius: 6px; padding: 8px 10px;
+    font-size: 10px; color: #201F1E;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border: 1px solid;
+  }
+  .card-b.todo    { background: white; border-color: rgba(96,94,92,0.2); }
+  .card-b.prog    { background: #FFFDF0; border-color: rgba(202,138,4,0.2); }
+  .card-b.review  { background: #FFFCF0; border-color: rgba(255,185,0,0.25); }
+  .card-b.done    { background: #F5FBF5; border-color: rgba(16,124,16,0.15); opacity: 0.8; }
+  .card-b.overdue { background: #FFF5F5; border-color: rgba(209,52,56,0.2); }
+
+  /* ── OPTION C: cards with top accent strip ── */
+  .col-c { background: white; border-radius: 8px; overflow: hidden; border: 1px solid #E1DFDD; }
+  .col-head-c {
+    padding: 9px 10px; display: flex; align-items: center; justify-content: space-between;
+    background: #F8F9FA; border-bottom: 1px solid #E1DFDD;
+  }
+  .col-head-c-dot {
+    width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex-shrink: 0;
+  }
+  .col-head-c-title { font-size: 10px; font-weight: 700; color: #201F1E; letter-spacing: 0.3px; text-transform: uppercase; display: flex; align-items: center; }
+  .card-c {
+    background: white; border-radius: 6px; padding: 8px 10px;
+    font-size: 10px; color: #201F1E; overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .card-c-strip { height: 3px; margin: -8px -10px 7px; }
+  .card-c.todo    .card-c-strip { background: #8A8886; }
+  .card-c.prog    .card-c-strip { background: linear-gradient(90deg, #D97C0A, #FFB900); }
+  .card-c.review  .card-c-strip { background: linear-gradient(90deg, #FFB900, #FF8C00); }
+  .card-c.done    .card-c-strip { background: linear-gradient(90deg, #107C10, #16A316); }
+  .card-c.overdue .card-c-strip { background: linear-gradient(90deg, #D13438, #FF6B6B); }
+
+  /* shared card internals */
+  .card-name { font-weight: 700; margin-bottom: 3px; font-size: 10px; }
+  .card-desc { color: #605E5C; font-size: 9px; margin-bottom: 4px; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+  .card-due  { font-size: 9px; color: #605E5C; }
+  .card-due.overdue { color: #D13438; font-weight: 700; }
+  .card-badge {
+    font-size: 8px; padding: 1px 5px; border-radius: 3px;
+    background: #FDE7E9; color: #D13438; font-weight: 700;
+  }
+  .card-assign { font-size: 9px; color: #605E5C; margin-top: 2px; }
+  .col-badge {
+    font-size: 9px; font-weight: 700; padding: 1px 7px;
+    border-radius: 20px;
+  }
+  .col-badge-light { background: rgba(0,0,0,0.1); color: white; }
+  .col-badge-dark  { background: rgba(0,0,0,0.08); }
+  .col-b.todo    .col-badge-dark { color: #605E5C; }
+  .col-b.prog    .col-badge-dark { color: #CA8A04; }
+  .col-b.review  .col-badge-dark { color: #E07200; }
+  .col-b.done    .col-badge-dark { color: #107C10; }
+  .col-b.overdue .col-badge-dark { color: #D13438; }
+
+  /* option label tags */
+  .opt-label { font-size: 10px; font-weight: 700; color: #605E5C; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 6px; }
+  .rec-badge {
+    display: inline-block; background: #E8F4FD; color: #0078D4;
+    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+    margin-left: 6px; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+</style>
+
+<h2>Kanban board — which direction feels right?</h2>
+<p class="subtitle">Three ways to elevate the board. All three keep the same 5-column layout and drag-and-drop behaviour.</p>
+
+<!-- ═══ OPTION A ═══ -->
+<div class="opt-label">A — Gradient column headers + left-accent cards <span class="rec-badge">★ Recommended</span></div>
+<div class="board-wrap" style="cursor:pointer" onclick="">
+  <!-- metric bar -->
+  <div class="metric-bar">
+    <div class="metric-tile"><div class="m-box" style="background:#DEECF9;color:#0078D4">12</div><div class="m-label">Assigned</div></div>
+    <div class="metric-tile"><div class="m-box" style="background:#FEF9C3;color:#CA8A04">4</div><div class="m-label">In Progress</div></div>
+    <div class="metric-tile"><div class="m-box" style="background:#FFF4CC;color:#E07200">3</div><div class="m-label">Pending Review</div></div>
+    <div class="metric-tile"><div class="m-box" style="background:#DFF6DD;color:#107C10">3</div><div class="m-label">Done</div></div>
+    <div class="metric-tile"><div class="m-box" style="background:#FDE7E9;color:#D13438">2</div><div class="m-label">Overdue</div></div>
+  </div>
+  <!-- columns -->
+  <div class="col-row">
+    <div class="col col-a">
+      <div class="col-head-a todo"><span class="col-head-title">To Do</span><span class="col-head-badge">3</span></div>
+      <div class="col-body">
+        <div class="card-a todo"><div class="card-name">Define access control matrix</div><div class="card-desc">List all roles and permissions…</div><div class="card-footer"><span class="card-due">May 20</span><span class="card-badge">Required</span></div></div>
+        <div class="card-a todo"><div class="card-name">Review encryption policy</div><div class="card-footer"><span class="card-due">Jun 3</span></div></div>
+      </div>
+    </div>
+    <div class="col col-a">
+      <div class="col-head-a prog"><span class="col-head-title">In Progress</span><span class="col-head-badge">2</span></div>
+      <div class="col-body">
+        <div class="card-a prog"><div class="card-name">GDPR data mapping audit</div><div class="card-desc">Document all data flows…</div><div class="card-assign">👤 Yael Cohen</div><div class="card-footer"><span class="card-due">May 28</span></div></div>
+        <div class="card-a prog"><div class="card-name">Vendor risk assessment</div><div class="card-footer"><span class="card-due">Jun 1</span></div></div>
+      </div>
+    </div>
+    <div class="col col-a">
+      <div class="col-head-a review"><span class="col-head-title">Pending Review</span><span class="col-head-badge">2</span></div>
+      <div class="col-body">
+        <div class="card-a review"><div class="card-name">ISO 27001 gap analysis</div><div class="card-footer"><span class="card-due">May 22</span><span class="card-badge">Required</span></div></div>
+      </div>
+    </div>
+    <div class="col col-a">
+      <div class="col-head-a done"><span class="col-head-title">Done</span><span class="col-head-badge">3</span></div>
+      <div class="col-body">
+        <div class="card-a done"><div class="card-name">Security awareness training</div><div class="card-footer"><span class="card-due">May 10</span></div></div>
+        <div class="card-a done"><div class="card-name">Backup policy review</div><div class="card-footer"><span class="card-due">May 8</span></div></div>
+      </div>
+    </div>
+    <div class="col col-a">
+      <div class="col-head-a overdue"><span class="col-head-title">Overdue</span><span class="col-head-badge">2</span></div>
+      <div class="col-body">
+        <div class="card-a overdue"><div class="card-name">Penetration test sign-off</div><div class="card-footer"><span class="card-due overdue">⚠ May 5</span><span class="card-badge">Required</span></div></div>
+        <div class="card-a overdue"><div class="card-name">DR plan documentation</div><div class="card-footer"><span class="card-due overdue">⚠ May 1</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OPTION B ═══ -->
+<div class="opt-label" style="margin-top:20px">B — Tinted column backgrounds + status-tinted cards</div>
+<div class="board-wrap">
+  <div class="metric-bar">
+    <div class="metric-tile"><div class="m-box" style="background:#DEECF9;color:#0078D4">12</div><div class="m-label">Assigned</div></div>
+    <div class="metric-tile"><div class="m-box" style="background:#FEF9C3;color:#CA8A04">4</div><div class="m-label">In Progress</div></div>
+    <div class="metric-tile"><div class="m-box" style="background:#FFF4CC;color:#E07200">3</div><div class="m-label">Pending Review</div></div>
+    <div class="metric-tile"><div class="m-box" style="background:#DFF6DD;color:#107C10">3</div><div class="m-label">Done</div></div>
+    <div class="metric-tile"><div class="m-box" style="background:#FDE7E9;color:#D13438">2</div><div class="m-label">Overdue</div></div>
+  </div>
+  <div class="col-row">
+    <div class="col col-b todo">
+      <div class="col-head-b"><span class="col-head-b-title">To Do</span><span class="col-badge col-badge-dark">3</span></div>
+      <div class="col-body">
+        <div class="card-b todo"><div class="card-name">Define access control matrix</div><div class="card-desc">List all roles and permissions…</div><div class="card-footer"><span class="card-due">May 20</span><span class="card-badge">Required</span></div></div>
+        <div class="card-b todo"><div class="card-name">Review encryption policy</div><div class="card-footer"><span class="card-due">Jun 3</span></div></div>
+      </div>
+    </div>
+    <div class="col col-b prog">
+      <div class="col-head-b"><span class="col-head-b-title">In Progress</span><span class="col-badge col-badge-dark">2</span></div>
+      <div class="col-body">
+        <div class="card-b prog"><div class="card-name">GDPR data mapping audit</div><div class="card-assign">👤 Yael Cohen</div><div class="card-footer"><span class="card-due">May 28</span></div></div>
+        <div class="card-b prog"><div class="card-name">Vendor risk assessment</div><div class="card-footer"><span class="card-due">Jun 1</span></div></div>
+      </div>
+    </div>
+    <div class="col col-b review">
+      <div class="col-head-b"><span class="col-head-b-title">Pending Review</span><span class="col-badge col-badge-dark">2</span></div>
+      <div class="col-body">
+        <div class="card-b review"><div class="card-name">ISO 27001 gap analysis</div><div class="card-footer"><span class="card-due">May 22</span><span class="card-badge">Required</span></div></div>
+      </div>
+    </div>
+    <div class="col col-b done">
+      <div class="col-head-b"><span class="col-head-b-title">Done</span><span class="col-badge col-badge-dark">3</span></div>
+      <div class="col-body">
+        <div class="card-b done"><div class="card-name">Security awareness training</div><div class="card-footer"><span class="card-due">May 10</span></div></div>
+        <div class="card-b done"><div class="card-name">Backup policy review</div><div class="card-footer"><span class="card-due">May 8</span></div></div>
+      </div>
+    </div>
+    <div class="col col-b overdue">
+      <div class="col-head-b"><span class="col-head-b-title">Overdue</span><span class="col-badge col-badge-dark">2</span></div>
+      <div class="col-body">
+        <div class="card-b overdue"><div class="card-name">Penetration test sign-off</div><div class="card-footer"><span class="card-due overdue">⚠ May 5</span><span class="card-badge">Required</span></div></div>
+        <div class="card-b overdue"><div class="card-name">DR plan documentation</div><div class="card-footer"><span class="card-due overdue">⚠ May 1</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OPTION C ═══ -->
+<div class="opt-label" style="margin-top:20px">C — Gradient metric bar + top-strip cards</div>
+<div class="board-wrap">
+  <div class="metric-bar-c">
+    <div class="metric-grad" style="background:linear-gradient(135deg,#0078D4,#005A9E)"><div><div class="mg-num">12</div><div class="mg-label">ASSIGNED</div></div></div>
+    <div class="metric-grad" style="background:linear-gradient(135deg,#D97C0A,#CA8A04)"><div><div class="mg-num">4</div><div class="mg-label">IN PROGRESS</div></div></div>
+    <div class="metric-grad" style="background:linear-gradient(135deg,#FFB900,#E07200)"><div><div class="mg-num">3</div><div class="mg-label">PENDING REVIEW</div></div></div>
+    <div class="metric-grad" style="background:linear-gradient(135deg,#107C10,#0A5C0A)"><div><div class="mg-num">3</div><div class="mg-label">DONE</div></div></div>
+    <div class="metric-grad" style="background:linear-gradient(135deg,#D13438,#A01010)"><div><div class="mg-num">2</div><div class="mg-label">OVERDUE</div></div></div>
+  </div>
+  <div class="col-row">
+    <div class="col col-c">
+      <div class="col-head-c"><div class="col-head-c-title"><div class="col-head-c-dot" style="background:#8A8886"></div>To Do</div><span class="col-badge" style="background:rgba(96,94,92,0.12);color:#605E5C">3</span></div>
+      <div class="col-body">
+        <div class="card-c todo"><div class="card-c-strip"></div><div class="card-name">Define access control matrix</div><div class="card-desc">List all roles and permissions…</div><div class="card-footer"><span class="card-due">May 20</span><span class="card-badge">Required</span></div></div>
+        <div class="card-c todo"><div class="card-c-strip"></div><div class="card-name">Review encryption policy</div><div class="card-footer"><span class="card-due">Jun 3</span></div></div>
+      </div>
+    </div>
+    <div class="col col-c">
+      <div class="col-head-c"><div class="col-head-c-title"><div class="col-head-c-dot" style="background:#D97C0A"></div>In Progress</div><span class="col-badge" style="background:rgba(202,138,4,0.12);color:#CA8A04">2</span></div>
+      <div class="col-body">
+        <div class="card-c prog"><div class="card-c-strip"></div><div class="card-name">GDPR data mapping audit</div><div class="card-assign">👤 Yael Cohen</div><div class="card-footer"><span class="card-due">May 28</span></div></div>
+        <div class="card-c prog"><div class="card-c-strip"></div><div class="card-name">Vendor risk assessment</div><div class="card-footer"><span class="card-due">Jun 1</span></div></div>
+      </div>
+    </div>
+    <div class="col col-c">
+      <div class="col-head-c"><div class="col-head-c-title"><div class="col-head-c-dot" style="background:#FFB900"></div>Pending Review</div><span class="col-badge" style="background:rgba(255,185,0,0.15);color:#E07200">2</span></div>
+      <div class="col-body">
+        <div class="card-c review"><div class="card-c-strip"></div><div class="card-name">ISO 27001 gap analysis</div><div class="card-footer"><span class="card-due">May 22</span><span class="card-badge">Required</span></div></div>
+      </div>
+    </div>
+    <div class="col col-c">
+      <div class="col-head-c"><div class="col-head-c-title"><div class="col-head-c-dot" style="background:#107C10"></div>Done</div><span class="col-badge" style="background:rgba(16,124,16,0.1);color:#107C10">3</span></div>
+      <div class="col-body">
+        <div class="card-c done"><div class="card-c-strip"></div><div class="card-name">Security awareness training</div><div class="card-footer"><span class="card-due">May 10</span></div></div>
+        <div class="card-c done"><div class="card-c-strip"></div><div class="card-name">Backup policy review</div><div class="card-footer"><span class="card-due">May 8</span></div></div>
+      </div>
+    </div>
+    <div class="col col-c">
+      <div class="col-head-c"><div class="col-head-c-title"><div class="col-head-c-dot" style="background:#D13438"></div>Overdue</div><span class="col-badge" style="background:rgba(209,52,56,0.1);color:#D13438">2</span></div>
+      <div class="col-body">
+        <div class="card-c overdue"><div class="card-c-strip"></div><div class="card-name">Penetration test sign-off</div><div class="card-footer"><span class="card-due overdue">⚠ May 5</span><span class="card-badge">Required</span></div></div>
+        <div class="card-c overdue"><div class="card-c-strip"></div><div class="card-name">DR plan documentation</div><div class="card-footer"><span class="card-due overdue">⚠ May 1</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top:20px">
+  <div class="option" data-choice="A" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Gradient column headers + left-accent cards</h3><p>Matches the app's existing gradient language (PageHeader, MetricCards). Bold, premium. The left border on cards gives instant status recognition without changing the card structure.</p></div>
+  </div>
+  <div class="option" data-choice="B" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Tinted column backgrounds + tinted cards</h3><p>Softer, all-over colour wash. Feels more like a document tool (Notion/Linear). Colour-coded but less bold than gradients.</p></div>
+  </div>
+  <div class="option" data-choice="C" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content"><h3>Gradient metric bar + top-strip cards</h3><p>Brings the dashboard's gradient MetricCards energy into the kanban header. Clean white columns. Cards have a top gradient strip as the status signal.</p></div>
+  </div>
+</div>

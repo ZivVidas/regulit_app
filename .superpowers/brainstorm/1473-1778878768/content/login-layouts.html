@@ -1,0 +1,225 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; }
+
+  .layouts { display: flex; gap: 18px; margin-top: 16px; flex-wrap: wrap; }
+
+  .layout-card {
+    flex: 1; min-width: 220px; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.13); cursor: pointer;
+    border: 2px solid transparent; transition: border-color 0.15s;
+  }
+  .layout-card:hover { border-color: #0078D4; }
+
+  /* --- mockup containers --- */
+  .mock { height: 260px; display: flex; position: relative; overflow: hidden; }
+
+  /* ── OPTION A: Split panel ── */
+  .mock-a { }
+  .mock-a .left {
+    width: 42%; background: linear-gradient(145deg, #0078D4 0%, #005A9E 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 14px 10px; gap: 8px;
+  }
+  .mock-a .logo-box {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 900; color: white;
+  }
+  .mock-a .brand { font-size: 13px; font-weight: 800; color: white; letter-spacing: 0.3px; }
+  .mock-a .tagline { font-size: 9px; color: rgba(255,255,255,0.7); text-align: center; line-height: 1.4; margin-top: 2px; }
+  .mock-a .orb {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(255,255,255,0.07); position: absolute; bottom: -20px; left: -20px;
+  }
+  .mock-a .orb2 {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: rgba(255,255,255,0.05); position: absolute; top: 10px; left: 10px;
+  }
+  .mock-a .right {
+    flex: 1; background: #FAFAFA; padding: 14px 12px;
+    display: flex; flex-direction: column; justify-content: center; gap: 9px;
+  }
+  .mock-a .form-title { font-size: 11px; font-weight: 700; color: #201F1E; }
+  .mock-a .field {
+    background: white; border: 1px solid #E1DFDD; border-radius: 6px;
+    height: 26px; padding: 0 8px; font-size: 9px; color: #605E5C;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .mock-a .field-icon { width: 10px; height: 10px; background: #C8C6C4; border-radius: 50%; flex-shrink: 0; }
+  .mock-a .btn {
+    background: linear-gradient(135deg, #FF8C00, #E07200);
+    border-radius: 6px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: white;
+  }
+  .mock-a .forgot { font-size: 8px; color: #FF8C00; text-align: right; }
+
+  /* ── OPTION B: Gradient background + floating card ── */
+  .mock-b {
+    background: linear-gradient(145deg, #0078D4 0%, #004A80 100%);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .mock-b .orb1 {
+    position: absolute; width: 120px; height: 120px; border-radius: 50%;
+    background: rgba(255,255,255,0.06); top: -30px; right: -30px;
+  }
+  .mock-b .orb2 {
+    position: absolute; width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(255,255,255,0.04); bottom: -20px; left: 20px;
+  }
+  .mock-b .card {
+    width: 100%; background: white; border-radius: 14px;
+    padding: 14px 14px 12px; z-index: 1;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+  .mock-b .card-top { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+  .mock-b .logo-sm {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: linear-gradient(135deg, #0078D4, #005A9E);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 900; color: white;
+  }
+  .mock-b .brand { font-size: 11px; font-weight: 800; color: #201F1E; }
+  .mock-b .field {
+    background: #F5F5F5; border: 1px solid #E1DFDD; border-radius: 5px;
+    height: 22px; margin-bottom: 7px; padding: 0 8px; font-size: 8px; color: #605E5C;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .mock-b .field-icon { width: 8px; height: 8px; background: #C8C6C4; border-radius: 50%; flex-shrink: 0; }
+  .mock-b .btn {
+    background: linear-gradient(135deg, #0078D4, #005A9E);
+    border-radius: 5px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: white;
+  }
+
+  /* ── OPTION C: Gradient hero band ── */
+  .mock-c { background: #F0F2F5; flex-direction: column; }
+  .mock-c .hero {
+    background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%);
+    padding: 14px 16px 20px; display: flex; align-items: center; gap: 10px;
+  }
+  .mock-c .logo-sm {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 900; color: white;
+  }
+  .mock-c .hero-text { }
+  .mock-c .hero-brand { font-size: 13px; font-weight: 800; color: white; }
+  .mock-c .hero-tag { font-size: 8px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+  .mock-c .card-wrap {
+    flex: 1; display: flex; align-items: flex-start; justify-content: center;
+    padding: 0 16px; margin-top: -10px;
+  }
+  .mock-c .card {
+    width: 100%; background: white; border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  }
+  .mock-c .form-title { font-size: 10px; font-weight: 700; color: #201F1E; margin-bottom: 8px; }
+  .mock-c .field {
+    background: #FAFAFA; border: 1px solid #E1DFDD; border-radius: 5px;
+    height: 20px; margin-bottom: 6px; padding: 0 7px; font-size: 8px; color: #605E5C;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .mock-c .field-icon { width: 8px; height: 8px; background: #C8C6C4; border-radius: 50%; flex-shrink: 0; }
+  .mock-c .btn {
+    background: linear-gradient(135deg, #FF8C00, #E07200);
+    border-radius: 5px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700; color: white;
+  }
+
+  /* label row */
+  .layout-label {
+    padding: 10px 14px 12px; background: white;
+  }
+  .layout-label h3 { font-size: 13px; font-weight: 700; color: #201F1E; margin-bottom: 2px; }
+  .layout-label p { font-size: 11px; color: #605E5C; line-height: 1.4; }
+  .rec-badge {
+    display: inline-block; background: #E8F4FD; color: #0078D4;
+    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+    margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+</style>
+
+<h2>Login page — which layout direction?</h2>
+<p class="subtitle">All three use the app's blue gradient. Pick the one that feels most premium.</p>
+
+<div class="layouts">
+
+  <!-- A: Split panel -->
+  <div class="layout-card" data-choice="split" onclick="toggleSelect(this)">
+    <div class="mock mock-a">
+      <div class="left">
+        <div class="orb"></div>
+        <div class="orb2"></div>
+        <div class="logo-box">R</div>
+        <div class="brand">ReguLit</div>
+        <div class="tagline">Compliance made<br>clear and simple</div>
+      </div>
+      <div class="right">
+        <div class="form-title">Sign in</div>
+        <div class="field"><div class="field-icon"></div>Email address</div>
+        <div class="field"><div class="field-icon"></div>Password</div>
+        <div class="forgot">Forgot password?</div>
+        <div class="btn">Sign In →</div>
+      </div>
+    </div>
+    <div class="layout-label">
+      <div class="rec-badge">★ Recommended</div>
+      <h3>A — Split panel</h3>
+      <p>Blue brand panel left, white form right. Enterprise SaaS feel. Collapses gracefully to single-column on mobile.</p>
+    </div>
+  </div>
+
+  <!-- B: Gradient background -->
+  <div class="layout-card" data-choice="gradient-bg" onclick="toggleSelect(this)">
+    <div class="mock mock-b">
+      <div class="orb1"></div>
+      <div class="orb2"></div>
+      <div class="card">
+        <div class="card-top">
+          <div class="logo-sm">R</div>
+          <div class="brand">ReguLit</div>
+        </div>
+        <div class="field"><div class="field-icon"></div>Email address</div>
+        <div class="field"><div class="field-icon"></div>Password</div>
+        <div class="btn">Sign In →</div>
+      </div>
+    </div>
+    <div class="layout-label">
+      <h3>B — Full gradient background</h3>
+      <p>Blue gradient fills the whole screen, white card floats centered. Bold and modern. No sidebar feel.</p>
+    </div>
+  </div>
+
+  <!-- C: Hero band -->
+  <div class="layout-card" data-choice="hero-band" onclick="toggleSelect(this)">
+    <div class="mock mock-c">
+      <div class="hero">
+        <div class="logo-sm">R</div>
+        <div class="hero-text">
+          <div class="hero-brand">ReguLit</div>
+          <div class="hero-tag">GRC Platform</div>
+        </div>
+      </div>
+      <div class="card-wrap">
+        <div class="card">
+          <div class="form-title">Sign in to your account</div>
+          <div class="field"><div class="field-icon"></div>Email address</div>
+          <div class="field"><div class="field-icon"></div>Password</div>
+          <div class="btn">Sign In →</div>
+        </div>
+      </div>
+    </div>
+    <div class="layout-label">
+      <h3>C — Gradient hero band</h3>
+      <p>Gradient header strip with logo, form card overlaps below on a light background. Closer to current but elevated.</p>
+    </div>
+  </div>
+
+</div>
