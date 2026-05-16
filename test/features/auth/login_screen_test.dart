@@ -38,6 +38,32 @@ class _SlowAuthState extends AuthState {
   void completeLogin() {}
 }
 
+// Simulates loginAndHold() that completes instantly with success.
+class _SuccessAuthState extends AuthState {
+  @override
+  Future<AppUser?> build() async => null;
+
+  @override
+  Future<void> loginAndHold({
+    required String email,
+    required String password,
+  }) async {
+    state = const AsyncLoading();
+    // Returns immediately — simulates instant API success
+  }
+
+  @override
+  void completeLogin() {
+    state = AsyncData(AppUser(
+      id: 'u1',
+      tenantId: 'ten',
+      email: 'alice@test.com',
+      name: 'Alice',
+      role: UserRole.employee,
+    ));
+  }
+}
+
 Widget _wrap(WidgetTester tester, {required Size size}) {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -47,6 +73,29 @@ Widget _wrap(WidgetTester tester, {required Size size}) {
     overrides: [
       secureStorageProvider.overrideWithValue(storage),
       authStateProvider.overrideWith(_LoggedOutAuthState.new),
+    ],
+    child: MaterialApp(
+      theme: AppTheme.light,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en')],
+      home: const LoginScreen(),
+    ),
+  );
+}
+
+Widget _wrapSuccess(WidgetTester tester, {required Size size}) {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1.0;
+  final storage = _MockStorage();
+  when(() => storage.read(key: any(named: 'key'))).thenAnswer((_) async => null);
+  return ProviderScope(
+    overrides: [
+      secureStorageProvider.overrideWithValue(storage),
+      authStateProvider.overrideWith(_SuccessAuthState.new),
     ],
     child: MaterialApp(
       theme: AppTheme.light,
@@ -163,6 +212,23 @@ void main() {
       // Drain the pending 1-hour timer so the test framework doesn't complain
       // about pending timers when the widget tree is disposed.
       await tester.pump(const Duration(hours: 1));
+    });
+  });
+
+  group('LoginScreen — fade overlay', () {
+    testWidgets('white overlay not visible in idle state', (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_wrap(tester, size: const Size(400, 800)));
+      await tester.pumpAndSettle();
+
+      // AnimatedOpacity from _FadeToWhiteOverlay should be at opacity 0.0
+      final overlayFinder = find.byKey(const Key('fadeToWhiteOverlay'));
+      // The _FadeToWhiteOverlay AnimatedOpacity must exist
+      expect(overlayFinder, findsOneWidget);
+      final overlay = tester.widget<AnimatedOpacity>(overlayFinder);
+      // In idle state the overlay must be invisible
+      expect(overlay.opacity, 0.0);
     });
   });
 }

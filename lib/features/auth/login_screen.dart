@@ -97,7 +97,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               return _MobileLayout(form: form, l10n: l10n);
             },
           ),
-          // _FadeToWhiteOverlay is added in Task 3
+          _FadeToWhiteOverlay(
+            visible: _phase == _ButtonPhase.succeeded,
+            onFadeComplete: () {
+              if (mounted) {
+                ref.read(authStateProvider.notifier).completeLogin();
+              }
+            },
+          ),
         ],
       ),
     );
@@ -583,40 +590,32 @@ class _MobileHeader extends StatelessWidget {
   }
 }
 
-// ── Success Overlay ───────────────────────────────────────────
-class _SuccessOverlay extends StatelessWidget {
-  const _SuccessOverlay();
+// ── Fade-to-white overlay ─────────────────────────────────────
+class _FadeToWhiteOverlay extends StatelessWidget {
+  final bool visible;
+  final VoidCallback onFadeComplete;
+  const _FadeToWhiteOverlay({
+    required this.visible,
+    required this.onFadeComplete,
+  });
+
+  static const Key overlayKey = Key('fadeToWhiteOverlay');
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black.withValues(alpha: 0.25),
-      child: Center(
-        child: Container(
-          width: 88,
-          height: 88,
-          decoration: BoxDecoration(
-            color: const Color(0xFF107C10),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF107C10).withValues(alpha: 0.40),
-                blurRadius: 28,
-                spreadRadius: 4,
-              ),
-            ],
-          ),
-          child: const Icon(Icons.check_rounded, color: Colors.white, size: 44),
-        )
-            .animate()
-            .scale(
-              begin: const Offset(0.3, 0.3),
-              duration: 500.ms,
-              curve: Curves.elasticOut,
-            )
-            .fadeIn(duration: 200.ms),
+    return IgnorePointer(
+      child: AnimatedOpacity(
+        key: overlayKey,
+        opacity: visible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeIn,
+        onEnd: visible ? onFadeComplete : null,
+        child: const ColoredBox(
+          color: Colors.white,
+          child: SizedBox.expand(),
+        ),
       ),
-    ).animate().fadeIn(duration: 200.ms);
+    );
   }
 }
 
