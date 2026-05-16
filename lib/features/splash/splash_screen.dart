@@ -23,7 +23,7 @@ class _SplashView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.blueDark,
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: AppGradients.primaryHeader,
         ),
         child: Stack(
