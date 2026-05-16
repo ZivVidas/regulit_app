@@ -191,9 +191,9 @@ class _ProgressBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: v,
                 minHeight: 4,
-                backgroundColor: Colors.white.withOpacity(0.10),
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  Color(0xFF0078D4),
+                backgroundColor: Colors.white.withValues(alpha: 0.18),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Colors.white.withValues(alpha: 0.88),
                 ),
               ),
             ),
@@ -202,7 +202,7 @@ class _ProgressBar extends StatelessWidget {
           Text(
             'Loading…',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.35),
+              color: Colors.white.withValues(alpha: 0.45),
               fontSize: 11,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w500,
