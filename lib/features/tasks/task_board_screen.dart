@@ -1128,28 +1128,28 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
             clipBehavior: Clip.antiAlias,
             child: IntrinsicHeight(
               child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(width: 3, color: _accent),
-                Expanded(
-                  child: widget.onTap != null
-                      ? Material(
-                          color: Colors.white,
-                          child: InkWell(
-                            onTap: dragging ? null : widget.onTap,
-                            child: Padding(
-                              padding: const EdgeInsets.all(AppSpacing.md),
-                              child: body,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(width: 3, color: _accent),
+                  Expanded(
+                    child: widget.onTap != null
+                        ? Material(
+                            color: Colors.white,
+                            child: InkWell(
+                              onTap: dragging ? null : widget.onTap,
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpacing.md),
+                                child: body,
+                              ),
                             ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            child: body,
                           ),
-                        )
-                      : Padding(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          child: body,
-                        ),
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1167,7 +1167,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
       onDragEnd: (_) => setState(() => _dragging = false),
       feedback: Material(
         elevation: 8,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         shadowColor: _accent.withOpacity(0.4),
         child: SizedBox(
           width: _KanbanBoard._colW - 16,
