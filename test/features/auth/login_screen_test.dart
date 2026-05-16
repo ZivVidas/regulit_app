@@ -64,6 +64,24 @@ class _SuccessAuthState extends AuthState {
   }
 }
 
+// Simulates loginAndHold() that throws immediately.
+class _ErrorAuthState extends AuthState {
+  @override
+  Future<AppUser?> build() async => null;
+
+  @override
+  Future<void> loginAndHold({
+    required String email,
+    required String password,
+  }) async {
+    state = const AsyncLoading();
+    throw Exception('Invalid credentials');
+  }
+
+  @override
+  void completeLogin() {}
+}
+
 Widget _wrap(WidgetTester tester, {required Size size}) {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -119,6 +137,29 @@ Widget _wrapSlow(WidgetTester tester, {required Size size}) {
     overrides: [
       secureStorageProvider.overrideWithValue(storage),
       authStateProvider.overrideWith(_SlowAuthState.new),
+    ],
+    child: MaterialApp(
+      theme: AppTheme.light,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en')],
+      home: const LoginScreen(),
+    ),
+  );
+}
+
+Widget _wrapError(WidgetTester tester, {required Size size}) {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1.0;
+  final storage = _MockStorage();
+  when(() => storage.read(key: any(named: 'key'))).thenAnswer((_) async => null);
+  return ProviderScope(
+    overrides: [
+      secureStorageProvider.overrideWithValue(storage),
+      authStateProvider.overrideWith(_ErrorAuthState.new),
     ],
     child: MaterialApp(
       theme: AppTheme.light,
@@ -249,6 +290,45 @@ void main() {
         find.byKey(const Key('fadeToWhiteOverlay')),
       );
       expect(overlay.opacity, 1.0);
+    });
+  });
+
+  group('LoginScreen — error path', () {
+    testWidgets('error banner appears after failed login', (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_wrapError(tester, size: const Size(400, 800)));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'alice@test.com');
+      await tester.enterText(find.byType(TextFormField).last, 'wrongpass');
+      await tester.tap(find.byType(FilledButton));
+      await tester.pump(); // start loading phase
+
+      // Pump past the 500 ms delay in _submit's error path
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // Error banner should now be visible
+      expect(find.text('Invalid credentials'), findsOneWidget);
+    });
+
+    testWidgets('button returns to idle (full-width) after error', (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_wrapError(tester, size: const Size(400, 800)));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField).first, 'alice@test.com');
+      await tester.enterText(find.byType(TextFormField).last, 'wrongpass');
+      await tester.tap(find.byType(FilledButton));
+      await tester.pump();
+
+      // After error delay + AnimatedContainer re-expand animation
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 350)); // container re-expand
+
+      // Button text label should be back
+      expect(find.textContaining('Sign in'), findsOneWidget);
     });
   });
 }
