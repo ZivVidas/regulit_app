@@ -134,8 +134,8 @@ class _GifLogo extends StatelessWidget {
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                const Color(0xFF0078D4).withOpacity(0.18),
-                const Color(0xFF0078D4).withOpacity(0.0),
+                Colors.white.withValues(alpha: 0.14),
+                Colors.white.withValues(alpha: 0.0),
               ],
             ),
           ),
@@ -147,7 +147,7 @@ class _GifLogo extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: const Color(0xFF58C2F0).withOpacity(0.14),
+              color: Colors.white.withValues(alpha: 0.28),
               width: 1.5,
             ),
           ),
