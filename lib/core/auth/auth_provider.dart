@@ -45,29 +45,51 @@ class AuthState extends _$AuthState {
     }
   }
 
-  /// Login with email + password
-  Future<void> login({required String email, required String password}) async {
+  AppUser? _pendingUser;
+
+  /// Authenticates against the API and stores tokens, but does NOT set
+  /// AsyncData — GoRouter's redirect will not fire yet.
+  /// Call [completeLogin] after the success animation to trigger navigation.
+  Future<void> loginAndHold({
+    required String email,
+    required String password,
+  }) async {
     state = const AsyncLoading();
 
-    state = await AsyncValue.guard(() async {
+    final result = await AsyncValue.guard(() async {
       final dio = ref.read(dioProvider);
       final storage = ref.read(secureStorageProvider);
 
-      final response = await dio.post(
+      final response = await dio.post<dynamic>(
         '/auth/login',
         data: {'email': email, 'password': password},
       );
 
       final data = response.data as Map<String, dynamic>;
 
-      // Persist tokens + remember email for next launch
-      await storage.write(key: 'auth_token',     value: data['access_token']  as String);
-      await storage.write(key: 'refresh_token',  value: data['refresh_token'] as String);
-      await storage.write(key: 'tenant_id',      value: data['tenant_id']     as String);
-      await storage.write(key: 'last_email',     value: email);
+      await storage.write(key: 'auth_token',    value: data['access_token']  as String);
+      await storage.write(key: 'refresh_token', value: data['refresh_token'] as String);
+      await storage.write(key: 'tenant_id',     value: data['tenant_id']     as String);
+      await storage.write(key: 'last_email',    value: email);
 
       return AppUser.fromJson(data['user'] as Map<String, dynamic>);
     });
+
+    if (result is AsyncError) {
+      state = const AsyncData(null);
+      throw result.error!;
+    }
+
+    _pendingUser = result.value;
+    // state intentionally stays AsyncLoading
+  }
+
+  /// Sets AsyncData with the user stored by [loginAndHold].
+  /// GoRouter's redirect fires on this call. Safe to call multiple times.
+  void completeLogin() {
+    if (_pendingUser == null) return;
+    state = AsyncData(_pendingUser);
+    _pendingUser = null;
   }
 
   /// SSO / OAuth login (Microsoft Entra, Google)
