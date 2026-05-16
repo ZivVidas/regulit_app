@@ -54,8 +54,9 @@ class AuthState extends _$AuthState {
     required String email,
     required String password,
   }) async {
-    state = const AsyncLoading();
-
+    // Do NOT set AsyncLoading here — the router provider watches authStateProvider,
+    // so any state change recreates GoRouter and reloads the login screen.
+    // The button's loading indicator is driven by _ButtonPhase in the UI instead.
     final result = await AsyncValue.guard(() async {
       final dio = ref.read(dioProvider);
       final storage = ref.read(secureStorageProvider);
@@ -81,7 +82,7 @@ class AuthState extends _$AuthState {
     }
 
     _pendingUser = result.value;
-    // state intentionally stays AsyncLoading
+    // state remains AsyncData(null) — GoRouter does not fire until completeLogin()
   }
 
   /// Sets AsyncData with the user stored by [loginAndHold].

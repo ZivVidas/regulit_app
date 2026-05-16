@@ -71,13 +71,16 @@ void main() {
           .thenAnswer((_) async => _successResponse());
     });
 
-    test('leaves state as AsyncLoading after API call completes', () async {
+    test('leaves state as AsyncData(null) after API call completes', () async {
       await container.read(authStateProvider.future); // wait for build()
       final notifier = container.read(authStateProvider.notifier);
 
       await notifier.loginAndHold(email: 'alice@test.com', password: 'pass1234');
 
-      expect(container.read(authStateProvider), isA<AsyncLoading<AppUser?>>());
+      // State must NOT change to AsyncLoading — the router provider watches
+      // authStateProvider and would recreate GoRouter (reloading login screen).
+      expect(container.read(authStateProvider), isA<AsyncData<AppUser?>>());
+      expect(container.read(authStateProvider).value, isNull);
     });
 
     test('completeLogin sets AsyncData with the pending user', () async {
