@@ -310,7 +310,7 @@ void main() {
       await tester.pump(); // flush pending setState rebuild
 
       // Error banner should now be visible
-      expect(find.text('Invalid credentials'), findsOneWidget);
+      expect(find.text('Something went wrong — please try again'), findsOneWidget);
     });
 
     testWidgets('button returns to idle (full-width) after error', (tester) async {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -763,6 +764,9 @@ class _WfFileItem {
   final String fileType;
   final String? fileText;
   final String? imageDescription;
+  final String? processingStatus;   // null | 'processing' | 'done' | 'failed'
+  final int? chunksTotal;
+  final int? chunksDone;
   final DateTime createdAt;
 
   const _WfFileItem({
@@ -774,8 +778,22 @@ class _WfFileItem {
     required this.fileType,
     this.fileText,
     this.imageDescription,
+    this.processingStatus,
+    this.chunksTotal,
+    this.chunksDone,
     required this.createdAt,
   });
+
+  bool get isProcessing => processingStatus == 'processing';
+
+  /// "X / N" progress text while structuring, or null if unknown.
+  String? get progressLabel {
+    if (!isProcessing) return null;
+    if (chunksTotal != null && chunksTotal! > 0) {
+      return '${chunksDone ?? 0}/${chunksTotal!}';
+    }
+    return null;
+  }
 
   factory _WfFileItem.fromJson(Map<String, dynamic> j) => _WfFileItem(
         id: j['id'] as String,
@@ -786,6 +804,9 @@ class _WfFileItem {
         fileType: j['fileType'] as String? ?? 'text',
         fileText: j['fileText'] as String?,
         imageDescription: j['imageDescription'] as String?,
+        processingStatus: j['processingStatus'] as String?,
+        chunksTotal: (j['chunksTotal'] as num?)?.toInt(),
+        chunksDone: (j['chunksDone'] as num?)?.toInt(),
         createdAt: DateTime.parse(j['createdAt'] as String),
       );
 }
@@ -819,6 +840,7 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
   bool _uploading = false;
   double _uploadProgress = 0.0;
   final List<_WfFileItem> _files = [];
+  Timer? _filePollTimer;   // re-fetches the file list while any file is processing
 
   bool get _isEdit => widget.initial != null;
   String? get _workflowId => widget.initial?['id'] as String?;
@@ -841,9 +863,25 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
 
   @override
   void dispose() {
+    _filePollTimer?.cancel();
     _nameCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
+  }
+
+  /// Start polling the file list every 3s while any file is still being
+  /// structured in the background; stop once all are done.
+  void _syncPolling() {
+    final anyProcessing = _files.any((f) => f.isProcessing);
+    if (anyProcessing) {
+      _filePollTimer ??= Timer.periodic(
+        const Duration(seconds: 3),
+        (_) => _loadFiles(),
+      );
+    } else {
+      _filePollTimer?.cancel();
+      _filePollTimer = null;
+    }
   }
 
   Future<void> _loadQuizzes() async {
@@ -882,6 +920,7 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
                 .map((e) => _WfFileItem.fromJson(e as Map<String, dynamic>)),
           );
       });
+      _syncPolling();
     } catch (_) {}
   }
 
@@ -927,6 +966,7 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
           _uploading = false;
           _uploadProgress = 0.0;
         });
+        _syncPolling();  // large doc → starts polling for progress
       }
     } catch (_) {
       if (mounted) setState(() => _uploading = false);
@@ -1388,7 +1428,33 @@ class _WfFileRow extends StatelessWidget {
             ),
           ),
           const Gap(4),
-          if (hasContent)
+          // Large doc still being structured in the background.
+          if (item.isProcessing)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7C3AED).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const SizedBox(
+                  width: 10, height: 10,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 1.6, color: Color(0xFF7C3AED)),
+                ),
+                const Gap(6),
+                Text(
+                  item.progressLabel != null
+                      ? 'Processing ${item.progressLabel}'
+                      : 'Processing…',
+                  style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF7C3AED),
+                      fontWeight: FontWeight.w600),
+                ),
+              ]),
+            ),
+          if (!item.isProcessing && hasContent)
             _WfFileIconBtn(
               icon: Icons.visibility_outlined,
               tooltip: 'View',

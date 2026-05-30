@@ -12,6 +12,7 @@ import '../../core/api/api_client.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/customer/customer_context_provider.dart';
 import '../../core/models/workflow_task.dart';
+import '../../core/widgets/reanalyze_dialog.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/page_header.dart';
 import 'task_edit_dialog.dart';
@@ -84,6 +85,48 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
     return ctx?['customerId'] as String?;
   }
 
+  /// Confirm + run a fresh analysis for the selected session, then refresh.
+  Future<void> _handleReanalyze() async {
+    final sessionId = _selectedSessionId;
+    if (sessionId == null) return;
+    final l10n = AppLocalizations.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(l10n.analyzeAgainTitle),
+        content: Text(l10n.analyzeAgainConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.analyzeAgain),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final created = await showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ReanalyzeDialog(sessionId: sessionId),
+    );
+
+    if (created != null && mounted) {
+      ref.invalidate(sessionTasksProvider(sessionId));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.reanalyzeComplete),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -151,6 +194,7 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                     ref.invalidate(sessionTasksProvider(_selectedSessionId!));
                   }
                 },
+                onReanalyze: _handleReanalyze,
                 onSwitchView: () => context.go(AppRoutes.taskList),
                 l10n: l10n,
               ),
@@ -185,6 +229,7 @@ class _SessionBar extends StatelessWidget {
   final bool canEdit;
   final ValueChanged<String?> onSessionChanged;
   final VoidCallback onRefresh;
+  final VoidCallback onReanalyze;
   final VoidCallback onSwitchView;
   final AppLocalizations l10n;
 
@@ -194,6 +239,7 @@ class _SessionBar extends StatelessWidget {
     required this.canEdit,
     required this.onSessionChanged,
     required this.onRefresh,
+    required this.onReanalyze,
     required this.onSwitchView,
     required this.l10n,
   });
@@ -231,6 +277,28 @@ class _SessionBar extends StatelessWidget {
             ),
 
           const Gap(12),
+
+          // ── Re-analyze button — only visible to editors ──────────────────
+          if (canEdit && _selected != null) ...[
+            Tooltip(
+              message: l10n.analyzeAgain,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF7C3AED),
+                  side: const BorderSide(color: Color(0xFF7C3AED)),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  textStyle: AppTextStyles.button,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+                label: Text(l10n.analyzeAgain),
+                onPressed: onReanalyze,
+              ),
+            ),
+            const Gap(8),
+          ],
 
           // ── New Task button — only visible to IT Executor ────────────────
           if (canEdit && _selected != null)

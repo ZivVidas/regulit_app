@@ -186,6 +186,7 @@ class _AgentNotifier extends StateNotifier<_AgentState> {
       'max_tokens': agent['maxTokens'],
       'temperature': agent['temperature'],
       'llm_agent_url': agent['llmAgentUrl'],
+      'tpm': agent['tpm'],
     };
     return save(body);
   }
@@ -767,6 +768,7 @@ class _AgentDialogState extends State<_AgentDialog> {
   late final TextEditingController _maxTokensCtrl;
   late final TextEditingController _tempCtrl;
   late final TextEditingController _agentUrlCtrl;
+  late final TextEditingController _tpmCtrl;
 
   int? _selectedTypeId;
   bool _isActive = true;
@@ -795,6 +797,8 @@ class _AgentDialogState extends State<_AgentDialog> {
         text: a?['temperature'] != null ? '${a!['temperature']}' : '');
     _agentUrlCtrl =
         TextEditingController(text: a?['llmAgentUrl'] as String? ?? '');
+    _tpmCtrl = TextEditingController(
+        text: a?['tpm'] != null ? '${a!['tpm']}' : '');
     _selectedTypeId = a?['typeId'] as int?;
     _isActive = (a?['isActive'] as bool?) ?? true;
     _isDefault = (a?['isDefault'] as bool?) ?? false;
@@ -812,6 +816,7 @@ class _AgentDialogState extends State<_AgentDialog> {
     _maxTokensCtrl.dispose();
     _tempCtrl.dispose();
     _agentUrlCtrl.dispose();
+    _tpmCtrl.dispose();
     super.dispose();
   }
 
@@ -867,6 +872,9 @@ class _AgentDialogState extends State<_AgentDialog> {
           : double.tryParse(_tempCtrl.text.trim()),
       'llm_agent_url':
           _agentUrlCtrl.text.trim().isEmpty ? null : _agentUrlCtrl.text.trim(),
+      'tpm': _tpmCtrl.text.trim().isEmpty
+          ? null
+          : int.tryParse(_tpmCtrl.text.trim()),
     };
     await widget.onSave(body);
     if (mounted) setState(() => _saving = false);
@@ -1032,6 +1040,16 @@ class _AgentDialogState extends State<_AgentDialog> {
                         controller: _agentUrlCtrl,
                         decoration: _inputDeco(l10n.llmAgentUrl,
                             hint: 'https://…'),
+                      ),
+                      const Gap(12),
+                      TextFormField(
+                        controller: _tpmCtrl,
+                        decoration: _inputDeco(
+                          'Tokens / min (TPM)',
+                          hint: 'e.g. 30000 — match your OpenAI tier; '
+                              'empty = 30000',
+                        ),
+                        keyboardType: TextInputType.number,
                       ),
                       const Gap(16),
                       // ── Schedule / Prompt ──────────────────

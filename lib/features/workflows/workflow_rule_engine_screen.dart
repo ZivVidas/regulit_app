@@ -1018,6 +1018,12 @@ class _RuleDialogState extends State<_RuleDialog> {
   // {'terms': [...], 'operator': 'AND'|'OR'}
   final List<_TermNode> _terms = [];
 
+  // Optional link to a specific question — the resulting task inherits this
+  // so the re-analyze flow can rewrite the answer once the task is Approved.
+  String? _selectedQuestionId;
+  List<Map<String, dynamic>> _availableQuestions = [];
+  bool _loadingQuestions = true;
+
   bool get _isEdit => widget.initial != null;
 
   @override
@@ -1030,6 +1036,7 @@ class _RuleDialogState extends State<_RuleDialog> {
     _dueDaysCtrl.text = (init?['dueDays'] as int?)?.toString() ?? '';
     _fineCtrl.text = (init?['estimatedFine'] as num?)?.toString() ?? '';
     _isRequired = init?['isRequired'] as bool? ?? false;
+    _selectedQuestionId = init?['questionId'] as String?;
     if (init != null) {
       final cond = init['condition'] as Map<String, dynamic>?;
       if (cond != null) {
@@ -1038,6 +1045,36 @@ class _RuleDialogState extends State<_RuleDialog> {
         for (final t in rawTerms) {
           _terms.add(_TermNode.fromJson(t as Map<String, dynamic>));
         }
+      }
+    }
+    _loadAvailableQuestions();
+  }
+
+  String? _questionsLoadError;
+
+  Future<void> _loadAvailableQuestions() async {
+    try {
+      final res = await widget.dio.get<List<dynamic>>(
+        '/workflows/${widget.workflowId}/task-rules/available-questions',
+      );
+      if (!mounted) return;
+      setState(() {
+        _availableQuestions =
+            (res.data ?? []).cast<Map<String, dynamic>>();
+        // If the saved questionId no longer exists, clear it
+        if (_selectedQuestionId != null &&
+            !_availableQuestions.any((q) => q['id'] == _selectedQuestionId)) {
+          _selectedQuestionId = null;
+        }
+        _loadingQuestions = false;
+        _questionsLoadError = null;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingQuestions = false;
+          _questionsLoadError = e.toString().replaceFirst('Exception: ', '');
+        });
       }
     }
   }
@@ -1090,6 +1127,7 @@ class _RuleDialogState extends State<_RuleDialog> {
       'estimatedFine': _fineCtrl.text.trim().isEmpty
           ? null
           : double.tryParse(_fineCtrl.text.trim()),
+      'questionId': _selectedQuestionId,
     };
     try {
       if (_isEdit) {
@@ -1237,6 +1275,18 @@ class _RuleDialogState extends State<_RuleDialog> {
                             style: TextStyle(fontSize: 13)),
                       ]),
                     ]),
+                    const Gap(12),
+                    // ── Linked question dropdown ──────────────────
+                    // Optional. When set + the created task gets Approved,
+                    // re-analyze will treat that question as compliant.
+                    _LinkedQuestionPicker(
+                      loading: _loadingQuestions,
+                      questions: _availableQuestions,
+                      selectedId: _selectedQuestionId,
+                      loadError: _questionsLoadError,
+                      onChanged: (v) =>
+                          setState(() => _selectedQuestionId = v),
+                    ),
                     const Gap(20),
                     const Divider(),
                     const Gap(8),
@@ -1616,6 +1666,113 @@ class _ErrorView extends StatelessWidget {
           FilledButton(
               onPressed: onRetry,
               child: const Text('Retry')),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Linked Question Picker ───────────────────────────────────
+// Dropdown that lets the admin link a task rule to a specific question
+// from any quiz attached to this workflow. When the resulting task is
+// later Approved, the re-analyze flow uses this link to rewrite the
+// original answer as "Yes — resolved by approved task".
+class _LinkedQuestionPicker extends StatelessWidget {
+  final bool loading;
+  final List<Map<String, dynamic>> questions;
+  final String? selectedId;
+  final String? loadError;
+  final ValueChanged<String?> onChanged;
+
+  const _LinkedQuestionPicker({
+    required this.loading,
+    required this.questions,
+    required this.selectedId,
+    required this.onChanged,
+    this.loadError,
+  });
+
+  String _label(Map<String, dynamic> q) {
+    final num = q['questionNumber']?.toString() ?? '?';
+    final text = (q['questionText'] as String?) ?? '';
+    final quiz = (q['quizName'] as String?) ?? '';
+    final short = text.length > 80 ? '${text.substring(0, 80)}…' : text;
+    return '[$quiz] Q$num: $short';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.link_rounded,
+              size: 16, color: _kRulePurple),
+          const Gap(8),
+          const Text('Linked question',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          const Gap(12),
+          Expanded(
+            child: loading
+                ? const SizedBox(
+                    height: 18,
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        Gap(8),
+                        Text('Loading questions…',
+                            style: TextStyle(
+                                fontSize: 12, color: Color(0xFF6B7280))),
+                      ],
+                    ),
+                  )
+                : loadError != null
+                ? Text(
+                    'Failed to load questions: $loadError',
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.danger),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      value: selectedId,
+                      isExpanded: true,
+                      isDense: true,
+                      hint: const Text(
+                        '(none — optional)',
+                        style: TextStyle(
+                            fontSize: 12, color: Color(0xFF94A3B8)),
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('(none — optional)',
+                              style: TextStyle(
+                                  fontSize: 12, color: Color(0xFF94A3B8))),
+                        ),
+                        ...questions.map((q) => DropdownMenuItem<String?>(
+                              value: q['id'] as String,
+                              child: Text(
+                                _label(q),
+                                style: const TextStyle(fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            )),
+                      ],
+                      onChanged: onChanged,
+                    ),
+                  ),
+          ),
         ],
       ),
     );

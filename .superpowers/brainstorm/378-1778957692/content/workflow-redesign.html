@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow Screen — Redesign Options</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      padding: 32px 24px 48px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #f8fafc;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .page-sub {
+      font-size: 14px;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    /* ── Grid of screens ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .screen-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+    .screen-label {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+    .screen-wrap.selected .screen-label {
+      color: #60a5fa;
+    }
+
+    /* Phone frame */
+    .phone {
+      width: 280px;
+      height: 560px;
+      border-radius: 32px;
+      overflow: hidden;
+      border: 2.5px solid #2a2f3a;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+    .screen-wrap:hover .phone {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+    }
+    .screen-wrap.selected .phone {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59,130,246,0.25), 0 16px 48px rgba(0,0,0,0.6);
+    }
+
+    /* ── Screen A: Current (Green) ── */
+    .screen-a {
+      background: #f1f5f9;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      font-size: 11px;
+    }
+    .a-header {
+      background: linear-gradient(180deg, #1B4D3E 0%, #2E7D5C 100%);
+      color: white;
+      padding: 14px 14px 10px;
+    }
+    .a-topbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .a-back { font-size: 16px; opacity: 0.8; }
+    .a-title { font-size: 13px; font-weight: 700; flex: 1; }
+    .a-step-count { font-size: 10px; opacity: 0.7; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 10px; }
+
+    .a-progress-track { height: 3px; background: rgba(255,255,255,0.2); border-radius: 4px; margin-bottom: 10px; }
+    .a-progress-fill { height: 100%; width: 40%; background: #4ade80; border-radius: 4px; }
+
+    .a-stepper { display: flex; align-items: center; gap: 0; }
+    .a-step { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+    .a-step.done { background: #4ade80; color: #1B4D3E; }
+    .a-step.active { background: white; color: #1B4D3E; border: 2px solid #4ade80; }
+    .a-step.todo { background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+    .a-step-line { flex: 1; height: 2px; background: rgba(255,255,255,0.2); }
+    .a-step-line.done { background: #4ade80; }
+
+    .a-body { flex: 1; padding: 12px; overflow: hidden; }
+
+    .a-card {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 8px;
+    }
+    .a-card-stripe { height: 4px; background: linear-gradient(90deg, #1B4D3E, #2E7D5C); }
+    .a-card-body { padding: 10px 12px; }
+    .a-q-label { font-size: 8px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+    .a-q-text { font-size: 11px; font-weight: 600; color: #1e293b; line-height: 1.4; margin-bottom: 10px; }
+
+    .a-yn-row { display: flex; gap: 6px; }
+    .a-btn { flex: 1; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+    .a-btn-yes { background: #22c55e; color: white; }
+    .a-btn-no { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+    .a-evidence {
+      background: white;
+      border-radius: 10px;
+      padding: 8px 12px;
+      border: 1.5px dashed #cbd5e1;
+      font-size: 9px;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    .a-navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: white;
+      border-top: 1px solid #f1f5f9;
+    }
+    .a-nav-btn { height: 28px; padding: 0 12px; border-radius: 6px; font-size: 10px; font-weight: 600; display: flex; align-items: center; }
+    .a-nav-back { background: #f1f5f9; color: #64748b; }
+    .a-nav-next { background: #2E7D5C; color: white; }
+
+    /* ── Screen B: Brand Blue ── */
+    .screen-b {
+      background: #f1f5f9;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      font-size: 11px;
+    }
+    .b-header {
+      background: linear-gradient(180deg, #0078D4 0%, #005A9E 100%);
+      color: white;
+      padding: 14px 14px 10px;
+    }
+    .b-topbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .b-back { font-size: 16px; opacity: 0.8; }
+    .b-title { font-size: 13px; font-weight: 700; flex: 1; }
+    .b-step-count { font-size: 10px; opacity: 0.7; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 10px; }
+
+    .b-progress-track { height: 3px; background: rgba(255,255,255,0.2); border-radius: 4px; margin-bottom: 10px; }
+    .b-progress-fill { height: 100%; width: 40%; background: rgba(255,255,255,0.9); border-radius: 4px; }
+
+    .b-stepper { display: flex; align-items: center; }
+    .b-step { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+    .b-step.done { background: rgba(255,255,255,0.95); color: #0078D4; }
+    .b-step.active { background: white; color: #0078D4; box-shadow: 0 0 0 3px rgba(255,255,255,0.4); }
+    .b-step.todo { background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+    .b-step-line { flex: 1; height: 2px; background: rgba(255,255,255,0.2); }
+    .b-step-line.done { background: rgba(255,255,255,0.7); }
+
+    .b-body { flex: 1; padding: 12px; overflow: hidden; }
+    .b-card {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 8px;
+    }
+    .b-card-stripe { height: 4px; background: linear-gradient(90deg, #0078D4, #005A9E); }
+    .b-card-body { padding: 10px 12px; }
+    .b-q-label { font-size: 8px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+    .b-q-text { font-size: 11px; font-weight: 600; color: #1e293b; line-height: 1.4; margin-bottom: 10px; }
+
+    .b-yn-row { display: flex; gap: 6px; }
+    .b-btn { flex: 1; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+    .b-btn-yes { background: #0078D4; color: white; }
+    .b-btn-no { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+    .b-evidence {
+      background: white;
+      border-radius: 10px;
+      padding: 8px 12px;
+      border: 1.5px dashed #cbd5e1;
+      font-size: 9px;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    .b-navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: white;
+      border-top: 1px solid #f1f5f9;
+    }
+    .b-nav-btn { height: 28px; padding: 0 12px; border-radius: 6px; font-size: 10px; font-weight: 600; display: flex; align-items: center; }
+    .b-nav-back { background: #f1f5f9; color: #64748b; }
+    .b-nav-next { background: #0078D4; color: white; }
+
+    /* ── Screen C: Clean Focus (white top, blue accent) ── */
+    .screen-c {
+      background: #ffffff;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      font-size: 11px;
+    }
+    .c-header {
+      background: white;
+      border-bottom: 1px solid #e8edf2;
+      padding: 12px 14px 8px;
+    }
+    .c-topbar { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .c-back { font-size: 14px; color: #0078D4; font-weight: 600; }
+    .c-wf-name { font-size: 11px; font-weight: 600; color: #0f172a; flex: 1; }
+    .c-step-count { font-size: 10px; color: #94a3b8; }
+
+    .c-step-track { position: relative; display: flex; align-items: center; height: 6px; background: #f1f5f9; border-radius: 3px; margin-bottom: 8px; overflow: hidden; }
+    .c-step-fill { height: 100%; width: 40%; background: #0078D4; border-radius: 3px; }
+
+    .c-step-chips { display: flex; align-items: center; gap: 4px; overflow: hidden; }
+    .c-chip { height: 20px; padding: 0 7px; border-radius: 10px; font-size: 9px; font-weight: 600; white-space: nowrap; }
+    .c-chip.done { background: #dbeafe; color: #1d4ed8; }
+    .c-chip.active { background: #0078D4; color: white; }
+    .c-chip.todo { background: #f1f5f9; color: #94a3b8; }
+
+    .c-body { flex: 1; padding: 14px 14px 10px; background: #f8fafc; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
+
+    .c-q-number { font-size: 9px; font-weight: 700; color: #0078D4; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 2px; }
+    .c-q-text { font-size: 12px; font-weight: 600; color: #0f172a; line-height: 1.45; margin-bottom: 4px; }
+    .c-q-hint { font-size: 9px; color: #94a3b8; line-height: 1.4; }
+
+    .c-divider { height: 1px; background: #e8edf2; }
+
+    .c-choices { display: flex; flex-direction: column; gap: 6px; }
+    .c-choice {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      cursor: pointer;
+    }
+    .c-choice.selected { border-color: #0078D4; background: #eff6ff; }
+    .c-choice-icon { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #cbd5e1; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .c-choice.selected .c-choice-icon { border-color: #0078D4; background: #0078D4; color: white; font-size: 9px; font-weight: 700; }
+    .c-choice-label { font-size: 10px; font-weight: 600; color: #334155; }
+    .c-choice.selected .c-choice-label { color: #0078D4; }
+
+    .c-evidence-btn {
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #64748b;
+      font-size: 9px;
+    }
+    .c-evidence-icon { font-size: 12px; }
+
+    .c-navbar {
+      padding: 10px 14px;
+      background: white;
+      border-top: 1px solid #e8edf2;
+      display: flex;
+      gap: 8px;
+    }
+    .c-btn-back { flex: 1; height: 32px; border-radius: 8px; background: #f1f5f9; color: #475569; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+    .c-btn-next { flex: 2; height: 32px; border-radius: 8px; background: #0078D4; color: white; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+    /* ── Selection UI ── */
+    .selected-badge {
+      display: none;
+      margin-top: 10px;
+      padding: 4px 14px;
+      background: #3b82f6;
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 20px;
+    }
+    .screen-wrap.selected .selected-badge { display: block; }
+
+    .caption {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      max-width: 240px;
+      line-height: 1.5;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      max-width: 1200px;
+      margin: 40px auto 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .legend-card {
+      background: #1a1f2e;
+      border: 1px solid #2a2f3a;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .legend-title { font-size: 12px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
+    .legend-item { font-size: 11px; color: #64748b; line-height: 1.6; }
+    .legend-item strong { color: #94a3b8; }
+
+    /* hint bar at top */
+    .hint-bar {
+      text-align: center;
+      font-size: 12px;
+      color: #475569;
+      margin-bottom: 28px;
+      background: #1a1f2e;
+      border: 1px solid #2a2f3a;
+      border-radius: 8px;
+      padding: 10px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Workflow Answer Screen — Redesign Options</h1>
+  <p class="page-sub">Click a design to select it, then let me know in the terminal what you think</p>
+
+  <div class="hint-bar">
+    ← Current look is the <strong>green one</strong> on the left &nbsp;·&nbsp; Two redesign directions on the right →
+  </div>
+
+  <div class="grid">
+
+    <!-- ── Option A: Current (green) ── -->
+    <div class="screen-wrap" id="wrap-a" onclick="select('a')">
+      <div class="screen-label">A — Current (green)</div>
+      <div class="phone">
+        <div class="screen-a">
+          <div class="a-header">
+            <div class="a-topbar">
+              <span class="a-back">←</span>
+              <span class="a-title">ISO 27001 Audit</span>
+              <span class="a-step-count">Step 2 of 5</span>
+            </div>
+            <div class="a-progress-track"><div class="a-progress-fill"></div></div>
+            <div class="a-stepper">
+              <div class="a-step done">✓</div>
+              <div class="a-step-line done"></div>
+              <div class="a-step active">2</div>
+              <div class="a-step-line"></div>
+              <div class="a-step todo">3</div>
+              <div class="a-step-line"></div>
+              <div class="a-step todo">4</div>
+              <div class="a-step-line"></div>
+              <div class="a-step todo">5</div>
+            </div>
+          </div>
+          <div class="a-body">
+            <div class="a-card">
+              <div class="a-card-stripe"></div>
+              <div class="a-card-body">
+                <div class="a-q-label">Question 3 of 8</div>
+                <div class="a-q-text">Does your organization have a documented information security policy approved by management?</div>
+                <div class="a-yn-row">
+                  <div class="a-btn a-btn-yes">Yes</div>
+                  <div class="a-btn a-btn-no">No</div>
+                </div>
+              </div>
+            </div>
+            <div class="a-evidence">📎 Attach supporting evidence (optional)</div>
+          </div>
+          <div class="a-navbar">
+            <div class="a-nav-btn a-nav-back">← Back</div>
+            <div style="font-size:9px;color:#94a3b8;">3 / 8</div>
+            <div class="a-nav-btn a-nav-next">Next →</div>
+          </div>
+        </div>
+      </div>
+      <div class="selected-badge">✓ Selected</div>
+      <p class="caption">Dark green header, green progress, green accent stripe. Doesn't match brand colors.</p>
+    </div>
+
+    <!-- ── Option B: Brand Blue (same layout, brand colors) ── -->
+    <div class="screen-wrap" id="wrap-b" onclick="select('b')">
+      <div class="screen-label">B — Brand Blue</div>
+      <div class="phone">
+        <div class="screen-b">
+          <div class="b-header">
+            <div class="b-topbar">
+              <span class="b-back">←</span>
+              <span class="b-title">ISO 27001 Audit</span>
+              <span class="b-step-count">Step 2 of 5</span>
+            </div>
+            <div class="b-progress-track"><div class="b-progress-fill"></div></div>
+            <div class="b-stepper">
+              <div class="b-step done">✓</div>
+              <div class="b-step-line done"></div>
+              <div class="b-step active">2</div>
+              <div class="b-step-line"></div>
+              <div class="b-step todo">3</div>
+              <div class="b-step-line"></div>
+              <div class="b-step todo">4</div>
+              <div class="b-step-line"></div>
+              <div class="b-step todo">5</div>
+            </div>
+          </div>
+          <div class="b-body">
+            <div class="b-card">
+              <div class="b-card-stripe"></div>
+              <div class="b-card-body">
+                <div class="b-q-label">Question 3 of 8</div>
+                <div class="b-q-text">Does your organization have a documented information security policy approved by management?</div>
+                <div class="b-yn-row">
+                  <div class="b-btn b-btn-yes">Yes</div>
+                  <div class="b-btn b-btn-no">No</div>
+                </div>
+              </div>
+            </div>
+            <div class="b-evidence">📎 Attach supporting evidence (optional)</div>
+          </div>
+          <div class="b-navbar">
+            <div class="b-nav-btn b-nav-back">← Back</div>
+            <div style="font-size:9px;color:#94a3b8;">3 / 8</div>
+            <div class="b-nav-btn b-nav-next">Next →</div>
+          </div>
+        </div>
+      </div>
+      <div class="selected-badge">✓ Selected</div>
+      <p class="caption">Same layout, brand blue (#0078D4). Consistent with login screen. Minimal code change.</p>
+    </div>
+
+    <!-- ── Option C: Clean Focus ── -->
+    <div class="screen-wrap" id="wrap-c" onclick="select('c')">
+      <div class="screen-label">C — Clean & Focused</div>
+      <div class="phone">
+        <div class="screen-c">
+          <div class="c-header">
+            <div class="c-topbar">
+              <span class="c-back">← Exit</span>
+              <span class="c-wf-name">ISO 27001 Audit</span>
+              <span class="c-step-count">2 of 5</span>
+            </div>
+            <div class="c-step-track"><div class="c-step-fill"></div></div>
+            <div class="c-step-chips">
+              <div class="c-chip done">✓ Scope</div>
+              <div class="c-chip active">Access Control</div>
+              <div class="c-chip todo">Encryption</div>
+              <div class="c-chip todo">Logging</div>
+              <div class="c-chip todo">Review</div>
+            </div>
+          </div>
+          <div class="c-body">
+            <div>
+              <div class="c-q-number">Question 3 of 8</div>
+              <div class="c-q-text">Does your organization have a documented information security policy approved by management?</div>
+              <div class="c-q-hint">A written policy that has been reviewed and signed off by an executive sponsor.</div>
+            </div>
+            <div class="c-divider"></div>
+            <div class="c-choices">
+              <div class="c-choice selected">
+                <div class="c-choice-icon">✓</div>
+                <div class="c-choice-label">Yes, we have one</div>
+              </div>
+              <div class="c-choice">
+                <div class="c-choice-icon"></div>
+                <div class="c-choice-label">No, not yet</div>
+              </div>
+              <div class="c-choice">
+                <div class="c-choice-icon"></div>
+                <div class="c-choice-label">In progress</div>
+              </div>
+            </div>
+            <div class="c-evidence-btn">
+              <span class="c-evidence-icon">📎</span>
+              <span>Attach evidence (optional)</span>
+            </div>
+          </div>
+          <div class="c-navbar">
+            <div class="c-btn-back">Back</div>
+            <div class="c-btn-next">Save & Continue →</div>
+          </div>
+        </div>
+      </div>
+      <div class="selected-badge">✓ Selected</div>
+      <p class="caption">White chrome, brand blue accents. Named step chips. Radio-style answers. Hint text per question.</p>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <div class="legend-card">
+      <div class="legend-title">A — Current (green)</div>
+      <div class="legend-item"><strong>Keep:</strong> overall layout, progress bar, stepper nodes</div>
+      <div class="legend-item"><strong>Issue:</strong> dark green doesn't match brand; looks like a different app</div>
+    </div>
+    <div class="legend-card">
+      <div class="legend-title">B — Brand Blue</div>
+      <div class="legend-item"><strong>Change:</strong> all green → #0078D4 / #005A9E brand blue</div>
+      <div class="legend-item"><strong>Effort:</strong> low — swap color constants only</div>
+      <div class="legend-item"><strong>Result:</strong> visually consistent with login + splash</div>
+    </div>
+    <div class="legend-card">
+      <div class="legend-title">C — Clean &amp; Focused</div>
+      <div class="legend-item"><strong>Change:</strong> white header, named step chips, radio answers, hint text</div>
+      <div class="legend-item"><strong>Effort:</strong> medium — refactor header + question card layout</div>
+      <div class="legend-item"><strong>Result:</strong> modern SaaS look; named steps are more readable</div>
+    </div>
+  </div>
+
+  <script>
+    let current = null;
+
+    function select(id) {
+      if (current) document.getElementById('wrap-' + current).classList.remove('selected');
+      current = id;
+      document.getElementById('wrap-' + id).classList.add('selected');
+
+      // Record event for the server to read
+      try {
+        const labels = { a: 'A — Current (green)', b: 'B — Brand Blue', c: 'C — Clean & Focused' };
+        if (window.__recordSelection) window.__recordSelection(id, labels[id]);
+      } catch(e) {}
+    }
+  </script>
+</body>
+</html>

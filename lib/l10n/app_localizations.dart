@@ -271,6 +271,7 @@ class AppLocalizations {
   // metric cards
   String get totalExposure              => _t('totalExposure');
   String get complianceScore            => _t('complianceScore');
+  String get yesNoScore                 => _t('yesNoScore');
   String get regulatoryExposure         => _t('regulatoryExposure');
   String get lowRisk                    => _t('lowRisk');
   String get mediumRisk                 => _t('mediumRisk');
@@ -370,6 +371,15 @@ class AppLocalizations {
   String removeFromOrg(String name)     => _t('removeFromOrg').replaceFirst('{name}', name);
   String get couldNotOpenZip            => _t('couldNotOpenZip');
   String get couldNotLoadFile           => _t('couldNotLoadFile');
+  // ── Re-analyze (step 29) ─────────────────────────────────────────────────
+  // Note: analyzeAgain getter already exists (executive dashboard) — reused.
+  String get analyzeAgainTitle          => _t('analyzeAgainTitle');
+  String get analyzeAgainConfirm        => _t('analyzeAgainConfirm');
+  String get reanalyzeRunning           => _t('reanalyzeRunning');
+  String get reanalyzeRunningSub        => _t('reanalyzeRunningSub');
+  String get reanalyzeComplete          => _t('reanalyzeComplete');
+  String get reanalyzeFailed            => _t('reanalyzeFailed');
+  String get reanalyzeInProgressError   => _t('reanalyzeInProgressError');
 
   // ── Language names (always shown in native script) ────────────────────────
   String get langEnglish => 'English';
@@ -604,6 +614,7 @@ class AppLocalizations {
       'selectSession': 'Select a session…',
       'totalExposure': 'Total Exposure',
       'complianceScore': 'Compliance Score',
+      'yesNoScore': 'Yes/No Score',
       'regulatoryExposure': 'Regulatory Exposure',
       'lowRisk': 'Low Risk',
       'mediumRisk': 'Medium Risk',
@@ -684,6 +695,13 @@ class AppLocalizations {
       'analysisTimedOut': 'The request timed out. The analysis may still be running — please try again in a moment.',
       'answeredLabel': 'Answered',
       'completionLabel': 'Completion',
+      'analyzeAgainTitle': 'Re-run analysis?',
+      'analyzeAgainConfirm': 'This creates a fresh analysis. Approved tasks are kept; other pending tasks are replaced with new ones. Continue?',
+      'reanalyzeRunning': 'Re-analyzing…',
+      'reanalyzeRunningSub': 'Approved tasks are credited as resolved. This may take a few minutes.',
+      'reanalyzeComplete': 'Re-analysis complete',
+      'reanalyzeFailed': 'Re-analysis failed. Please try again.',
+      'reanalyzeInProgressError': 'An analysis is already running for this session.',
       'aiAnalyzingResponses': 'AI is analyzing your responses…',
       'identifyingComplianceGaps': 'Identifying compliance gaps and generating tasks…',
       'analysisRunsInBackground': 'This may take a few minutes. You can go to the dashboard in the meantime.',
@@ -921,6 +939,7 @@ class AppLocalizations {
       'selectSession': 'בחר פגישה…',
       'totalExposure': 'סה"כ חשיפה',
       'complianceScore': 'ציון ציות',
+      'yesNoScore': 'ציון כן/לא',
       'regulatoryExposure': 'חשיפה רגולטורית',
       'lowRisk': 'סיכון נמוך',
       'mediumRisk': 'סיכון בינוני',
@@ -1001,6 +1020,13 @@ class AppLocalizations {
       'analysisTimedOut': 'הבקשה פגה. הניתוח עשוי להמשיך לפעול — אנא נסה שנית בעוד רגע.',
       'answeredLabel': 'נענה',
       'completionLabel': 'השלמה',
+      'analyzeAgainTitle': 'להריץ ניתוח מחדש?',
+      'analyzeAgainConfirm': 'פעולה זו יוצרת ניתוח חדש. משימות מאושרות נשמרות; משימות ממתינות אחרות יוחלפו בחדשות. להמשיך?',
+      'reanalyzeRunning': 'מנתח מחדש…',
+      'reanalyzeRunningSub': 'משימות מאושרות נחשבות כפתורות. פעולה זו עשויה להימשך מספר דקות.',
+      'reanalyzeComplete': 'הניתוח החוזר הושלם',
+      'reanalyzeFailed': 'הניתוח החוזר נכשל. אנא נסה שנית.',
+      'reanalyzeInProgressError': 'ניתוח כבר רץ עבור מושב זה.',
       'aiAnalyzingResponses': 'AI מנתח את תשובותיך…',
       'identifyingComplianceGaps': 'מזהה פערי ציות ומייצר משימות…',
       'analysisRunsInBackground': 'זה עשוי לקחת כמה דקות. ניתן לעבור ללוח הבקרה בינתיים.',
@@ -1238,6 +1264,7 @@ class AppLocalizations {
       'selectSession': 'Seleccionar sesión…',
       'totalExposure': 'Exposición total',
       'complianceScore': 'Puntuación de cumplimiento',
+      'yesNoScore': 'Puntuación Sí/No',
       'regulatoryExposure': 'Exposición regulatoria',
       'lowRisk': 'Riesgo bajo',
       'mediumRisk': 'Riesgo medio',
@@ -1317,6 +1344,13 @@ class AppLocalizations {
       'requestTimedOut': 'Tiempo de solicitud agotado',
       'analysisTimedOut': 'La solicitud expiró. El análisis puede seguir ejecutándose — inténtalo de nuevo en un momento.',
       'answeredLabel': 'Respondido',
+      'analyzeAgainTitle': '¿Reejecutar el análisis?',
+      'analyzeAgainConfirm': 'Esto crea un análisis nuevo. Las tareas aprobadas se conservan; otras tareas pendientes se reemplazan por nuevas. ¿Continuar?',
+      'reanalyzeRunning': 'Reanalizando…',
+      'reanalyzeRunningSub': 'Las tareas aprobadas se cuentan como resueltas. Esto puede tardar unos minutos.',
+      'reanalyzeComplete': 'Reanálisis completado',
+      'reanalyzeFailed': 'El reanálisis falló. Inténtalo de nuevo.',
+      'reanalyzeInProgressError': 'Ya hay un análisis en ejecución para esta sesión.',
       'completionLabel': 'Completado',
       'aiAnalyzingResponses': 'La IA está analizando tus respuestas…',
       'identifyingComplianceGaps': 'Identificando brechas y generando tareas…',
@@ -1555,6 +1589,7 @@ class AppLocalizations {
       'selectSession': 'Sélectionner une session…',
       'totalExposure': 'Exposition totale',
       'complianceScore': 'Score de conformité',
+      'yesNoScore': 'Score Oui/Non',
       'regulatoryExposure': 'Exposition réglementaire',
       'lowRisk': 'Risque faible',
       'mediumRisk': 'Risque moyen',
@@ -1634,6 +1669,13 @@ class AppLocalizations {
       'requestTimedOut': 'Délai de la requête dépassé',
       'analysisTimedOut': 'La requête a expiré. L\'analyse est peut-être encore en cours — veuillez réessayer dans un instant.',
       'answeredLabel': 'Répondu',
+      'analyzeAgainTitle': 'Relancer l\'analyse ?',
+      'analyzeAgainConfirm': 'Cela crée une nouvelle analyse. Les tâches approuvées sont conservées ; les autres tâches en attente sont remplacées. Continuer ?',
+      'reanalyzeRunning': 'Nouvelle analyse…',
+      'reanalyzeRunningSub': 'Les tâches approuvées sont comptées comme résolues. Cela peut prendre quelques minutes.',
+      'reanalyzeComplete': 'Nouvelle analyse terminée',
+      'reanalyzeFailed': 'La nouvelle analyse a échoué. Veuillez réessayer.',
+      'reanalyzeInProgressError': 'Une analyse est déjà en cours pour cette session.',
       'completionLabel': 'Complétion',
       'aiAnalyzingResponses': 'L\'IA analyse vos réponses…',
       'identifyingComplianceGaps': 'Identification des lacunes et génération des tâches…',
@@ -1872,6 +1914,7 @@ class AppLocalizations {
       'selectSession': 'Выбрать сессию…',
       'totalExposure': 'Общая экспозиция',
       'complianceScore': 'Оценка соответствия',
+      'yesNoScore': 'Оценка Да/Нет',
       'regulatoryExposure': 'Регуляторная экспозиция',
       'lowRisk': 'Низкий риск',
       'mediumRisk': 'Средний риск',
@@ -1951,6 +1994,13 @@ class AppLocalizations {
       'requestTimedOut': 'Время ожидания истекло',
       'analysisTimedOut': 'Время ожидания истекло. Анализ может ещё выполняться — повторите попытку через мгновение.',
       'answeredLabel': 'Отвечено',
+      'analyzeAgainTitle': 'Запустить анализ заново?',
+      'analyzeAgainConfirm': 'Будет создан новый анализ. Утверждённые задачи сохраняются; остальные ожидающие задачи заменяются новыми. Продолжить?',
+      'reanalyzeRunning': 'Повторный анализ…',
+      'reanalyzeRunningSub': 'Утверждённые задачи засчитываются как решённые. Это может занять несколько минут.',
+      'reanalyzeComplete': 'Повторный анализ завершён',
+      'reanalyzeFailed': 'Повторный анализ не удался. Попробуйте снова.',
+      'reanalyzeInProgressError': 'Анализ для этой сессии уже выполняется.',
       'completionLabel': 'Выполнение',
       'aiAnalyzingResponses': 'ИИ анализирует ваши ответы…',
       'identifyingComplianceGaps': 'Выявление пробелов и создание задач…',

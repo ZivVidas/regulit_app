@@ -36,6 +36,7 @@ class _ExecSession {
 
 class _ExecSummary {
   final double? complianceScore; // 0–100
+  final int? yesNoScore;         // deterministic yes/no score 0–100
   final double? totalExposure;
   final int openTasks;
   final int closedTasks;
@@ -43,6 +44,7 @@ class _ExecSummary {
 
   const _ExecSummary({
     required this.complianceScore,
+    required this.yesNoScore,
     required this.totalExposure,
     required this.openTasks,
     required this.closedTasks,
@@ -51,13 +53,15 @@ class _ExecSummary {
 
   factory _ExecSummary.fromJson(Map<String, dynamic> j) => _ExecSummary(
         complianceScore: (j['complianceScore'] as num?)?.toDouble(),
+        yesNoScore: (j['yesNoScore'] as num?)?.toInt(),
         totalExposure: (j['totalExposure'] as num?)?.toDouble(),
         openTasks: j['openTasks'] as int? ?? 0,
         closedTasks: j['closedTasks'] as int? ?? 0,
         totalTasks: j['totalTasks'] as int? ?? 0,
       );
 
-  bool get hasData => complianceScore != null || totalExposure != null;
+  bool get hasData =>
+      complianceScore != null || totalExposure != null || yesNoScore != null;
 
   /// Map to the legacy GapSummary used by RiskMeterWidget / _MetricsGrid.
   GapSummary toGapSummary() => GapSummary(
@@ -586,6 +590,9 @@ class _MetricsGrid extends StatelessWidget {
         : '—';
 
     final l10n = AppLocalizations.of(context);
+    // Deterministic yes/no score (0–100 int) → 0.0–1.0 for the percent card.
+    final yesNo = exec.yesNoScore;
+    final yesNoFraction = (yesNo ?? 0) / 100;
     return Column(
       children: [
         MetricRow(cards: [
@@ -608,6 +615,17 @@ class _MetricsGrid extends StatelessWidget {
                     ? MetricVariant.warning
                     : MetricVariant.danger,
             icon: Icons.verified_rounded,
+          ),
+          MetricCard.percent(
+            label: l10n.yesNoScore,
+            value: yesNoFraction,
+            sub: yesNo != null ? '$yesNo%' : l10n.runAnalysisToPopulate,
+            variant: yesNoFraction >= 0.8
+                ? MetricVariant.success
+                : yesNoFraction >= 0.5
+                    ? MetricVariant.warning
+                    : MetricVariant.danger,
+            icon: Icons.checklist_rounded,
           ),
         ])
             .animate()

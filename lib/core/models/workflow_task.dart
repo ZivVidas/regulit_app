@@ -43,6 +43,7 @@ class WorkflowTask {
   final String id;
   final String workflowId;
   final String? workflowAnswerId;
+  final String? questionId;          // gap question this task addresses (step 29)
   final String taskName;
   final String? whatToDo;
   final int statusId;
@@ -61,11 +62,13 @@ class WorkflowTask {
   final String? evidenceDecision;   // 'APPROVE' | 'INSUFFICIENT'
   final String? evidenceSummary;
   final String? evidenceReason;
+  final DateTime? supersededAt;     // non-null = replaced by a re-analyze run
 
   const WorkflowTask({
     required this.id,
     required this.workflowId,
     this.workflowAnswerId,
+    this.questionId,
     required this.taskName,
     this.whatToDo,
     required this.statusId,
@@ -84,6 +87,7 @@ class WorkflowTask {
     this.evidenceDecision,
     this.evidenceSummary,
     this.evidenceReason,
+    this.supersededAt,
   });
 
   WorkflowTaskStatus get status => WorkflowTaskStatus.fromId(statusId);
@@ -93,6 +97,7 @@ class WorkflowTask {
       id: j['id'] as String,
       workflowId: j['workflowId'] as String,
       workflowAnswerId: j['workflowAnswerId'] as String?,
+      questionId: j['questionId'] as String?,
       taskName: j['taskName'] as String,
       whatToDo: j['whatToDo'] as String?,
       statusId: (j['statusId'] as num).toInt(),
@@ -116,6 +121,9 @@ class WorkflowTask {
       evidenceDecision: j['evidenceDecision'] as String?,
       evidenceSummary:  j['evidenceSummary']  as String?,
       evidenceReason:   j['evidenceReason']   as String?,
+      supersededAt: j['supersededAt'] != null
+          ? DateTime.tryParse(j['supersededAt'] as String)
+          : null,
     );
   }
 }

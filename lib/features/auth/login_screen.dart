@@ -1,6 +1,7 @@
 // lib/features/auth/login_screen.dart
 import 'dart:math' as math;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +21,8 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -28,10 +30,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   _ButtonPhase _phase = _ButtonPhase.idle;
   int _errorShakeVersion = 0;
   String? _errorMessage;
+  late final AnimationController _pwShakeCtrl;
 
   @override
   void initState() {
     super.initState();
+    _pwShakeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
     _prefillEmail();
   }
 
@@ -45,6 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
+    _pwShakeCtrl.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -65,6 +73,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       setState(() => _phase = _ButtonPhase.succeeded);
     } on Exception catch (e) {
       if (!mounted) return;
+      final message = _extractErrorMessage(e);
+      _pwShakeCtrl.forward(from: 0.0);
       setState(() {
         _phase = _ButtonPhase.error;
         _errorShakeVersion++;
@@ -73,7 +83,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
       setState(() {
         _phase = _ButtonPhase.idle;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = message;
       });
     }
   }
@@ -144,32 +154,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           // Password
           Text(l10n.password, style: AppTextStyles.label),
           const Gap(AppSpacing.xs),
-          TextFormField(
-            controller: _passwordController,
-            obscureText: _obscurePassword,
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) => _submit(),
-            style: AppTextStyles.body,
-            decoration: InputDecoration(
-              hintText: '••••••••••',
-              prefixIcon: const Icon(Icons.lock_outline, size: 18),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  size: 18,
-                  color: AppColors.muted,
-                ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
+          AnimatedBuilder(
+            animation: _pwShakeCtrl,
+            builder: (context, child) => Transform.translate(
+              offset: Offset(
+                8.0 * math.sin(_pwShakeCtrl.value * math.pi * 4) *
+                    (1.0 - _pwShakeCtrl.value),
+                0,
               ),
+              child: child,
             ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return l10n.required;
-              if (v.length < 8) return l10n.atLeast8Chars;
-              return null;
-            },
+            child: TextFormField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _submit(),
+              style: AppTextStyles.body,
+              decoration: InputDecoration(
+                hintText: '••••••••••',
+                prefixIcon: const Icon(Icons.lock_outline, size: 18),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    size: 18,
+                    color: AppColors.muted,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                ),
+              ),
+              validator: (v) {
+                if (v == null || v.isEmpty) return l10n.required;
+                if (v.length < 8) return l10n.atLeast8Chars;
+                return null;
+              },
+            ),
           ),
 
           // Forgot password
@@ -206,7 +227,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Widget _buildButton(AppLocalizations l10n) {
     return TweenAnimationBuilder<double>(
-      key: ValueKey(_errorShakeVersion),
+      key: ValueKey('btn_shake_$_errorShakeVersion'),
       tween: Tween<double>(begin: 0.0, end: 1.0),
       duration: const Duration(milliseconds: 400),
       builder: (context, t, child) => Transform.translate(
@@ -225,27 +246,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           };
           final radius = isCircle ? 24.0 : AppRadius.sm;
 
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            alignment: Alignment.center,
-            width: isCircle ? 48.0 : constraints.maxWidth,
-            height: 48,
-            decoration: BoxDecoration(
-              color: btnColor,
-              borderRadius: BorderRadius.circular(radius),
-            ),
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(radius),
-                ),
+          return Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              alignment: Alignment.center,
+              width: isCircle ? 48.0 : constraints.maxWidth,
+              height: 48,
+              decoration: BoxDecoration(
+                color: btnColor,
+                borderRadius: BorderRadius.circular(radius),
               ),
-              onPressed: _phase == _ButtonPhase.idle ? _submit : null,
-              child: _buildBtnChild(l10n),
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(radius),
+                  ),
+                ),
+                onPressed: _phase == _ButtonPhase.idle ? _submit : null,
+                child: _buildBtnChild(l10n),
+              ),
             ),
           );
         },
@@ -277,6 +300,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _ButtonPhase.error => const SizedBox.shrink(key: ValueKey('empty')),
       },
     );
+  }
+
+  String _extractErrorMessage(Exception e) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map<String, dynamic>) {
+        final detail = data['detail'] ?? data['message'] ?? data['error'];
+        if (detail is String && detail.isNotEmpty) return detail;
+      }
+      switch (e.response?.statusCode) {
+        case 401: return 'Incorrect email or password';
+        case 429: return 'Too many attempts — please try again later';
+      }
+    }
+    return 'Something went wrong — please try again';
   }
 
   void _showForgotPassword(BuildContext context) {

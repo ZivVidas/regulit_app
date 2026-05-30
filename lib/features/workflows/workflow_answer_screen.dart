@@ -15,11 +15,12 @@ import '../../app/router.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/customer/customer_context_provider.dart';
+import '../../core/widgets/reanalyze_dialog.dart';
 import '../../l10n/app_localizations.dart';
 
 // ── Palette ───────────────────────────────────────────────────
-const _kGrad1   = Color(0xFF1B4D3E);
-const _kGrad2   = Color(0xFF2E7D5C);
+const _kGrad1   = Color(0xFF005A9E);
+const _kGrad2   = Color(0xFF0078D4);
 const _kDone    = Color(0xFF16A34A);
 const _kDoneBg  = Color(0xFFDCFCE7);
 const _kBg      = Color(0xFFF1F5F9);
@@ -980,7 +981,7 @@ class _TopBar extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         boxShadow: [
-          BoxShadow(color: Color(0x331B4D3E), blurRadius: 20, offset: Offset(0, 6)),
+          BoxShadow(color: Color(0x33005A9E), blurRadius: 20, offset: Offset(0, 6)),
         ],
       ),
       child: SafeArea(
@@ -997,7 +998,7 @@ class _TopBar extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.edit_note_rounded,
@@ -1032,9 +1033,9 @@ class _TopBar extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
+                  color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.white.withOpacity(0.25)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1187,10 +1188,10 @@ class _StepperBar extends StatelessWidget {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: badgeColor.withOpacity(0.12),
+                                      color: badgeColor.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                          color: badgeColor.withOpacity(0.5)),
+                                          color: badgeColor.withValues(alpha: 0.5)),
                                     ),
                                     child: Text(
                                       result!,
@@ -1357,7 +1358,7 @@ class _QuestionView extends StatelessWidget {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1366,7 +1367,7 @@ class _QuestionView extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: _kGrad2.withOpacity(0.08),
+                                  color: _kGrad2.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -1761,13 +1762,13 @@ class _EvidencePanelState extends State<_EvidencePanel> {
                   color: (_reviewDecision == 'APPROVE'
                           ? const Color(0xFF16A34A)
                           : const Color(0xFFD97706))
-                      .withOpacity(0.07),
+                      .withValues(alpha: 0.07),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: (_reviewDecision == 'APPROVE'
                             ? const Color(0xFF16A34A)
                             : const Color(0xFFD97706))
-                        .withOpacity(0.35),
+                        .withValues(alpha: 0.35),
                   ),
                 ),
                 child: Row(
@@ -2106,8 +2107,8 @@ class _EvidenceViewerDialog extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
               decoration: BoxDecoration(
                 color: isImage
-                    ? const Color(0xFF0EA5E9).withOpacity(0.08)
-                    : AppColors.blue.withOpacity(0.08),
+                    ? const Color(0xFF0EA5E9).withValues(alpha: 0.08)
+                    : AppColors.blue.withValues(alpha: 0.08),
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(16)),
                 border: const Border(
@@ -2265,7 +2266,7 @@ class _DocumentViewState extends State<_DocumentView> {
                                 horizontal: 14, vertical: 9),
                             decoration: BoxDecoration(
                               color: isActive
-                                  ? const Color(0xFF1A237E).withOpacity(0.08)
+                                  ? const Color(0xFF1A237E).withValues(alpha: 0.08)
                                   : Colors.transparent,
                               border: Border(
                                 left: BorderSide(
@@ -2484,7 +2485,7 @@ class _ImageDescriptionView extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFF0F9FF),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF0EA5E9).withOpacity(0.3)),
+            border: Border.all(color: const Color(0xFF0EA5E9).withValues(alpha: 0.3)),
           ),
           child: SelectableText(
             description,
@@ -2505,7 +2506,7 @@ class _EvidenceNotice extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFFFBEB),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
+        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -2604,25 +2605,25 @@ class _AnswerButtonState extends State<_AnswerButton> {
             color: sel
                 ? widget.activeColor
                 : _hovered
-                    ? widget.activeColor.withOpacity(0.06)
+                    ? widget.activeColor.withValues(alpha: 0.06)
                     : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: sel
                   ? widget.activeColor
                   : _hovered
-                      ? widget.activeColor.withOpacity(0.4)
+                      ? widget.activeColor.withValues(alpha: 0.4)
                       : const Color(0xFFE2E8F0),
               width: sel ? 2 : 1.5,
             ),
             boxShadow: sel
-                ? [BoxShadow(color: widget.activeColor.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))]
+                ? [BoxShadow(color: widget.activeColor.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))]
                 : null,
           ),
           child: Column(
             children: [
               Icon(widget.icon,
-                  color: sel ? Colors.white : widget.activeColor.withOpacity(0.7),
+                  color: sel ? Colors.white : widget.activeColor.withValues(alpha: 0.7),
                   size: 26),
               const Gap(6),
               Text(
@@ -2773,13 +2774,13 @@ class _OptionRowState extends State<_OptionRow> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
             color: sel
-                ? _kGrad2.withOpacity(0.08)
+                ? _kGrad2.withValues(alpha: 0.08)
                 : _hovered
-                    ? _kGrad2.withOpacity(0.04)
+                    ? _kGrad2.withValues(alpha: 0.04)
                     : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: sel ? _kGrad2 : _hovered ? _kGrad2.withOpacity(0.3) : const Color(0xFFE2E8F0),
+              color: sel ? _kGrad2 : _hovered ? _kGrad2.withValues(alpha: 0.3) : const Color(0xFFE2E8F0),
               width: sel ? 2 : 1,
             ),
           ),
@@ -2900,7 +2901,7 @@ class _NumericInput extends StatelessWidget {
           decoration: InputDecoration(
             hintText: '0',
             hintStyle: TextStyle(
-              color: _kMuted.withOpacity(0.5),
+              color: _kMuted.withValues(alpha: 0.5),
               fontSize: 22,
               fontWeight: FontWeight.w700,
             ),
@@ -2934,11 +2935,11 @@ class _NumericInput extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.info_outline_rounded, size: 13, color: _kMuted.withOpacity(0.7)),
+            Icon(Icons.info_outline_rounded, size: 13, color: _kMuted.withValues(alpha: 0.7)),
             const Gap(4),
             Text(
               AppLocalizations.of(context).enterANumber,
-              style: TextStyle(fontSize: 12, color: _kMuted.withOpacity(0.7)),
+              style: TextStyle(fontSize: 12, color: _kMuted.withValues(alpha: 0.7)),
             ),
           ],
         ),
@@ -2980,7 +2981,7 @@ class _NavBar extends StatelessWidget {
         border: const Border(top: BorderSide(color: Color(0xFFE2E8F0))),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, -4),
           ),
@@ -3256,6 +3257,41 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
     }
   }
 
+  /// Confirm + re-run analysis, then send the user to the Kanban board to
+  /// review the refreshed task list.
+  Future<void> _handleReanalyze() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(l10n.analyzeAgainTitle),
+        content: Text(l10n.analyzeAgainConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.analyzeAgain),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final created = await showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ReanalyzeDialog(sessionId: widget.sessionId),
+    );
+    if (created != null && mounted) {
+      _unlockNav();
+      context.go(AppRoutes.tasks);
+    }
+  }
+
   // Color for result badge
   static Color _resultColor(String label) {
     switch (label.toUpperCase()) {
@@ -3388,6 +3424,19 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
                     style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w700)),
               ).animate().fadeIn(delay: 600.ms, duration: 400.ms).slideY(begin: 0.1, end: 0),
+
+              // ── Re-analyze — only after the first analysis has finished ──
+              if (!_analyzing && _analyzeError == null && !_analysisPending) ...[
+                const Gap(12),
+                TextButton.icon(
+                  onPressed: _handleReanalyze,
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+                  label: Text(AppLocalizations.of(context).analyzeAgain),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF7C3AED),
+                  ),
+                ).animate().fadeIn(delay: 700.ms, duration: 400.ms),
+              ],
             ],
           ),
         ),
@@ -3464,7 +3513,7 @@ class _AnalyzingPanel extends StatelessWidget {
         .shimmer(
           delay: 600.ms,
           duration: 1800.ms,
-          color: Colors.white.withOpacity(0.4),
+          color: Colors.white.withValues(alpha: 0.4),
         );
   }
 }
@@ -3534,7 +3583,7 @@ class _AnalysisPendingPanelState extends State<_AnalysisPendingPanel>
             border: Border.all(color: borderColor, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF0284C7).withOpacity(0.15 * t),
+                color: const Color(0xFF0284C7).withValues(alpha: 0.15 * t),
                 blurRadius: 12,
                 spreadRadius: 2,
               ),
@@ -3631,7 +3680,7 @@ class _TasksCreatedPanel extends StatelessWidget {
                 const Gap(2),
                 Text(sub,
                     style: TextStyle(
-                      color: iconColor.withOpacity(0.75),
+                      color: iconColor.withValues(alpha: 0.75),
                       fontSize: 11,
                     )),
               ],
@@ -3705,9 +3754,9 @@ class _StatBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -3824,9 +3873,9 @@ class _SufficiencyBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: _color.withOpacity(0.08),
+        color: _color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _color.withOpacity(0.35)),
+        border: Border.all(color: _color.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
