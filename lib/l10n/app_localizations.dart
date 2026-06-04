@@ -380,6 +380,14 @@ class AppLocalizations {
   String get reanalyzeComplete          => _t('reanalyzeComplete');
   String get reanalyzeFailed            => _t('reanalyzeFailed');
   String get reanalyzeInProgressError   => _t('reanalyzeInProgressError');
+  // ── Gap Survey Report (step 35) ──────────────────────────────────────────
+  String get downloadGapReport          => _t('downloadGapReport');
+  String get reportInProgress           => _t('reportInProgress');
+  String get reportScheduling           => _t('reportScheduling');
+  String get reportGenerating           => _t('reportGenerating');
+  String get reportDownloading          => _t('reportDownloading');
+  String get reportTakesAFewMinutes     => _t('reportTakesAFewMinutes');
+  String get reportFailed               => _t('reportFailed');
 
   // ── Language names (always shown in native script) ────────────────────────
   String get langEnglish => 'English';
@@ -702,6 +710,13 @@ class AppLocalizations {
       'reanalyzeComplete': 'Re-analysis complete',
       'reanalyzeFailed': 'Re-analysis failed. Please try again.',
       'reanalyzeInProgressError': 'An analysis is already running for this session.',
+      'downloadGapReport': 'Download Gap Report',
+      'reportInProgress': 'Generating report',
+      'reportScheduling': 'Scheduling generation…',
+      'reportGenerating': 'Generating the PDF — assembling data, writing prose, and rendering…',
+      'reportDownloading': 'Downloading the PDF…',
+      'reportTakesAFewMinutes': 'This may take a few minutes.',
+      'reportFailed': 'Report generation failed.',
       'aiAnalyzingResponses': 'AI is analyzing your responses…',
       'identifyingComplianceGaps': 'Identifying compliance gaps and generating tasks…',
       'analysisRunsInBackground': 'This may take a few minutes. You can go to the dashboard in the meantime.',
@@ -1027,6 +1042,13 @@ class AppLocalizations {
       'reanalyzeComplete': 'הניתוח החוזר הושלם',
       'reanalyzeFailed': 'הניתוח החוזר נכשל. אנא נסה שנית.',
       'reanalyzeInProgressError': 'ניתוח כבר רץ עבור מושב זה.',
+      'downloadGapReport': 'הורד דוח סקר פערים',
+      'reportInProgress': 'יוצר דוח',
+      'reportScheduling': 'מתזמן יצירה…',
+      'reportGenerating': 'יוצר את ה-PDF — אוסף נתונים, כותב טקסטים ומבצע רינדור…',
+      'reportDownloading': 'מוריד את ה-PDF…',
+      'reportTakesAFewMinutes': 'פעולה זו עשויה להימשך מספר דקות.',
+      'reportFailed': 'יצירת הדוח נכשלה.',
       'aiAnalyzingResponses': 'AI מנתח את תשובותיך…',
       'identifyingComplianceGaps': 'מזהה פערי ציות ומייצר משימות…',
       'analysisRunsInBackground': 'זה עשוי לקחת כמה דקות. ניתן לעבור ללוח הבקרה בינתיים.',
@@ -1351,6 +1373,13 @@ class AppLocalizations {
       'reanalyzeComplete': 'Reanálisis completado',
       'reanalyzeFailed': 'El reanálisis falló. Inténtalo de nuevo.',
       'reanalyzeInProgressError': 'Ya hay un análisis en ejecución para esta sesión.',
+      'downloadGapReport': 'Descargar informe de brechas',
+      'reportInProgress': 'Generando informe',
+      'reportScheduling': 'Programando la generación…',
+      'reportGenerating': 'Generando el PDF: ensamblando datos, redactando y renderizando…',
+      'reportDownloading': 'Descargando el PDF…',
+      'reportTakesAFewMinutes': 'Esto puede tardar unos minutos.',
+      'reportFailed': 'Falló la generación del informe.',
       'completionLabel': 'Completado',
       'aiAnalyzingResponses': 'La IA está analizando tus respuestas…',
       'identifyingComplianceGaps': 'Identificando brechas y generando tareas…',
@@ -1676,6 +1705,13 @@ class AppLocalizations {
       'reanalyzeComplete': 'Nouvelle analyse terminée',
       'reanalyzeFailed': 'La nouvelle analyse a échoué. Veuillez réessayer.',
       'reanalyzeInProgressError': 'Une analyse est déjà en cours pour cette session.',
+      'downloadGapReport': 'Télécharger le rapport d\'écarts',
+      'reportInProgress': 'Génération du rapport',
+      'reportScheduling': 'Planification de la génération…',
+      'reportGenerating': 'Génération du PDF — assemblage des données, rédaction et rendu…',
+      'reportDownloading': 'Téléchargement du PDF…',
+      'reportTakesAFewMinutes': 'Cela peut prendre quelques minutes.',
+      'reportFailed': 'Échec de la génération du rapport.',
       'completionLabel': 'Complétion',
       'aiAnalyzingResponses': 'L\'IA analyse vos réponses…',
       'identifyingComplianceGaps': 'Identification des lacunes et génération des tâches…',
@@ -2001,6 +2037,13 @@ class AppLocalizations {
       'reanalyzeComplete': 'Повторный анализ завершён',
       'reanalyzeFailed': 'Повторный анализ не удался. Попробуйте снова.',
       'reanalyzeInProgressError': 'Анализ для этой сессии уже выполняется.',
+      'downloadGapReport': 'Скачать отчёт о пробелах',
+      'reportInProgress': 'Создание отчёта',
+      'reportScheduling': 'Планирование генерации…',
+      'reportGenerating': 'Создаём PDF — собираем данные, пишем текст и рендерим…',
+      'reportDownloading': 'Скачиваем PDF…',
+      'reportTakesAFewMinutes': 'Это может занять несколько минут.',
+      'reportFailed': 'Сбой при создании отчёта.',
       'completionLabel': 'Выполнение',
       'aiAnalyzingResponses': 'ИИ анализирует ваши ответы…',
       'identifyingComplianceGaps': 'Выявление пробелов и создание задач…',

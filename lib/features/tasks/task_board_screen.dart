@@ -12,6 +12,7 @@ import '../../core/api/api_client.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/customer/customer_context_provider.dart';
 import '../../core/models/workflow_task.dart';
+import '../../core/widgets/gap_report_dialog.dart';
 import '../../core/widgets/reanalyze_dialog.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/page_header.dart';
@@ -277,6 +278,32 @@ class _SessionBar extends StatelessWidget {
             ),
 
           const Gap(12),
+
+          // ── Download Gap Report — only visible to editors ────────────────
+          if (canEdit && _selected != null) ...[
+            Tooltip(
+              message: l10n.downloadGapReport,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF1B3A6B),
+                  side: const BorderSide(color: Color(0xFF1B3A6B)),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  textStyle: AppTextStyles.button,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+                label: Text(l10n.downloadGapReport),
+                onPressed: () => showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => GapReportDialog(sessionId: _selected!.id),
+                ),
+              ),
+            ),
+            const Gap(8),
+          ],
 
           // ── Re-analyze button — only visible to editors ──────────────────
           if (canEdit && _selected != null) ...[

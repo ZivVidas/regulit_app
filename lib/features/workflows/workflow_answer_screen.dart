@@ -15,6 +15,7 @@ import '../../app/router.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/customer/customer_context_provider.dart';
+import '../../core/widgets/gap_report_dialog.dart';
 import '../../core/widgets/reanalyze_dialog.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -3425,16 +3426,35 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
                         fontSize: 15, fontWeight: FontWeight.w700)),
               ).animate().fadeIn(delay: 600.ms, duration: 400.ms).slideY(begin: 0.1, end: 0),
 
-              // ── Re-analyze — only after the first analysis has finished ──
+              // ── Re-analyze + Download Gap Report ─────────────────────────
               if (!_analyzing && _analyzeError == null && !_analysisPending) ...[
                 const Gap(12),
-                TextButton.icon(
-                  onPressed: _handleReanalyze,
-                  icon: const Icon(Icons.auto_awesome_rounded, size: 16),
-                  label: Text(AppLocalizations.of(context).analyzeAgain),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF7C3AED),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton.icon(
+                      onPressed: _handleReanalyze,
+                      icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+                      label: Text(AppLocalizations.of(context).analyzeAgain),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF7C3AED),
+                      ),
+                    ),
+                    const Gap(12),
+                    OutlinedButton.icon(
+                      onPressed: () => showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => GapReportDialog(sessionId: widget.sessionId),
+                      ),
+                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+                      label: Text(AppLocalizations.of(context).downloadGapReport),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1B3A6B),
+                        side: const BorderSide(color: Color(0xFF1B3A6B)),
+                      ),
+                    ),
+                  ],
                 ).animate().fadeIn(delay: 700.ms, duration: 400.ms),
               ],
             ],

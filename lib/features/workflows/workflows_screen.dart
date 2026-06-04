@@ -827,6 +827,9 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _descCtrl;
+  // Gap-report boilerplate (step 34); may contain {{company_name}}.
+  late final TextEditingController _regContextCtrl;
+  late final TextEditingController _reportPurposeCtrl;
   bool _saving = false;
   String? _error;
 
@@ -852,6 +855,10 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
         TextEditingController(text: widget.initial?['name'] as String? ?? '');
     _descCtrl = TextEditingController(
         text: widget.initial?['description'] as String? ?? '');
+    _regContextCtrl = TextEditingController(
+        text: widget.initial?['regulatoryContextText'] as String? ?? '');
+    _reportPurposeCtrl = TextEditingController(
+        text: widget.initial?['reportPurposeText'] as String? ?? '');
     _fineSource =
         (widget.initial?['fineSource'] as String?) ?? 'llm';
     _fineQuizId = widget.initial?['fineQuizId'] as String?;
@@ -866,6 +873,8 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
     _filePollTimer?.cancel();
     _nameCtrl.dispose();
     _descCtrl.dispose();
+    _regContextCtrl.dispose();
+    _reportPurposeCtrl.dispose();
     super.dispose();
   }
 
@@ -1004,6 +1013,12 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
             : _descCtrl.text.trim(),
         'fineSource': _fineSource,
         'fineQuizId': _fineSource == 'quiz_numeric' ? _fineQuizId : null,
+        'regulatoryContextText': _regContextCtrl.text.trim().isEmpty
+            ? null
+            : _regContextCtrl.text.trim(),
+        'reportPurposeText': _reportPurposeCtrl.text.trim().isEmpty
+            ? null
+            : _reportPurposeCtrl.text.trim(),
       });
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -1090,6 +1105,23 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
                           label: 'Description (optional)',
                           ctrl: _descCtrl,
                           maxLines: 3),
+                      // ── Gap Report boilerplate texts (step 34) ─────
+                      const Gap(12),
+                      _FormField(
+                        label:
+                            'Regulatory context (for the Gap Report intro) '
+                            '— may use {{company_name}}',
+                        ctrl: _regContextCtrl,
+                        maxLines: 5,
+                      ),
+                      const Gap(12),
+                      _FormField(
+                        label:
+                            'Report purpose (for the Gap Report intro) '
+                            '— may use {{company_name}}',
+                        ctrl: _reportPurposeCtrl,
+                        maxLines: 4,
+                      ),
                       if (_isEdit) ...[
                       const Gap(16),
                       // ── Fine Source Picker ────────────────────────

@@ -949,6 +949,10 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
   late final TextEditingController _numCtrl;
   late final TextEditingController _evidCtrl;
   late final TextEditingController _evidPromptCtrl;
+  // Gap-report fields (step 34)
+  late final TextEditingController _legalBasisCtrl;
+  late final TextEditingController _dueDaysCtrl;
+  String? _severity;   // null | 'critical' | 'high' | 'medium' | 'low'
   late String _qtype;
   late bool _requiresEvidence;
 
@@ -983,6 +987,11 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
     _qtype = q?['qType'] as String? ?? 'yes_no';
     _conditionLabels = List<String>.from(
         (q?['conditionToShowQuestion'] as List?)?.cast<String>() ?? []);
+    _legalBasisCtrl =
+        TextEditingController(text: q?['legalBasis'] as String? ?? '');
+    _dueDaysCtrl = TextEditingController(
+        text: q?['dueDays'] != null ? '${q!['dueDays']}' : '');
+    _severity = q?['severity'] as String?;
 
     // Pre-populate options from existing question data
     final existingOptions =
@@ -1001,6 +1010,8 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
     _numCtrl.dispose();
     _evidCtrl.dispose();
     _evidPromptCtrl.dispose();
+    _legalBasisCtrl.dispose();
+    _dueDaysCtrl.dispose();
     _conditionInputCtrl.dispose();
     for (final c in _optionCtrls) {
       c.dispose();
@@ -1083,6 +1094,13 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
           : _evidPromptCtrl.text.trim(),
       'conditionToShowQuestion':
           _conditionLabels.isEmpty ? null : _conditionLabels,
+      'legalBasis': _legalBasisCtrl.text.trim().isEmpty
+          ? null
+          : _legalBasisCtrl.text.trim(),
+      'severity': _severity,
+      'dueDays': _dueDaysCtrl.text.trim().isEmpty
+          ? null
+          : int.tryParse(_dueDaysCtrl.text.trim()),
     };
 
     try {
@@ -1318,6 +1336,98 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
                                 maxLines: 2,
                               ),
                             ],
+                          ],
+                        ),
+                      ),
+
+                      // ── Gap Report Metadata (step 34) ──────────
+                      const Gap(12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F3FF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: const Color(0xFF7C3AED).withOpacity(0.3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: [
+                              const Icon(Icons.gavel_rounded,
+                                  size: 14, color: Color(0xFF7C3AED)),
+                              const Gap(6),
+                              Text(
+                                'Gap Report Metadata',
+                                style: AppTextStyles.label.copyWith(
+                                    color: const Color(0xFF7C3AED)),
+                              ),
+                            ]),
+                            const Gap(8),
+                            _Field(
+                              label: 'Legal basis',
+                              ctrl: _legalBasisCtrl,
+                              hint:
+                                  'e.g. תקנות אבטחת מידע, סעיף 3 — shown in the gap table',
+                              maxLines: 2,
+                            ),
+                            const Gap(8),
+                            Row(children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Severity',
+                                        style: AppTextStyles.label),
+                                    const Gap(4),
+                                    DropdownButtonFormField<String?>(
+                                      value: _severity,
+                                      decoration: const InputDecoration(
+                                          isDense: true),
+                                      items: const [
+                                        DropdownMenuItem(
+                                            value: null,
+                                            child: Text('— (none)',
+                                                style:
+                                                    TextStyle(fontSize: 13))),
+                                        DropdownMenuItem(
+                                            value: 'critical',
+                                            child: Text('🔴 critical',
+                                                style:
+                                                    TextStyle(fontSize: 13))),
+                                        DropdownMenuItem(
+                                            value: 'high',
+                                            child: Text('🟠 high',
+                                                style:
+                                                    TextStyle(fontSize: 13))),
+                                        DropdownMenuItem(
+                                            value: 'medium',
+                                            child: Text('🟡 medium',
+                                                style:
+                                                    TextStyle(fontSize: 13))),
+                                        DropdownMenuItem(
+                                            value: 'low',
+                                            child: Text('🟢 low',
+                                                style:
+                                                    TextStyle(fontSize: 13))),
+                                      ],
+                                      onChanged: (v) =>
+                                          setState(() => _severity = v),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Gap(12),
+                              SizedBox(
+                                width: 130,
+                                child: _Field(
+                                  label: 'Due days (optional)',
+                                  ctrl: _dueDaysCtrl,
+                                  hint: '30 / 90 / 180',
+                                ),
+                              ),
+                            ]),
                           ],
                         ),
                       ),
