@@ -388,6 +388,13 @@ class AppLocalizations {
   String get reportDownloading          => _t('reportDownloading');
   String get reportTakesAFewMinutes     => _t('reportTakesAFewMinutes');
   String get reportFailed               => _t('reportFailed');
+  // Stage labels shown in the report-generation waiting window.
+  String get reportStageData            => _t('reportStageData');
+  String get reportStageAnalyze         => _t('reportStageAnalyze');
+  String get reportStageOrgDesc         => _t('reportStageOrgDesc');
+  String get reportStageActionPlan      => _t('reportStageActionPlan');
+  String get reportStageExecSummary     => _t('reportStageExecSummary');
+  String get reportStageRender          => _t('reportStageRender');
 
   // ── Language names (always shown in native script) ────────────────────────
   String get langEnglish => 'English';
@@ -717,6 +724,12 @@ class AppLocalizations {
       'reportDownloading': 'Downloading the PDF…',
       'reportTakesAFewMinutes': 'This may take a few minutes.',
       'reportFailed': 'Report generation failed.',
+      'reportStageData': 'Collecting answers from the survey',
+      'reportStageAnalyze': 'Computing compliance score and gaps',
+      'reportStageOrgDesc': 'Drafting organization description (AI)',
+      'reportStageActionPlan': 'Building the action plan (AI)',
+      'reportStageExecSummary': 'Writing the executive summary (AI)',
+      'reportStageRender': 'Rendering the report',
       'aiAnalyzingResponses': 'AI is analyzing your responses…',
       'identifyingComplianceGaps': 'Identifying compliance gaps and generating tasks…',
       'analysisRunsInBackground': 'This may take a few minutes. You can go to the dashboard in the meantime.',
@@ -1049,6 +1062,12 @@ class AppLocalizations {
       'reportDownloading': 'מוריד את ה-PDF…',
       'reportTakesAFewMinutes': 'פעולה זו עשויה להימשך מספר דקות.',
       'reportFailed': 'יצירת הדוח נכשלה.',
+      'reportStageData': 'אוסף תשובות מהשאלון',
+      'reportStageAnalyze': 'מחשב ציון ציות וזיהוי פערים',
+      'reportStageOrgDesc': 'מנסח תיאור ארגון (AI)',
+      'reportStageActionPlan': 'בונה תוכנית פעולה (AI)',
+      'reportStageExecSummary': 'כותב סיכום מנהלים (AI)',
+      'reportStageRender': 'מציג את הדוח',
       'aiAnalyzingResponses': 'AI מנתח את תשובותיך…',
       'identifyingComplianceGaps': 'מזהה פערי ציות ומייצר משימות…',
       'analysisRunsInBackground': 'זה עשוי לקחת כמה דקות. ניתן לעבור ללוח הבקרה בינתיים.',
@@ -1380,6 +1399,12 @@ class AppLocalizations {
       'reportDownloading': 'Descargando el PDF…',
       'reportTakesAFewMinutes': 'Esto puede tardar unos minutos.',
       'reportFailed': 'Falló la generación del informe.',
+      'reportStageData': 'Recopilando respuestas del cuestionario',
+      'reportStageAnalyze': 'Calculando la puntuación y las brechas',
+      'reportStageOrgDesc': 'Redactando la descripción de la organización (IA)',
+      'reportStageActionPlan': 'Elaborando el plan de acción (IA)',
+      'reportStageExecSummary': 'Redactando el resumen ejecutivo (IA)',
+      'reportStageRender': 'Renderizando el informe',
       'completionLabel': 'Completado',
       'aiAnalyzingResponses': 'La IA está analizando tus respuestas…',
       'identifyingComplianceGaps': 'Identificando brechas y generando tareas…',
@@ -1712,6 +1737,12 @@ class AppLocalizations {
       'reportDownloading': 'Téléchargement du PDF…',
       'reportTakesAFewMinutes': 'Cela peut prendre quelques minutes.',
       'reportFailed': 'Échec de la génération du rapport.',
+      'reportStageData': 'Collecte des réponses au questionnaire',
+      'reportStageAnalyze': 'Calcul du score de conformité et des écarts',
+      'reportStageOrgDesc': 'Rédaction de la description de l\'organisation (IA)',
+      'reportStageActionPlan': 'Élaboration du plan d\'action (IA)',
+      'reportStageExecSummary': 'Rédaction du résumé exécutif (IA)',
+      'reportStageRender': 'Rendu du rapport',
       'completionLabel': 'Complétion',
       'aiAnalyzingResponses': 'L\'IA analyse vos réponses…',
       'identifyingComplianceGaps': 'Identification des lacunes et génération des tâches…',
@@ -2044,6 +2075,12 @@ class AppLocalizations {
       'reportDownloading': 'Скачиваем PDF…',
       'reportTakesAFewMinutes': 'Это может занять несколько минут.',
       'reportFailed': 'Сбой при создании отчёта.',
+      'reportStageData': 'Собираем ответы из опросника',
+      'reportStageAnalyze': 'Считаем оценку соответствия и пробелы',
+      'reportStageOrgDesc': 'Готовим описание организации (ИИ)',
+      'reportStageActionPlan': 'Строим план действий (ИИ)',
+      'reportStageExecSummary': 'Пишем резюме для руководства (ИИ)',
+      'reportStageRender': 'Формируем отчёт',
       'completionLabel': 'Выполнение',
       'aiAnalyzingResponses': 'ИИ анализирует ваши ответы…',
       'identifyingComplianceGaps': 'Выявление пробелов и создание задач…',
