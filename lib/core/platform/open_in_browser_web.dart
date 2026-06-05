@@ -15,8 +15,16 @@ class DeferredOpen {
   DeferredOpen(this.blobUrl);
 
   /// MUST be invoked synchronously from a user gesture (click handler).
+  /// Wrapped in try/catch because dart:html returns a "null window" stub
+  /// when the popup is blocked, and merely *touching* it throws — but
+  /// once we're in a real gesture this should succeed.
   void openInGesture() {
-    html.window.open(blobUrl, '_blank');
+    try {
+      html.window.open(blobUrl, '_blank');
+    } catch (_) {
+      // Best-effort — if the browser still blocks here there is nothing
+      // we can do programmatically.
+    }
   }
 }
 
@@ -51,15 +59,20 @@ Future<DeferredOpen?> platformOpenInBrowser({
   final blob = html.Blob(<dynamic>[bytes], mimeType);
   final blobUrl = html.Url.createObjectUrlFromBlob(blob);
 
-  // Try the automatic open. Browsers return null when they block.
-  final win = html.window.open(blobUrl, '_blank');
-
-  // Heuristic for "blocked": the returned window is null, OR it's closed
-  // immediately, OR it has no top/document accessor. Some blockers return
-  // a window-like stub. The most reliable signal is `null` though.
-  // We don't revoke the blob URL — the new tab needs it.
-  if (win.closed ?? true) {
-    return DeferredOpen(blobUrl);
+  // Try the automatic open. dart:html's Window.open returns a stub object
+  // when the popup is blocked; that stub throws "Attempting to use a null
+  // window opened in Window.open" on any property access. We use that as
+  // our block-detection probe: touch `.closed` inside a try/catch.
+  //
+  // We do NOT revoke the blob URL — the new tab needs it to load.
+  try {
+    final win = html.window.open(blobUrl, '_blank');
+    final isClosed = win.closed; // throws if stub (= blocked)
+    if (isClosed == true) {
+      return DeferredOpen(blobUrl); // opened then immediately closed
+    }
+    return null; // success
+  } catch (_) {
+    return DeferredOpen(blobUrl); // blocked
   }
-  return null;
 }
