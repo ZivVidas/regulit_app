@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,21 +6,39 @@ import 'package:gap/gap.dart';
 import '../../app/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../api/api_client.dart';
-import '../platform/file_download.dart';
+import '../platform/open_in_browser.dart';
 
-/// A self-contained, non-dismissible dialog that:
-///   1. POSTs /workflow-answers/{sessionId}/generate-report
-///   2. Polls /report-status every 4 s until done/failed (6-min timeout)
-///   3. On 'done' → fetches the PDF (auth'd Dio) and triggers a browser save-as
-///   4. On 'failed' → shows error + a Retry button (force=true on retry)
+/// Non-dismissible dialog that opens the Gap Survey Report as **HTML in a
+/// new browser tab** (RTL Hebrew renders natively in Chrome).
+///
+/// Why HTML instead of PDF? The WeasyPrint PDF path requires GTK system
+/// libs and has had install issues on both the Windows dev box and the
+/// Render container. The HTML preview endpoint produces the same content
+/// (same template, same data, same LLM prose) and the browser handles RTL
+/// and printing cleanly — including "Save as PDF" via Ctrl+P.
+///
+/// Flow:
+///   1. POST nothing — call GET /workflow-answers/{id}/report/preview.html
+///      (single request, no polling). The endpoint runs the LLM prompts
+///      synchronously and returns the rendered HTML.
+///   2. Open the response bytes in a new tab via `platformOpenInBrowser`.
+///   3. Close this dialog.
 ///
 /// Returns (via Navigator.pop):
-///   * true  → PDF was successfully downloaded
-///   * null  → user cancelled, or error/timeout
+///   * true  → HTML was successfully opened
+///   * null  → user cancelled, or error
 class GapReportDialog extends ConsumerStatefulWidget {
   final String sessionId;
 
-  const GapReportDialog({super.key, required this.sessionId});
+  /// If true, skip the 3 LLM prompts on the backend — useful for fast
+  /// visual iteration on layout (Prose sections render as "תוכן לא זמין").
+  final bool skipLlm;
+
+  const GapReportDialog({
+    super.key,
+    required this.sessionId,
+    this.skipLlm = false,
+  });
 
   @override
   ConsumerState<GapReportDialog> createState() => _GapReportDialogState();
@@ -31,107 +47,29 @@ class GapReportDialog extends ConsumerStatefulWidget {
 class _GapReportDialogState extends ConsumerState<GapReportDialog> {
   bool _busy = true;
   String? _error;
-  String? _statusLabel;   // shown under the spinner ("scheduling…", "rendering…")
-
-  Timer? _pollTimer;
-  int _pollCount = 0;
-
-  // 4 s × 90 polls = 6 minutes max.
-  static const _kPollInterval = Duration(seconds: 4);
-  static const _kMaxPolls = 90;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _start(force: false);
+      if (mounted) _open();
     });
   }
 
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    super.dispose();
-  }
-
-  /// Kick off generation, then start polling.
-  /// force=true re-generates even if a 'done' report already exists.
-  Future<void> _start({required bool force}) async {
+  Future<void> _open() async {
     if (!mounted) return;
     setState(() {
       _busy = true;
       _error = null;
-      _statusLabel = AppLocalizations.of(context).reportScheduling;
     });
-    final dio = ref.read(dioProvider);
     try {
-      final res = await dio.post<Map<String, dynamic>>(
-        '/workflow-answers/${widget.sessionId}/generate-report'
-        '${force ? '?force=true' : ''}',
-      );
-      final status = res.data?['status'] as String? ?? 'pending';
-      if (status == 'done' && !force) {
-        await _downloadAndClose();
-        return;
-      }
-      _startPolling();
+      final url =
+          '/workflow-answers/${widget.sessionId}/report/preview.html'
+          '${widget.skipLlm ? '?skip_llm=true' : ''}';
+      await platformOpenInBrowser(url: url, dio: ref.read(dioProvider));
+      if (mounted) Navigator.of(context).pop(true);
     } on DioException catch (e) {
       _showError(_dioMessage(e));
-    } catch (e) {
-      _showError(e.toString().replaceFirst('Exception: ', ''));
-    }
-  }
-
-  void _startPolling() {
-    _pollTimer?.cancel();
-    _pollCount = 0;
-    if (mounted) {
-      setState(() => _statusLabel = AppLocalizations.of(context).reportGenerating);
-    }
-    _pollTimer = Timer.periodic(_kPollInterval, (_) async {
-      _pollCount++;
-      if (!mounted) {
-        _pollTimer?.cancel();
-        return;
-      }
-      if (_pollCount >= _kMaxPolls) {
-        _pollTimer?.cancel();
-        _showError(AppLocalizations.of(context).analysisTimedOut);
-        return;
-      }
-      try {
-        final dio = ref.read(dioProvider);
-        final res = await dio.get<Map<String, dynamic>>(
-          '/workflow-answers/${widget.sessionId}/report-status',
-        );
-        final status = res.data?['status'] as String? ?? 'pending';
-        if (status == 'done') {
-          _pollTimer?.cancel();
-          await _downloadAndClose();
-        } else if (status == 'failed') {
-          _pollTimer?.cancel();
-          _showError(
-            (res.data?['errorMessage'] as String?) ??
-                AppLocalizations.of(context).reportFailed,
-          );
-        }
-        // 'pending' / 'processing' → keep polling silently
-      } catch (_) {
-        // transient — keep polling until timeout
-      }
-    });
-  }
-
-  Future<void> _downloadAndClose() async {
-    if (!mounted) return;
-    setState(() => _statusLabel = AppLocalizations.of(context).reportDownloading);
-    try {
-      await platformDownload(
-        url: '/workflow-answers/${widget.sessionId}/report/download',
-        fileName: 'gap_report_${widget.sessionId}.pdf',
-        dio: ref.read(dioProvider),
-      );
-      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       _showError(e.toString().replaceFirst('Exception: ', ''));
     }
@@ -175,12 +113,14 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
           child: CircularProgressIndicator(strokeWidth: 3, color: Color(0xFF1B3A6B)),
         ),
         const Gap(20),
-        Text(l10n.reportInProgress,
-            style: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.text)),
+        Text(
+          l10n.reportInProgress,
+          style: const TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.text),
+        ),
         const Gap(6),
         Text(
-          _statusLabel ?? l10n.reportGenerating,
+          l10n.reportGenerating,
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 12, color: AppColors.muted, height: 1.5),
         ),
@@ -188,7 +128,8 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
         Text(
           l10n.reportTakesAFewMinutes,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 11, color: AppColors.muted, fontStyle: FontStyle.italic),
+          style: const TextStyle(
+              fontSize: 11, color: AppColors.muted, fontStyle: FontStyle.italic),
         ),
       ],
     );
@@ -219,7 +160,7 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
             ),
             const Gap(8),
             FilledButton.icon(
-              onPressed: () => _start(force: true),
+              onPressed: _open,
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: Text(l10n.retry),
             ),
