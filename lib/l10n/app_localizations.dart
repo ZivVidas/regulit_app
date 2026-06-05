@@ -395,6 +395,8 @@ class AppLocalizations {
   String get reportStageActionPlan      => _t('reportStageActionPlan');
   String get reportStageExecSummary     => _t('reportStageExecSummary');
   String get reportStageRender          => _t('reportStageRender');
+  String get reportReady                => _t('reportReady');
+  String get reportOpenInNewTab         => _t('reportOpenInNewTab');
 
   // ── Language names (always shown in native script) ────────────────────────
   String get langEnglish => 'English';
@@ -730,6 +732,8 @@ class AppLocalizations {
       'reportStageActionPlan': 'Building the action plan (AI)',
       'reportStageExecSummary': 'Writing the executive summary (AI)',
       'reportStageRender': 'Rendering the report',
+      'reportReady': 'Report is ready',
+      'reportOpenInNewTab': 'Open Report',
       'aiAnalyzingResponses': 'AI is analyzing your responses…',
       'identifyingComplianceGaps': 'Identifying compliance gaps and generating tasks…',
       'analysisRunsInBackground': 'This may take a few minutes. You can go to the dashboard in the meantime.',
@@ -1068,6 +1072,8 @@ class AppLocalizations {
       'reportStageActionPlan': 'בונה תוכנית פעולה (AI)',
       'reportStageExecSummary': 'כותב סיכום מנהלים (AI)',
       'reportStageRender': 'מציג את הדוח',
+      'reportReady': 'הדוח מוכן',
+      'reportOpenInNewTab': 'פתח את הדוח',
       'aiAnalyzingResponses': 'AI מנתח את תשובותיך…',
       'identifyingComplianceGaps': 'מזהה פערי ציות ומייצר משימות…',
       'analysisRunsInBackground': 'זה עשוי לקחת כמה דקות. ניתן לעבור ללוח הבקרה בינתיים.',
@@ -1405,6 +1411,8 @@ class AppLocalizations {
       'reportStageActionPlan': 'Elaborando el plan de acción (IA)',
       'reportStageExecSummary': 'Redactando el resumen ejecutivo (IA)',
       'reportStageRender': 'Renderizando el informe',
+      'reportReady': 'El informe está listo',
+      'reportOpenInNewTab': 'Abrir informe',
       'completionLabel': 'Completado',
       'aiAnalyzingResponses': 'La IA está analizando tus respuestas…',
       'identifyingComplianceGaps': 'Identificando brechas y generando tareas…',
@@ -1743,6 +1751,8 @@ class AppLocalizations {
       'reportStageActionPlan': 'Élaboration du plan d\'action (IA)',
       'reportStageExecSummary': 'Rédaction du résumé exécutif (IA)',
       'reportStageRender': 'Rendu du rapport',
+      'reportReady': 'Le rapport est prêt',
+      'reportOpenInNewTab': 'Ouvrir le rapport',
       'completionLabel': 'Complétion',
       'aiAnalyzingResponses': 'L\'IA analyse vos réponses…',
       'identifyingComplianceGaps': 'Identification des lacunes et génération des tâches…',
@@ -2081,6 +2091,8 @@ class AppLocalizations {
       'reportStageActionPlan': 'Строим план действий (ИИ)',
       'reportStageExecSummary': 'Пишем резюме для руководства (ИИ)',
       'reportStageRender': 'Формируем отчёт',
+      'reportReady': 'Отчёт готов',
+      'reportOpenInNewTab': 'Открыть отчёт',
       'completionLabel': 'Выполнение',
       'aiAnalyzingResponses': 'ИИ анализирует ваши ответы…',
       'identifyingComplianceGaps': 'Выявление пробелов и создание задач…',

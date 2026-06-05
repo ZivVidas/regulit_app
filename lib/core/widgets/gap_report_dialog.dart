@@ -64,6 +64,12 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
   bool _busy = true;
   String? _error;
 
+  /// Set when the browser blocked the automatic popup. The user has to
+  /// click the manual button to open the report (Chrome only allows
+  /// window.open from inside a user gesture, and an `await`-d callback
+  /// is no longer one). See platform/open_in_browser_web.dart.
+  DeferredOpen? _deferred;
+
   /// Index into _Stage.values of the currently-running stage.
   int _currentStage = 0;
   Timer? _stageTimer;
@@ -87,6 +93,7 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
     setState(() {
       _busy = true;
       _error = null;
+      _deferred = null;
       _currentStage = 0;
     });
     _scheduleNextStage();
@@ -95,13 +102,24 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
       final url =
           '/workflow-answers/${widget.sessionId}/report/preview.html'
           '${widget.skipLlm ? '?skip_llm=true' : ''}';
-      await platformOpenInBrowser(url: url, dio: ref.read(dioProvider));
-      // Success: jump cursor past the last stage so every row renders as
-      // completed for one frame before we pop.
-      if (mounted) {
-        _stageTimer?.cancel();
-        setState(() => _currentStage = _Stage.values.length);
+      final deferred =
+          await platformOpenInBrowser(url: url, dio: ref.read(dioProvider));
+      if (!mounted) return;
+      _stageTimer?.cancel();
+
+      if (deferred != null) {
+        // Browser blocked the auto-popup. Show the manual "click to open"
+        // button — the user's click on it is a fresh gesture, so the
+        // window.open inside it will succeed.
+        setState(() {
+          _deferred = deferred;
+          _currentStage = _Stage.values.length; // all stages done
+        });
+        return;
       }
+
+      // Auto-opened. Briefly flash all stages green, then close.
+      setState(() => _currentStage = _Stage.values.length);
       await Future<void>.delayed(const Duration(milliseconds: 250));
       if (mounted) Navigator.of(context).pop(true);
     } on DioException catch (e) {
@@ -109,6 +127,16 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
     } catch (e) {
       _showError(e.toString().replaceFirst('Exception: ', ''));
     }
+  }
+
+  /// Called when the user clicks the manual "Open Report" button after a
+  /// popup-block. This handler runs inside a fresh user gesture, so the
+  /// `window.open` inside `openInGesture()` is allowed.
+  void _openManually() {
+    final d = _deferred;
+    if (d == null) return;
+    d.openInGesture();
+    Navigator.of(context).pop(true);
   }
 
   /// Schedules the timer to advance from [_currentStage] to the next one
@@ -147,15 +175,55 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final Widget body;
+    if (_deferred != null) {
+      body = _buildManualOpen(l10n);
+    } else if (_busy) {
+      body = _buildBusy(l10n);
+    } else {
+      body = _buildError(l10n);
+    }
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: _busy ? _buildBusy(l10n) : _buildError(l10n),
-        ),
+        child: Padding(padding: const EdgeInsets.all(24), child: body),
       ),
+    );
+  }
+
+  /// Shown when the browser blocked the auto-popup. The user's tap on the
+  /// "Open Report" button is a fresh user gesture, which means
+  /// `window.open` inside [_openManually] will succeed.
+  Widget _buildManualOpen(AppLocalizations l10n) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.check_circle_rounded, size: 44, color: Color(0xFF16A34A)),
+        const Gap(14),
+        Text(l10n.reportReady,
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.text)),
+        const Gap(20),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: _openManually,
+            icon: const Icon(Icons.open_in_new_rounded, size: 18),
+            label: Text(l10n.reportOpenInNewTab),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              textStyle:
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+        const Gap(8),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
+        ),
+      ],
     );
   }
 
