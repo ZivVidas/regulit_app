@@ -8,7 +8,18 @@ import 'package:gap/gap.dart';
 import '../../app/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../api/api_client.dart';
+import '../platform/file_download.dart';
 import '../platform/open_in_browser.dart';
+
+/// Output format requested by the caller of [GapReportDialog].
+///
+/// * [pdf]  — server renders to PDF via headless Chromium (Step 37);
+///            client triggers a file download. Browser-agnostic — every
+///            user sees the same bytes regardless of their browser.
+/// * [html] — server returns the rendered HTML; client opens it in a
+///            new tab. The user can then `Ctrl+P → Save as PDF` if they
+///            want a PDF. Quality varies slightly by browser.
+enum GapReportFormat { pdf, html }
 
 /// Non-dismissible dialog that opens the Gap Survey Report as **HTML in a
 /// new browser tab** (RTL Hebrew renders natively in Chrome).
@@ -30,6 +41,11 @@ import '../platform/open_in_browser.dart';
 class GapReportDialog extends ConsumerStatefulWidget {
   final String sessionId;
 
+  /// Output format. Defaults to PDF (Step 37) — the "Download Gap Report"
+  /// button label is most natural when it actually downloads a PDF.
+  /// Pass [GapReportFormat.html] to keep the legacy open-in-new-tab flow.
+  final GapReportFormat format;
+
   /// If true, skip the 3 LLM prompts on the backend — useful for fast
   /// visual iteration on layout (Prose sections render as "תוכן לא זמין").
   final bool skipLlm;
@@ -37,6 +53,7 @@ class GapReportDialog extends ConsumerStatefulWidget {
   const GapReportDialog({
     super.key,
     required this.sessionId,
+    this.format = GapReportFormat.pdf,
     this.skipLlm = false,
   });
 
@@ -98,6 +115,33 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
     });
     _scheduleNextStage();
 
+    // Step 37: PDF path — server renders via Chromium and we trigger a
+    // browser download. No popup-block fallback needed because file
+    // downloads aren't gesture-restricted the way `window.open` is.
+    if (widget.format == GapReportFormat.pdf) {
+      try {
+        final url =
+            '/workflow-answers/${widget.sessionId}/report/download.pdf'
+            '${widget.skipLlm ? '?skip_llm=true' : ''}';
+        await platformDownload(
+          url: url,
+          fileName: 'gap-report-${widget.sessionId.substring(0, 8)}.pdf',
+          dio: ref.read(dioProvider),
+        );
+        if (!mounted) return;
+        _stageTimer?.cancel();
+        setState(() => _currentStage = _Stage.values.length);
+        await Future<void>.delayed(const Duration(milliseconds: 350));
+        if (mounted) Navigator.of(context).pop(true);
+      } on DioException catch (e) {
+        _showError(_dioMessage(e));
+      } catch (e) {
+        _showError(e.toString().replaceFirst('Exception: ', ''));
+      }
+      return;
+    }
+
+    // HTML path (legacy, still available for browser preview).
     try {
       final url =
           '/workflow-answers/${widget.sessionId}/report/preview.html'
