@@ -8,6 +8,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
+import '../../l10n/app_localizations.dart';
 
 // ── Palette ───────────────────────────────────────────────────
 const _kGrad1 = AppColors.blue;
@@ -953,6 +954,9 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
   late final TextEditingController _legalBasisCtrl;
   late final TextEditingController _dueDaysCtrl;
   String? _severity;   // null | 'critical' | 'high' | 'medium' | 'low'
+  // Step 36: per-environment question flag. When true the survey UI
+  // renders one card with N rows (one per customer_data_environment).
+  bool _isDataEnvQuestion = false;
   late String _qtype;
   late bool _requiresEvidence;
 
@@ -992,6 +996,8 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
     _dueDaysCtrl = TextEditingController(
         text: q?['dueDays'] != null ? '${q!['dueDays']}' : '');
     _severity = q?['severity'] as String?;
+    _isDataEnvQuestion =
+        (q?['isDataEnvironmentQuestion'] as bool?) ?? false;
 
     // Pre-populate options from existing question data
     final existingOptions =
@@ -1101,6 +1107,8 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
       'dueDays': _dueDaysCtrl.text.trim().isEmpty
           ? null
           : int.tryParse(_dueDaysCtrl.text.trim()),
+      // Step 36
+      'isDataEnvironmentQuestion': _isDataEnvQuestion,
     };
 
     try {
@@ -1428,6 +1436,27 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
                                 ),
                               ),
                             ]),
+                            // Step 36: per-environment question toggle.
+                            // When ON, the survey UI renders this question
+                            // once with N rows (one per env), and each
+                            // "no" answer spawns its own remediation task
+                            // tagged with the env id.
+                            const Gap(4),
+                            SwitchListTile.adaptive(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              value: _isDataEnvQuestion,
+                              onChanged: (v) =>
+                                  setState(() => _isDataEnvQuestion = v),
+                              title: Text(
+                                AppLocalizations.of(context)
+                                    .isDataEnvironmentQuestion,
+                                style: AppTextStyles.label.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              activeThumbColor: const Color(0xFF7C3AED),
+                            ),
                           ],
                         ),
                       ),

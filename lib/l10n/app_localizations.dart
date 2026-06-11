@@ -398,6 +398,26 @@ class AppLocalizations {
   String get reportReady                => _t('reportReady');
   String get reportOpenInNewTab         => _t('reportOpenInNewTab');
 
+  // ── Data Environments (step 36) ──────────────────────────────────────────
+  String get dataEnvironments              => _t('dataEnvironments');
+  String get numberOfDataEnvironments      => _t('numberOfDataEnvironments');
+  String get addDataEnvironment            => _t('addDataEnvironment');
+  String get manageDataEnvironments        => _t('manageDataEnvironments');
+  String get dataEnvironmentName           => _t('dataEnvironmentName');
+  String get dataEnvironmentDeleteLastError=> _t('dataEnvironmentDeleteLastError');
+  String get isDataEnvironmentQuestion     => _t('isDataEnvironmentQuestion');
+  String get defaultEnvironmentName        => _t('defaultEnvironmentName');
+  String get environmentLabel              => _t('environmentLabel');
+
+  /// Confirmation shown before deleting an environment that has answers
+  /// and/or tasks attached. Counts come from the server's pre-flight or
+  /// from the DELETE response (we use the response — see Phase 9).
+  /// Template uses {n}/{m} placeholders so it survives translation.
+  String dataEnvironmentDeleteConfirm(int answers, int tasks) =>
+      _t('dataEnvironmentDeleteConfirm')
+          .replaceAll('{n}', answers.toString())
+          .replaceAll('{m}', tasks.toString());
+
   // ── Language names (always shown in native script) ────────────────────────
   String get langEnglish => 'English';
   String get langHebrew  => 'עברית';
@@ -734,6 +754,18 @@ class AppLocalizations {
       'reportStageRender': 'Rendering the report',
       'reportReady': 'Report is ready',
       'reportOpenInNewTab': 'Open Report',
+      // Step 36 — Data Environments
+      'dataEnvironments': 'Data Environments',
+      'numberOfDataEnvironments': 'Number of Data Environments',
+      'addDataEnvironment': 'Add Environment',
+      'manageDataEnvironments': 'Manage Environments',
+      'dataEnvironmentName': 'Environment Name',
+      'dataEnvironmentDeleteConfirm':
+          'This will also delete {n} answers and {m} tasks. Continue?',
+      'dataEnvironmentDeleteLastError': 'Cannot delete the last environment.',
+      'isDataEnvironmentQuestion': 'Per data-environment question',
+      'defaultEnvironmentName': 'Primary',
+      'environmentLabel': 'Environment',
       'aiAnalyzingResponses': 'AI is analyzing your responses…',
       'identifyingComplianceGaps': 'Identifying compliance gaps and generating tasks…',
       'analysisRunsInBackground': 'This may take a few minutes. You can go to the dashboard in the meantime.',
@@ -1074,6 +1106,18 @@ class AppLocalizations {
       'reportStageRender': 'מציג את הדוח',
       'reportReady': 'הדוח מוכן',
       'reportOpenInNewTab': 'פתח את הדוח',
+      // Step 36 — Data Environments
+      'dataEnvironments': 'סביבות מידע',
+      'numberOfDataEnvironments': 'מספר סביבות מידע',
+      'addDataEnvironment': 'הוסף סביבה',
+      'manageDataEnvironments': 'ניהול סביבות מידע',
+      'dataEnvironmentName': 'שם הסביבה',
+      'dataEnvironmentDeleteConfirm':
+          'פעולה זו תמחק גם {n} תשובות ו-{m} משימות. להמשיך?',
+      'dataEnvironmentDeleteLastError': 'לא ניתן למחוק את הסביבה האחרונה.',
+      'isDataEnvironmentQuestion': 'שאלה לכל סביבת מידע',
+      'defaultEnvironmentName': 'ראשי',
+      'environmentLabel': 'סביבה',
       'aiAnalyzingResponses': 'AI מנתח את תשובותיך…',
       'identifyingComplianceGaps': 'מזהה פערי ציות ומייצר משימות…',
       'analysisRunsInBackground': 'זה עשוי לקחת כמה דקות. ניתן לעבור ללוח הבקרה בינתיים.',
@@ -1413,6 +1457,18 @@ class AppLocalizations {
       'reportStageRender': 'Renderizando el informe',
       'reportReady': 'El informe está listo',
       'reportOpenInNewTab': 'Abrir informe',
+      // Step 36 — Data Environments
+      'dataEnvironments': 'Entornos de datos',
+      'numberOfDataEnvironments': 'Número de entornos de datos',
+      'addDataEnvironment': 'Añadir entorno',
+      'manageDataEnvironments': 'Administrar entornos',
+      'dataEnvironmentName': 'Nombre del entorno',
+      'dataEnvironmentDeleteConfirm':
+          'Esto eliminará también {n} respuestas y {m} tareas. ¿Continuar?',
+      'dataEnvironmentDeleteLastError': 'No se puede eliminar el último entorno.',
+      'isDataEnvironmentQuestion': 'Pregunta por entorno de datos',
+      'defaultEnvironmentName': 'Principal',
+      'environmentLabel': 'Entorno',
       'completionLabel': 'Completado',
       'aiAnalyzingResponses': 'La IA está analizando tus respuestas…',
       'identifyingComplianceGaps': 'Identificando brechas y generando tareas…',
@@ -1753,6 +1809,19 @@ class AppLocalizations {
       'reportStageRender': 'Rendu du rapport',
       'reportReady': 'Le rapport est prêt',
       'reportOpenInNewTab': 'Ouvrir le rapport',
+      // Step 36 — Data Environments
+      'dataEnvironments': 'Environnements de données',
+      'numberOfDataEnvironments': 'Nombre d\'environnements de données',
+      'addDataEnvironment': 'Ajouter un environnement',
+      'manageDataEnvironments': 'Gérer les environnements',
+      'dataEnvironmentName': 'Nom de l\'environnement',
+      'dataEnvironmentDeleteConfirm':
+          'Cette action supprimera aussi {n} réponses et {m} tâches. Continuer ?',
+      'dataEnvironmentDeleteLastError':
+          'Impossible de supprimer le dernier environnement.',
+      'isDataEnvironmentQuestion': 'Question par environnement de données',
+      'defaultEnvironmentName': 'Principal',
+      'environmentLabel': 'Environnement',
       'completionLabel': 'Complétion',
       'aiAnalyzingResponses': 'L\'IA analyse vos réponses…',
       'identifyingComplianceGaps': 'Identification des lacunes et génération des tâches…',
@@ -2093,6 +2162,18 @@ class AppLocalizations {
       'reportStageRender': 'Формируем отчёт',
       'reportReady': 'Отчёт готов',
       'reportOpenInNewTab': 'Открыть отчёт',
+      // Step 36 — Data Environments
+      'dataEnvironments': 'Среды данных',
+      'numberOfDataEnvironments': 'Количество сред данных',
+      'addDataEnvironment': 'Добавить среду',
+      'manageDataEnvironments': 'Управление средами',
+      'dataEnvironmentName': 'Название среды',
+      'dataEnvironmentDeleteConfirm':
+          'Также будут удалены {n} ответов и {m} задач. Продолжить?',
+      'dataEnvironmentDeleteLastError': 'Нельзя удалить последнюю среду.',
+      'isDataEnvironmentQuestion': 'Вопрос по средам данных',
+      'defaultEnvironmentName': 'Основная',
+      'environmentLabel': 'Среда',
       'completionLabel': 'Выполнение',
       'aiAnalyzingResponses': 'ИИ анализирует ваши ответы…',
       'identifyingComplianceGaps': 'Выявление пробелов и создание задач…',

@@ -9,9 +9,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
+import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/page_header.dart';
+import 'customer_data_environments_panel.dart';
 import 'customer_users_panel.dart';
 import 'customer_workflows_panel.dart';
 
@@ -901,6 +903,9 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
   bool _isActive = true;
   bool _saving = false;
   String? _error;
+  // Step 36: live count of customer_data_environments. Updates when the
+  // embedded panel adds or deletes envs; displayed read-only in the form.
+  int _envCount = 1;
 
   bool get _isEdit => widget.initialCustomer != null;
 
@@ -925,6 +930,7 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
     _tier = c?['subscriptionTier'] as String? ?? 'basic';
     _language = c?['language'] as String? ?? 'he';
     _isActive = c?['isActive'] as bool? ?? true;
+    _envCount = (c?['numberOfDataEnvironments'] as num?)?.toInt() ?? 1;
   }
 
   @override
@@ -1048,6 +1054,14 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
                         ),
                         const Gap(12),
                       ],
+                      // Step 36: read-only counter chip. Only meaningful for
+                      // existing customers (new ones haven't been POSTed and
+                      // don't yet have envs). Live-refreshed by the embedded
+                      // CustomerDataEnvironmentsPanel below via onCountChanged.
+                      if (_isEdit) ...[
+                        _DataEnvCounterChip(count: _envCount),
+                        const Gap(12),
+                      ],
                       _LabelField(
                           label: 'Company name *',
                           ctrl: _nameCtrl,
@@ -1156,6 +1170,15 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
                           Text(_isActive ? 'Active' : 'Inactive',
                               style: AppTextStyles.body),
                         ]),
+                        // Step 36: env CRUD sub-panel. Embedded only on
+                        // edit because env CRUD needs a customer_id, which
+                        // doesn't exist until after first save.
+                        const Gap(14),
+                        CustomerDataEnvironmentsPanel(
+                          customerId: widget.initialCustomer!['id'] as String,
+                          onCountChanged: (n) =>
+                              setState(() => _envCount = n),
+                        ),
                       ],
                     ],
                   ),
@@ -1214,6 +1237,39 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
           duration: 220.ms,
           curve: Curves.easeOutBack,
         );
+  }
+}
+
+// ── Step 36: read-only counter chip shown at the top of the form ─────
+class _DataEnvCounterChip extends StatelessWidget {
+  final int count;
+  const _DataEnvCounterChip({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.infoLight,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.storage_rounded, size: 14, color: AppColors.info),
+          const Gap(6),
+          Text(
+            '${l10n.numberOfDataEnvironments}: $count',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.text,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

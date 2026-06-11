@@ -60,6 +60,12 @@ class _LocalAns {
   int? answerNumber;
   String answerText;
   Set<String> pickedOptionIds;
+  // Step 36: per-environment answers. NON-EMPTY only for questions whose
+  // `isDataEnvironmentQuestion` is true. Key = customer_data_environment_id;
+  // value = answerNumber (1 for yes, 0 for no). When this is populated,
+  // [answerNumber] / [answerText] / [pickedOptionIds] are ignored for the
+  // per-env submit (POST /answers/bulk).
+  Map<String, int> envAnswers;
   int? evidenceSufficiencyPcntg; // loaded from server, shown as badge
   String? evidenceDecision;      // 'APPROVE' | 'INSUFFICIENT'
   String? evidenceSummary;       // LLM short summary
@@ -70,23 +76,36 @@ class _LocalAns {
     this.answerNumber,
     this.answerText = '',
     Set<String>? pickedOptionIds,
+    Map<String, int>? envAnswers,
     this.evidenceSufficiencyPcntg,
     this.evidenceDecision,
     this.evidenceSummary,
     this.evidenceReason,
     this.answerId,
-  }) : pickedOptionIds = pickedOptionIds ?? {};
+  }) : pickedOptionIds = pickedOptionIds ?? {},
+       envAnswers = envAnswers ?? {};
 
   bool get hasValue =>
       answerNumber != null ||
       answerText.trim().isNotEmpty ||
-      pickedOptionIds.isNotEmpty;
+      pickedOptionIds.isNotEmpty ||
+      envAnswers.isNotEmpty;
+
+  /// Step 36: true when EVERY env in [envIds] has an answer. Used by
+  /// canAdvance for per-environment questions (single hasValue isn't
+  /// enough — partial answers must keep the Next button disabled).
+  bool allEnvsAnswered(Iterable<String> envIds) {
+    final ids = envIds.toList();
+    if (ids.isEmpty) return false;
+    return ids.every(envAnswers.containsKey);
+  }
 
   _LocalAns copyWith({
     int? answerNumber,
     bool clearAnswerNumber = false,
     String? answerText,
     Set<String>? pickedOptionIds,
+    Map<String, int>? envAnswers,
     int? evidenceSufficiencyPcntg,
     bool clearSufficiency = false,
     String? evidenceDecision,
@@ -100,6 +119,7 @@ class _LocalAns {
             clearAnswerNumber ? null : (answerNumber ?? this.answerNumber),
         answerText: answerText ?? this.answerText,
         pickedOptionIds: pickedOptionIds ?? Set.from(this.pickedOptionIds),
+        envAnswers: envAnswers ?? Map.from(this.envAnswers),
         evidenceSufficiencyPcntg: (clearSufficiency || clearReview)
             ? null
             : (evidenceSufficiencyPcntg ?? this.evidenceSufficiencyPcntg),
@@ -283,11 +303,27 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
           '/workflow-answers/$sessionId');
       final data = res.data!;
 
+      // Step 36: a single question may have N answer rows for per-env
+      // questions (one row per environment). Group by questionId — for
+      // per-env answers, accumulate into envAnswers; for normal answers,
+      // overwrite (only one row exists).
       final answers = <String, _LocalAns>{};
       for (final a in (data['answers'] as List? ?? [])) {
         final m = a as Map<String, dynamic>;
-        answers[m['questionId'] as String] = _LocalAns(
-          answerNumber: m['answerNumber'] as int?,
+        final qId = m['questionId'] as String;
+        final envId = m['customerDataEnvironmentId'] as String?;
+        final num = m['answerNumber'] as int?;
+
+        if (envId != null) {
+          // Per-env answer — accumulate into the question's envAnswers map.
+          final cur = answers[qId] ?? _LocalAns();
+          if (num != null) cur.envAnswers[envId] = num;
+          answers[qId] = cur;
+          continue;
+        }
+        // Normal answer — single row per question.
+        answers[qId] = _LocalAns(
+          answerNumber: num,
           answerText: m['answerText'] as String? ?? '',
           pickedOptionIds:
               Set<String>.from(m['pickedOptionIds'] as List? ?? []),
@@ -390,6 +426,25 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
     );
   }
 
+  /// Step 36: set the yes/no answer for ONE environment of a per-env
+  /// question. Other envs' answers are preserved. The bulk submit is
+  /// triggered by the user clicking Next (we don't auto-advance per-env
+  /// because the user has multiple rows to answer).
+  void setEnvAnswerNumber(String questionId, String envId, int v) {
+    final cur = state.answers[questionId] ?? _LocalAns();
+    if (cur.envAnswers[envId] == v) return;
+    final newEnvs = Map<String, int>.from(cur.envAnswers);
+    newEnvs[envId] = v;
+    state = state.copyWith(
+      answers: {
+        ...state.answers,
+        questionId: cur.copyWith(envAnswers: newEnvs, clearReview: true),
+      },
+      serverAnsweredIds: _invalidateServerAnswered(questionId),
+      error: null,
+    );
+  }
+
   void setAnswerText(String questionId, String v) {
     final cur = state.answers[questionId] ?? _LocalAns();
     if (cur.answerText == v) return;
@@ -477,17 +532,31 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
     final qType  = q['qType'] as String;
     final quizId = state.currentQuiz!['id'] as String;
     final local  = state.answers[qId] ?? _LocalAns();
+    // Step 36
+    final isPerEnv = q['isDataEnvironmentQuestion'] as bool? ?? false;
+    final envList = (q['environments'] as List?)
+            ?.cast<Map<String, dynamic>>() ??
+        const [];
 
     // Guard: must answer before advancing
     if (!local.hasValue) {
       state = state.copyWith(error: 'pleaseAnswerBeforeContinuing');
       return;
     }
+    // Step 36: per-env requires ALL envs to be answered (partial = block).
+    if (isPerEnv && !local.allEnvsAnswered(envList.map((e) => e['id'] as String))) {
+      state = state.copyWith(error: 'pleaseAnswerBeforeContinuing');
+      return;
+    }
 
-    // Guard: evidence required and condition met but no file uploaded yet
+    // Guard: evidence required and condition met but no file uploaded yet.
+    // NOTE: per-env questions skip the evidence flow in v1 — there's no
+    // single answer_id to attach evidence to. The reviewer can attach
+    // task-level evidence post-analysis instead.
     final reqsEv   = q['requiresEvidence'] as bool? ?? false;
     final evidCond = q['evidenceCondition'] as String?;
-    if (reqsEv &&
+    if (!isPerEnv &&
+        reqsEv &&
         _evidenceConditionMet(evidCond, local) &&
         local.evidenceDecision?.toUpperCase() != 'APPROVE' &&
         !state.serverAnsweredIds.contains(qId)) {
@@ -499,6 +568,40 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
     }
 
     state = state.copyWith(saving: true, error: null);
+
+    // ── Step 36: per-environment bulk submit ───────────────────────────────
+    // Branch early — bypasses the single-answer payload, evidence linking,
+    // and evidence review (none apply to per-env in v1). On success we fall
+    // through to the same _afterSubmitAdvance() that the normal path uses.
+    if (isPerEnv) {
+      try {
+        final items = local.envAnswers.entries
+            .map((e) => <String, dynamic>{
+                  'customerDataEnvironmentId': e.key,
+                  'answerNumber': e.value,
+                })
+            .toList();
+        await _dio.post<dynamic>(
+          '/workflow-answers/$sessionId/answers/bulk',
+          data: <String, dynamic>{
+            'quizId': quizId,
+            'questionId': qId,
+            'items': items,
+            'nextQuizId': null,
+            'nextQuestionId': null,
+          },
+        );
+        // Mark as server-answered so the back-nav guard doesn't re-trigger.
+        state = state.copyWith(
+          serverAnsweredIds:
+              Set<String>.from(state.serverAnsweredIds)..add(qId),
+        );
+        await _afterSubmitAdvance();
+      } catch (e) {
+        state = state.copyWith(saving: false, error: _dioMsg(e));
+      }
+      return;
+    }
 
     try {
       // ── 1. Prepare answer payload ──────────────────────────────────────────
@@ -612,90 +715,102 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
         }
       }
 
-      // ── 4. If this was the last VISIBLE question of the current quiz,
-      //       compute its result NOW — before scanning for the next visible
-      //       question.  This is critical: questions in subsequent quizzes may
-      //       have conditionToShowQuestion that depends on this quiz's result,
-      //       so the scan in step 5 must see the freshly computed result. ─────
-      final currentQsList = (state.currentQuiz?['questions'] as List?) ?? [];
-      bool hasLaterVisible = false;
-      for (var i = state.qIdx + 1; i < currentQsList.length; i++) {
-        if (state.isQuestionVisible(currentQsList[i] as Map<String, dynamic>)) {
-          hasLaterVisible = true;
-          break;
-        }
-      }
-      if (!hasLaterVisible) {
-        try {
-          final resultRes = await _dio.post<Map<String, dynamic>>(
-            '/workflow-answers/$sessionId/quizzes/$quizId/compute-result',
-          );
-          // Update local quiz results map so the scan below uses the fresh result.
-          if (resultRes.data != null) {
-            final resultLabel = resultRes.data!['resultLabel'] as String?;
-            if (resultLabel != null) {
-              final updatedResults =
-                  Map<String, String>.from(state.quizResults)
-                    ..[quizId] = resultLabel;
-              state = state.copyWith(quizResults: updatedResults);
-            }
-          }
-        } catch (_) {
-          // Non-critical — result computation failure should not block navigation.
-        }
-      }
-
-      // ── 5. Find the next VISIBLE question by scanning forward.
-      //       Uses state.quizResults which now includes any result computed
-      //       in step 4, so cross-quiz conditional questions are evaluated
-      //       with the latest data. ────────────────────────────────────────────
-      final quizzes = state.quizzes;
-      int nextQuizIdx = state.quizIdx;
-      int nextQIdx    = state.qIdx + 1;
-      bool foundNext  = false;
-      bool finished   = false;
-
-      outer:
-      while (nextQuizIdx < quizzes.length) {
-        final qs = ((quizzes[nextQuizIdx] as Map)['questions'] as List?) ?? [];
-        while (nextQIdx < qs.length) {
-          final nextQMap = qs[nextQIdx] as Map<String, dynamic>;
-          if (state.isQuestionVisible(nextQMap)) {
-            foundNext = true;
-            break outer;
-          }
-          nextQIdx++;
-        }
-        // Move to next quiz
-        nextQuizIdx++;
-        nextQIdx = 0;
-      }
-
-      if (!foundNext) finished = true;
-
-      // ── 6. When the entire workflow is done, mark this session as active ───
-      if (finished) {
-        try {
-          await _dio.patch<dynamic>('/workflow-answers/$sessionId/activate');
-        } catch (_) {
-          // Non-critical — show finished screen regardless.
-        }
-      }
-
-      state = state.copyWith(
-        saving:   false,
-        quizIdx:  nextQuizIdx,
-        qIdx:     nextQIdx,
-        finished: finished,
-        slideDir: 1,
-        error:    null,
-      );
+      await _afterSubmitAdvance();
     } catch (e) {
-      state = state.copyWith(
-        saving: false,
-        error:  e.toString().replaceFirst('Exception: ', ''),
-      );
+      state = state.copyWith(saving: false, error: _dioMsg(e));
     }
+  }
+
+  /// Shared post-POST logic — runs after EITHER the normal single-answer
+  /// submit OR the Step 36 per-environment bulk submit. Computes the
+  /// current quiz's result (if this was its last visible question),
+  /// scans forward for the next visible question, and updates state for
+  /// the slide animation. Assumes `state.saving == true` on entry and
+  /// always clears it on success.
+  Future<void> _afterSubmitAdvance() async {
+    final quizId = state.currentQuiz!['id'] as String;
+
+    // ── If this was the last VISIBLE question of the current quiz,
+    //    compute its result NOW so cross-quiz conditionals see fresh data. ─
+    final currentQsList = (state.currentQuiz?['questions'] as List?) ?? [];
+    bool hasLaterVisible = false;
+    for (var i = state.qIdx + 1; i < currentQsList.length; i++) {
+      if (state.isQuestionVisible(currentQsList[i] as Map<String, dynamic>)) {
+        hasLaterVisible = true;
+        break;
+      }
+    }
+    if (!hasLaterVisible) {
+      try {
+        final resultRes = await _dio.post<Map<String, dynamic>>(
+          '/workflow-answers/$sessionId/quizzes/$quizId/compute-result',
+        );
+        if (resultRes.data != null) {
+          final resultLabel = resultRes.data!['resultLabel'] as String?;
+          if (resultLabel != null) {
+            final updatedResults =
+                Map<String, String>.from(state.quizResults)
+                  ..[quizId] = resultLabel;
+            state = state.copyWith(quizResults: updatedResults);
+          }
+        }
+      } catch (_) {
+        // Non-critical — result computation failure should not block nav.
+      }
+    }
+
+    // ── Find the next VISIBLE question by scanning forward. ─────────────
+    final quizzes = state.quizzes;
+    int nextQuizIdx = state.quizIdx;
+    int nextQIdx    = state.qIdx + 1;
+    bool foundNext  = false;
+    bool finished   = false;
+
+    outer:
+    while (nextQuizIdx < quizzes.length) {
+      final qs = ((quizzes[nextQuizIdx] as Map)['questions'] as List?) ?? [];
+      while (nextQIdx < qs.length) {
+        final nextQMap = qs[nextQIdx] as Map<String, dynamic>;
+        if (state.isQuestionVisible(nextQMap)) {
+          foundNext = true;
+          break outer;
+        }
+        nextQIdx++;
+      }
+      nextQuizIdx++;
+      nextQIdx = 0;
+    }
+
+    if (!foundNext) finished = true;
+
+    // ── When the entire workflow is done, mark this session as active ───
+    if (finished) {
+      try {
+        await _dio.patch<dynamic>('/workflow-answers/$sessionId/activate');
+      } catch (_) {
+        // Non-critical — show finished screen regardless.
+      }
+    }
+
+    state = state.copyWith(
+      saving:   false,
+      quizIdx:  nextQuizIdx,
+      qIdx:     nextQIdx,
+      finished: finished,
+      slideDir: 1,
+      error:    null,
+    );
+  }
+
+  /// Extract a user-facing error message from a Dio/Exception object.
+  /// Mirrors the pattern used elsewhere in the codebase.
+  static String _dioMsg(Object e) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      final detail = data is Map ? data['detail']?.toString() : null;
+      return detail ?? e.message ?? 'Network error';
+    }
+    return e.toString().replaceFirst('Exception: ', '');
   }
 
   void goBack() {
@@ -834,7 +949,11 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
         return KeyEventResult.handled;
       }
     }
-    if (qType == 'yes_no') {
+    // Step 36: skip Y/N shortcut for per-env yes_no questions — the user
+    // has N rows to answer; a single keypress doesn't pick which row.
+    final isPerEnv =
+        s.currentQuestion!['isDataEnvironmentQuestion'] as bool? ?? false;
+    if (qType == 'yes_no' && !isPerEnv) {
       if (event.logicalKey == LogicalKeyboardKey.keyY) {
         notif.setAnswerNumber(qId, 1);
         _scheduleAutoAdvance();
@@ -935,6 +1054,14 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
                   final qId = q['id'] as String;
                   final localAns = s.answers[qId] ?? _LocalAns();
                   if (!localAns.hasValue) return false;
+                  // Step 36: per-env needs ALL envs answered, not just any.
+                  final isPerEnv =
+                      q['isDataEnvironmentQuestion'] as bool? ?? false;
+                  if (isPerEnv) {
+                    final envIds = ((q['environments'] as List?) ?? const [])
+                        .map((e) => (e as Map)['id'] as String);
+                    return localAns.allEnvsAnswered(envIds);
+                  }
                   final reqsEv  = q['requiresEvidence'] as bool? ?? false;
                   if (!reqsEv) return true;
                   // Evidence only required when the condition matches the answer.
@@ -1398,7 +1525,24 @@ class _QuestionView extends StatelessWidget {
                             const Gap(24),
 
                             // Answer input
-                            if (qType == 'yes_no')
+                            // Step 36: per-env yes/no questions get the
+                            // N-row card; everything else uses the single
+                            // big-button input.
+                            if (qType == 'yes_no' &&
+                                (q['isDataEnvironmentQuestion'] as bool? ??
+                                    false))
+                              _PerEnvAnswerCard(
+                                environments: (q['environments'] as List?)
+                                        ?.cast<Map<String, dynamic>>() ??
+                                    const [],
+                                answers: localAns.envAnswers,
+                                onChanged: (envId, v) {
+                                  notifier.setEnvAnswerNumber(qId, envId, v);
+                                  // No auto-advance for per-env: user has
+                                  // multiple rows to answer.
+                                },
+                              )
+                            else if (qType == 'yes_no')
                               _YesNoInput(
                                 value:      localAns.answerNumber,
                                 onChanged:  (v) {
@@ -2563,6 +2707,169 @@ class _YesNoInput extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Step 36: Per-environment answer card ──────────────────────
+// Renders one Yes/No control PER customer_data_environment. The question
+// text is still shown above (by the parent card); this widget renders
+// only the input rows.
+class _PerEnvAnswerCard extends StatelessWidget {
+  /// List of `{id, envName}` from the question payload (Phase 6 returns
+  /// these on every question with `isDataEnvironmentQuestion: true`).
+  final List<Map<String, dynamic>> environments;
+
+  /// Map env_id → answerNumber (0 or 1). Envs not in the map are unanswered.
+  final Map<String, int> answers;
+
+  /// Called when the user picks Yes (1) or No (0) for one env.
+  final void Function(String envId, int answerNumber) onChanged;
+
+  const _PerEnvAnswerCard({
+    required this.environments,
+    required this.answers,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (environments.isEmpty) {
+      // Defensive: the server should always send ≥1 env for a per-env
+      // question (every customer gets a default env). If we somehow get
+      // an empty list, surface a quiet hint instead of a silent empty card.
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.warningLight,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          l10n.noResults,
+          style: const TextStyle(fontSize: 13, color: AppColors.warning),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < environments.length; i++) ...[
+          if (i > 0) const Gap(10),
+          _PerEnvRow(
+            envName: environments[i]['envName'] as String? ?? '',
+            value: answers[environments[i]['id'] as String],
+            onChanged: (v) => onChanged(environments[i]['id'] as String, v),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PerEnvRow extends StatelessWidget {
+  final String envName;
+  final int? value;   // 1 = Yes, 0 = No, null = unanswered
+  final void Function(int) onChanged;
+
+  const _PerEnvRow({
+    required this.envName,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.cloud_outlined,
+              size: 16, color: AppColors.muted),
+          const Gap(8),
+          Expanded(
+            child: Text(
+              envName,
+              style: const TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w600, color: _kText,
+              ),
+            ),
+          ),
+          _PerEnvPickBtn(
+            label: l10n.yes,
+            icon: Icons.check_rounded,
+            color: _kDone,
+            selected: value == 1,
+            onTap: () => onChanged(1),
+          ),
+          const Gap(8),
+          _PerEnvPickBtn(
+            label: l10n.no,
+            icon: Icons.close_rounded,
+            color: AppColors.danger,
+            selected: value == 0,
+            onTap: () => onChanged(0),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PerEnvPickBtn extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PerEnvPickBtn({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? color : color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? color : color.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon,
+                size: 14, color: selected ? Colors.white : color),
+            const Gap(4),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : color,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
