@@ -898,6 +898,10 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
   late final TextEditingController _contactPhoneCtrl;
   late final TextEditingController _cityCtrl;
   late final TextEditingController _notesCtrl;
+  // Number-of-employees text field. Stored as int on the backend
+  // (customer.company_size). Powers the Gap Report "Employee count" line
+  // and the customer-card chip.
+  late final TextEditingController _companySizeCtrl;
   String _tier = 'basic';
   String _language = 'he';
   bool _isActive = true;
@@ -927,6 +931,8 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
         TextEditingController(text: c?['city'] as String? ?? '');
     _notesCtrl =
         TextEditingController(text: c?['notes'] as String? ?? '');
+    _companySizeCtrl = TextEditingController(
+        text: (c?['companySize'] as int?)?.toString() ?? '');
     _tier = c?['subscriptionTier'] as String? ?? 'basic';
     _language = c?['language'] as String? ?? 'he';
     _isActive = c?['isActive'] as bool? ?? true;
@@ -942,6 +948,7 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
     _contactPhoneCtrl.dispose();
     _cityCtrl.dispose();
     _notesCtrl.dispose();
+    _companySizeCtrl.dispose();
     super.dispose();
   }
 
@@ -966,6 +973,10 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
         'city': _cityCtrl.text.trim(),
       if (_notesCtrl.text.trim().isNotEmpty)
         'notes': _notesCtrl.text.trim(),
+      // company_size: only send if numeric; empty / non-numeric → omitted
+      // (backend treats absent as "leave unchanged" / NULL on create).
+      if (int.tryParse(_companySizeCtrl.text.trim()) != null)
+        'company_size': int.parse(_companySizeCtrl.text.trim()),
       'subscription_tier': _tier,
       'language': _language,
       if (_isEdit) 'is_active': _isActive,
@@ -1077,6 +1088,16 @@ class _CustomerFormDialogState extends State<_CustomerFormDialog> {
                         Expanded(
                           child: _LabelField(
                               label: 'City', ctrl: _cityCtrl),
+                        ),
+                        const Gap(12),
+                        // company_size — drives Gap Report "Employee count"
+                        // line and the customer-card chip. Optional integer.
+                        SizedBox(
+                          width: 110,
+                          child: _LabelField(
+                              label: 'Employees',
+                              ctrl: _companySizeCtrl,
+                              keyboardType: TextInputType.number),
                         ),
                       ]),
                       const Gap(10),
