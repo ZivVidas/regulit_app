@@ -49,6 +49,10 @@ class _EngineState {
   final List<Map<String, dynamic>> rules;
   final Map<String, String> optionLabels;
   final List<_QuestionGroup> optionGroups;
+  // Step 38 — numeric-eligible questions (q_type IN numeric|yes_no)
+  // reachable from this quiz via shared workflows. Source: the new
+  // GET /quizzes/{id}/signals/numeric-questions endpoint.
+  final List<Map<String, dynamic>> numericQuestions;
   final bool isLoading;
   final String? error;
 
@@ -57,6 +61,7 @@ class _EngineState {
     this.rules = const [],
     this.optionLabels = const {},
     this.optionGroups = const [],
+    this.numericQuestions = const [],
     this.isLoading = true,
     this.error,
   });
@@ -66,6 +71,7 @@ class _EngineState {
     List<Map<String, dynamic>>? rules,
     Map<String, String>? optionLabels,
     List<_QuestionGroup>? optionGroups,
+    List<Map<String, dynamic>>? numericQuestions,
     bool? isLoading,
     String? error,
   }) =>
@@ -74,6 +80,7 @@ class _EngineState {
         rules: rules ?? this.rules,
         optionLabels: optionLabels ?? this.optionLabels,
         optionGroups: optionGroups ?? this.optionGroups,
+        numericQuestions: numericQuestions ?? this.numericQuestions,
         isLoading: isLoading ?? this.isLoading,
         error: error,
       );
@@ -100,10 +107,16 @@ class _EngineNotifier extends StateNotifier<_EngineState> {
           '/quizzes/$quizId/steps',
           queryParameters: {'page': 1, 'page_size': 100},
         ),
+        // Step 38 — numeric-eligible questions reachable from this quiz
+        // via shared workflows.
+        _dio.get<List<dynamic>>(
+            '/quizzes/$quizId/signals/numeric-questions'),
       ]);
 
       final optionLabels = (results[2].data as Map<String, dynamic>)
           .map((k, v) => MapEntry(k, v as String));
+      final numericQs =
+          (results[4].data as List).cast<Map<String, dynamic>>();
 
       // Phase 2: fetch questions for each step in parallel, build groups
       final stepsData = results[3].data as Map<String, dynamic>;
@@ -151,6 +164,7 @@ class _EngineNotifier extends StateNotifier<_EngineState> {
         rules: (results[1].data as List).cast<Map<String, dynamic>>(),
         optionLabels: optionLabels,
         optionGroups: optionGroups,
+        numericQuestions: numericQs,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -236,7 +250,7 @@ class QuizResultEngineScreen extends ConsumerWidget {
                     color: _kGrad1,
                     onAdd: () => _showSignalDialog(
                         context, ref, dio, quizId, s.optionLabels,
-                        s.optionGroups, null),
+                        s.optionGroups, s.numericQuestions, null),
                   ),
                   const Gap(8),
                   ...s.signals.asMap().entries.map((e) => _SignalCard(
@@ -245,7 +259,7 @@ class QuizResultEngineScreen extends ConsumerWidget {
                         optionLabels: s.optionLabels,
                         onEdit: () => _showSignalDialog(
                             context, ref, dio, quizId, s.optionLabels,
-                            s.optionGroups, e.value),
+                            s.optionGroups, s.numericQuestions, e.value),
                         onDelete: () => _confirmDelete(
                           context,
                           'signal "${e.value['signalName']}"',
@@ -299,6 +313,7 @@ class QuizResultEngineScreen extends ConsumerWidget {
     String quizId,
     Map<String, String> optionLabels,
     List<_QuestionGroup> optionGroups,
+    List<Map<String, dynamic>> numericQuestions,
     Map<String, dynamic>? initial,
   ) {
     showDialog<void>(
@@ -309,6 +324,7 @@ class QuizResultEngineScreen extends ConsumerWidget {
         quizId: quizId,
         optionLabels: optionLabels,
         optionGroups: optionGroups,
+        numericQuestions: numericQuestions,
         initial: initial,
         onSaved: () =>
             ref.read(_engineProvider(quizId).notifier).load(),
@@ -910,6 +926,8 @@ class _SignalDialog extends StatefulWidget {
   final String quizId;
   final Map<String, String> optionLabels;
   final List<_QuestionGroup> optionGroups;
+  // Step 38 — numeric-eligible questions for the Numeric-condition block.
+  final List<Map<String, dynamic>> numericQuestions;
   final Map<String, dynamic>? initial;
   final VoidCallback onSaved;
 
@@ -918,6 +936,7 @@ class _SignalDialog extends StatefulWidget {
     required this.quizId,
     required this.optionLabels,
     required this.optionGroups,
+    required this.numericQuestions,
     this.initial,
     required this.onSaved,
   });
@@ -940,11 +959,21 @@ class _SignalDialogState extends State<_SignalDialog> {
   late Set<String> _excluded;
   String _search = '';
 
+  // Step 38 — numeric block state. All three nullable; backend enforces
+  // all-or-none. Errors surface via [_error].
+  String? _numericQuestionId;
+  String? _numericOp;
+  final _numericValueCtrl = TextEditingController();
+
   bool _saving = false;
   String? _error;
 
   bool get _isEdit => widget.initial != null;
   bool get _hasOptions => widget.optionLabels.isNotEmpty;
+  bool get _anyNumericFieldSet =>
+      _numericQuestionId != null ||
+      _numericOp != null ||
+      _numericValueCtrl.text.trim().isNotEmpty;
 
   @override
   void initState() {
@@ -960,6 +989,12 @@ class _SignalDialogState extends State<_SignalDialog> {
     _excluded = Set.from(excList);
     _requiredCtrl = TextEditingController(text: reqList.join('\n'));
     _excludedCtrl = TextEditingController(text: excList.join('\n'));
+
+    // Step 38 — load existing numeric block (null on legacy signals).
+    _numericQuestionId = s?['numericQuestionId'] as String?;
+    _numericOp = s?['numericOp'] as String?;
+    final nv = s?['numericValue'];
+    _numericValueCtrl.text = nv == null ? '' : nv.toString();
   }
 
   @override
@@ -968,6 +1003,7 @@ class _SignalDialogState extends State<_SignalDialog> {
     _descCtrl.dispose();
     _requiredCtrl.dispose();
     _excludedCtrl.dispose();
+    _numericValueCtrl.dispose();
     super.dispose();
   }
 
@@ -997,7 +1033,7 @@ class _SignalDialogState extends State<_SignalDialog> {
       _error = null;
     });
 
-    final body = {
+    final body = <String, dynamic>{
       'signalName': _nameCtrl.text.trim(),
       'description':
           _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
@@ -1007,6 +1043,18 @@ class _SignalDialogState extends State<_SignalDialog> {
       'excludedOptionIds': _hasOptions
           ? _excluded.toList()
           : _parseIds(_excludedCtrl.text),
+      // Step 38 — always send all 3 numeric fields when ANY is touched OR
+      // we're editing an existing signal (so we can clear a previously-
+      // configured numeric block by leaving the inputs blank).
+      // Sending partial values lets the backend 422 with a precise
+      // all-or-none error, which surfaces in [_error].
+      if (_anyNumericFieldSet || _isEdit) ...{
+        'numericQuestionId': _numericQuestionId,
+        'numericOp': _numericOp,
+        'numericValue': _numericValueCtrl.text.trim().isEmpty
+            ? null
+            : double.tryParse(_numericValueCtrl.text.trim()),
+      },
     };
 
     try {
@@ -1120,6 +1168,9 @@ class _SignalDialogState extends State<_SignalDialog> {
                     maxLines: 5,
                   ),
                 ],
+                const Gap(12),
+                // ── Step 38: Numeric condition (optional) ──────────────
+                _buildNumericBlock(),
                 if (_error != null) ...[
                   const Gap(8),
                   Text(_error!,
@@ -1157,6 +1208,112 @@ class _SignalDialogState extends State<_SignalDialog> {
         _legendDot(const Color(0xFF2563EB), 'Required (tap once)'),
         const Gap(12),
         _legendDot(const Color(0xFFDC2626), 'Excluded (tap twice)'),
+      ],
+    );
+  }
+
+  // Step 38: optional numeric-condition block. Collapsed by default for
+  // new signals, auto-expanded when editing a signal that already has a
+  // numeric block configured. Backend enforces all-or-none.
+  Widget _buildNumericBlock() {
+    return ExpansionTile(
+      initiallyExpanded: _anyNumericFieldSet,
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.symmetric(vertical: 6),
+      title: const Row(children: [
+        Icon(Icons.functions_rounded, size: 16, color: Color(0xFF7C3AED)),
+        Gap(6),
+        Text('Numeric condition (optional)',
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600)),
+      ]),
+      children: [
+        if (widget.numericQuestions.isEmpty)
+          const Text(
+            'No numeric or yes/no questions reachable from this quiz '
+            'through a shared workflow. Add the target question to a '
+            'workflow that also includes this quiz.',
+            style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+          )
+        else ...[
+          DropdownButtonFormField<String?>(
+            initialValue: _numericQuestionId,
+            decoration: const InputDecoration(
+              labelText: 'Numeric question',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('—', style: TextStyle(fontSize: 13)),
+              ),
+              ...widget.numericQuestions.map((q) {
+                final qNum = q['questionNumber'] as int;
+                final qText = q['questionText'] as String;
+                final qType = q['qType'] as String;
+                final marker = qType == 'numeric' ? '#' : 'Y/N';
+                return DropdownMenuItem<String?>(
+                  value: q['id'] as String,
+                  child: Text(
+                    'Q$qNum [$marker] $qText',
+                    style: const TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }),
+            ],
+            onChanged: (v) => setState(() => _numericQuestionId = v),
+          ),
+          const Gap(10),
+          Row(children: [
+            SizedBox(
+              width: 110,
+              child: DropdownButtonFormField<String?>(
+                initialValue: _numericOp,
+                decoration: const InputDecoration(
+                  labelText: 'Op',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                items: const [
+                  DropdownMenuItem<String?>(value: null, child: Text('—')),
+                  DropdownMenuItem<String?>(value: '<',  child: Text('<')),
+                  DropdownMenuItem<String?>(value: '<=', child: Text('≤')),
+                  DropdownMenuItem<String?>(value: '=',  child: Text('=')),
+                  DropdownMenuItem<String?>(value: '!=', child: Text('≠')),
+                  DropdownMenuItem<String?>(value: '>=', child: Text('≥')),
+                  DropdownMenuItem<String?>(value: '>',  child: Text('>')),
+                ],
+                onChanged: (v) => setState(() => _numericOp = v),
+              ),
+            ),
+            const Gap(10),
+            Expanded(
+              child: TextField(
+                controller: _numericValueCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Value',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  hintText: 'e.g. 10000000',
+                ),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+          ]),
+          const Gap(6),
+          const Text(
+            'When set, the signal additionally requires the user\'s answer '
+            'to satisfy "answer  op  value". Leave all three blank for a '
+            'pick-only signal.',
+            style: TextStyle(
+                fontSize: 10.5, color: Color(0xFF6B7280), height: 1.4),
+          ),
+        ],
       ],
     );
   }
