@@ -1577,7 +1577,14 @@ class _RuleDialogState extends State<_RuleDialog> {
 
   bool get _isEdit => widget.initial != null;
 
-  static const _kLabels = ['INDIVIDUAL', 'HIGH', 'MEDIUM', 'BASIC'];
+  // Quick-pick suggestions for the Result label field. The field itself
+  // accepts ANY string — these are just one-tap shortcuts. Admins can
+  // type custom labels (e.g. SMALL_BUSINESS for the severity engine,
+  // DPO_REQUIRED, CRITICAL_BREACH, etc.) without needing a code change.
+  // Order is the order the chips render in.
+  static const _kLabels = [
+    'INDIVIDUAL', 'HIGH', 'MEDIUM', 'BASIC', 'SMALL_BUSINESS',
+  ];
 
   @override
   void initState() {
@@ -1604,6 +1611,40 @@ class _RuleDialogState extends State<_RuleDialog> {
     _descCtrl.dispose();
     _conditionCtrl.dispose();
     super.dispose();
+  }
+
+  /// Quick-pick chip strip under the Result-label field. The field accepts
+  /// any string; these are just one-tap shortcuts to common labels.
+  Widget _buildLabelSuggestions() {
+    final current = _labelCtrl.text.trim().toUpperCase();
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: _kLabels.map((l) {
+        final selected = current == l.toUpperCase();
+        return ChoiceChip(
+          label: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 8, height: 8,
+              decoration: BoxDecoration(
+                color: _labelColor(l), shape: BoxShape.circle,
+              ),
+            ),
+            const Gap(6),
+            Text(l, style: const TextStyle(
+                fontSize: 11, fontFamily: 'monospace')),
+          ]),
+          selected: selected,
+          onSelected: (_) => setState(() {
+            _labelCtrl.text = l;
+            _labelCtrl.selection = TextSelection.collapsed(
+                offset: _labelCtrl.text.length);
+          }),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        );
+      }).toList(),
+    );
   }
 
   Future<void> _save() async {
@@ -1688,40 +1729,44 @@ class _RuleDialogState extends State<_RuleDialog> {
                     const Gap(12),
                     Expanded(
                       flex: 3,
-                      child: DropdownButtonFormField<String>(
-                        value: _kLabels.contains(_labelCtrl.text)
-                            ? _labelCtrl.text
-                            : null,
-                        decoration: const InputDecoration(
+                      // Free-text result label. The dropdown restriction was
+                      // a UI-only limit — the backend has always accepted any
+                      // string. Common labels are shown as quick-pick chips
+                      // below (see _buildLabelSuggestions). Custom labels
+                      // render with a purple fallback in _labelColor/_labelBg.
+                      child: TextFormField(
+                        controller: _labelCtrl,
+                        decoration: InputDecoration(
                           labelText: 'Result label *',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
+                          // Live color dot reflects what the user typed.
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.only(left: 12, right: 4),
+                            child: Container(
+                              width: 10, height: 10,
+                              decoration: BoxDecoration(
+                                color: _labelColor(_labelCtrl.text.trim()),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                          prefixIconConstraints: const BoxConstraints(
+                              minWidth: 0, minHeight: 0),
                         ),
-                        items: _kLabels
-                            .map((l) => DropdownMenuItem(
-                                  value: l,
-                                  child: Row(children: [
-                                    Container(
-                                      width: 10,
-                                      height: 10,
-                                      margin: const EdgeInsets.only(right: 6),
-                                      decoration: BoxDecoration(
-                                        color: _labelColor(l),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                    Text(l),
-                                  ]),
-                                ))
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) _labelCtrl.text = v;
-                        },
+                        textCapitalization: TextCapitalization.characters,
+                        style: const TextStyle(
+                            fontFamily: 'monospace', fontSize: 13),
+                        // Rebuild so the color dot refreshes as the user types.
+                        onChanged: (_) => setState(() {}),
                         validator: (v) =>
-                            v == null ? 'Required' : null,
+                            (v?.trim().isEmpty ?? true) ? 'Required' : null,
                       ),
                     ),
                   ],
                 ),
+                const Gap(6),
+                // Quick-pick chips for common labels — tap to fill the field.
+                _buildLabelSuggestions(),
                 const Gap(12),
                 TextFormField(
                   controller: _descCtrl,
