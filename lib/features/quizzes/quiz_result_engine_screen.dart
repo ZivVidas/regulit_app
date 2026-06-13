@@ -1215,7 +1215,20 @@ class _SignalDialogState extends State<_SignalDialog> {
   // Step 38: optional numeric-condition block. Collapsed by default for
   // new signals, auto-expanded when editing a signal that already has a
   // numeric block configured. Backend enforces all-or-none.
+  //
+  // Dropdown filtering note: the backend endpoint returns numeric AND
+  // yes_no questions (yes_no is a documented edge case in
+  // numeric_signals_design.md §4 — admins can compare answer_number 0/1
+  // against a literal via curl/SQL). The UI deliberately shows ONLY
+  // numeric questions to keep the form unambiguous — yes_no comparisons
+  // are an advanced workaround, not something we want to surface in the
+  // primary admin flow.
   Widget _buildNumericBlock() {
+    // Filter to numeric-type questions only (see note above).
+    final numericOnly = widget.numericQuestions
+        .where((q) => (q['qType'] as String?) == 'numeric')
+        .toList();
+
     return ExpansionTile(
       initiallyExpanded: _anyNumericFieldSet,
       tilePadding: EdgeInsets.zero,
@@ -1229,16 +1242,26 @@ class _SignalDialogState extends State<_SignalDialog> {
                 fontWeight: FontWeight.w600)),
       ]),
       children: [
-        if (widget.numericQuestions.isEmpty)
+        if (numericOnly.isEmpty)
           const Text(
-            'No numeric or yes/no questions reachable from this quiz '
-            'through a shared workflow. Add the target question to a '
-            'workflow that also includes this quiz.',
+            'No numeric questions reachable from this quiz through a '
+            'shared workflow. Add a numeric-type question to a workflow '
+            'that also includes this quiz.',
             style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
           )
         else ...[
           DropdownButtonFormField<String?>(
-            initialValue: _numericQuestionId,
+            // CAUTION: do NOT use `initialValue:` here. In current Flutter,
+            // `initialValue` is a one-shot — it's only applied when the
+            // widget is first constructed, so subsequent setState updates
+            // to _numericQuestionId don't refresh the visible selection.
+            // The deprecated-but-functional `value:` parameter acts as a
+            // controlled value that re-syncs on every rebuild, which is
+            // what we want here (and what the rest of this file uses —
+            // see _RuleDialogState's signal dropdown). Worth swapping for
+            // a Key-based pattern when Flutter drops `value:` entirely.
+            // ignore: deprecated_member_use
+            value: _numericQuestionId,
             decoration: const InputDecoration(
               labelText: 'Numeric question',
               border: OutlineInputBorder(),
@@ -1249,15 +1272,13 @@ class _SignalDialogState extends State<_SignalDialog> {
                 value: null,
                 child: Text('—', style: TextStyle(fontSize: 13)),
               ),
-              ...widget.numericQuestions.map((q) {
+              ...numericOnly.map((q) {
                 final qNum = q['questionNumber'] as int;
                 final qText = q['questionText'] as String;
-                final qType = q['qType'] as String;
-                final marker = qType == 'numeric' ? '#' : 'Y/N';
                 return DropdownMenuItem<String?>(
                   value: q['id'] as String,
                   child: Text(
-                    'Q$qNum [$marker] $qText',
+                    'Q$qNum  $qText',
                     style: const TextStyle(fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1271,7 +1292,12 @@ class _SignalDialogState extends State<_SignalDialog> {
             SizedBox(
               width: 110,
               child: DropdownButtonFormField<String?>(
-                initialValue: _numericOp,
+                // Same controlled-value pattern as the question dropdown
+                // above. `initialValue:` would lock the displayed op to
+                // its construction-time value; `value:` re-syncs on
+                // every rebuild.
+                // ignore: deprecated_member_use
+                value: _numericOp,
                 decoration: const InputDecoration(
                   labelText: 'Op',
                   border: OutlineInputBorder(),
