@@ -1303,14 +1303,57 @@ class _SignalDialogState extends State<_SignalDialog> {
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
+                // `selectedItemBuilder` lets the COLLAPSED field show
+                // just the compact symbol (so the narrow 110-pt slot
+                // keeps fitting alongside the wider Value field), while
+                // the OPEN menu shows the full descriptive label so
+                // admins know what each symbol means without memorising.
+                selectedItemBuilder: (context) => const [
+                  Align(alignment: AlignmentDirectional.centerStart,
+                      child: Text('—')),
+                  Align(alignment: AlignmentDirectional.centerStart,
+                      child: Text('<',  style: TextStyle(fontWeight: FontWeight.w700))),
+                  Align(alignment: AlignmentDirectional.centerStart,
+                      child: Text('≤',  style: TextStyle(fontWeight: FontWeight.w700))),
+                  Align(alignment: AlignmentDirectional.centerStart,
+                      child: Text('=',  style: TextStyle(fontWeight: FontWeight.w700))),
+                  Align(alignment: AlignmentDirectional.centerStart,
+                      child: Text('≠',  style: TextStyle(fontWeight: FontWeight.w700))),
+                  Align(alignment: AlignmentDirectional.centerStart,
+                      child: Text('≥',  style: TextStyle(fontWeight: FontWeight.w700))),
+                  Align(alignment: AlignmentDirectional.centerStart,
+                      child: Text('>',  style: TextStyle(fontWeight: FontWeight.w700))),
+                ],
                 items: const [
-                  DropdownMenuItem<String?>(value: null, child: Text('—')),
-                  DropdownMenuItem<String?>(value: '<',  child: Text('<')),
-                  DropdownMenuItem<String?>(value: '<=', child: Text('≤')),
-                  DropdownMenuItem<String?>(value: '=',  child: Text('=')),
-                  DropdownMenuItem<String?>(value: '!=', child: Text('≠')),
-                  DropdownMenuItem<String?>(value: '>=', child: Text('≥')),
-                  DropdownMenuItem<String?>(value: '>',  child: Text('>')),
+                  DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('— (no operator)',
+                        style: TextStyle(color: Color(0xFF6B7280))),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: '<',
+                    child: _OpItem(symbol: '<',  label: 'less than'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: '<=',
+                    child: _OpItem(symbol: '≤',  label: 'less than or equal'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: '=',
+                    child: _OpItem(symbol: '=',  label: 'equals'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: '!=',
+                    child: _OpItem(symbol: '≠',  label: 'not equal'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: '>=',
+                    child: _OpItem(symbol: '≥',  label: 'greater than or equal'),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: '>',
+                    child: _OpItem(symbol: '>',  label: 'greater than'),
+                  ),
                 ],
                 onChanged: (v) => setState(() => _numericOp = v),
               ),
@@ -2177,4 +2220,29 @@ class _JsonTreeViewState extends State<_JsonTreeView> {
           fontStyle: italic ? FontStyle.italic : FontStyle.normal,
         ),
       );
+}
+
+// ── Step 38: Operator dropdown item ──────────────────────────────────────
+// Used inside the numeric-signal form's "Op" dropdown to render each open-
+// menu item as `<bold-symbol>   <plain-description>`. The COLLAPSED field
+// shows only the symbol via `selectedItemBuilder` so the narrow Op slot
+// keeps fitting next to the wider Value field.
+class _OpItem extends StatelessWidget {
+  final String symbol;
+  final String label;
+  const _OpItem({required this.symbol, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      SizedBox(
+        width: 22,
+        child: Text(symbol,
+            style: const TextStyle(
+                fontWeight: FontWeight.w700, fontSize: 14)),
+      ),
+      Text(label,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+    ]);
+  }
 }
