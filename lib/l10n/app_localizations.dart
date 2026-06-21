@@ -278,6 +278,15 @@ class AppLocalizations {
   String get fineAggregationRulesLabel   => _t('fineAggregationRulesLabel');
   String get fineAggregationRulesHint    => _t('fineAggregationRulesHint');
   String get fineAggregationAddRule      => _t('fineAggregationAddRule');
+
+  // ── Step 43: workflow signal numeric condition ─────────────────────────
+  String get numericCondLabel       => _t('numericCondLabel');
+  String get numericCondHint        => _t('numericCondHint');
+  String get numericCondQuestion    => _t('numericCondQuestion');
+  String get numericCondOp          => _t('numericCondOp');
+  String get numericCondValue       => _t('numericCondValue');
+  String get numericCondClear       => _t('numericCondClear');
+  String get numericCondEmptyHint   => _t('numericCondEmptyHint');
   String get noCustomerContextSelected   => _t('noCustomerContextSelected');
   String get noActiveAssessmentSessions  => _t('noActiveAssessmentSessions');
   String get assessmentLabel             => _t('assessmentLabel');
@@ -676,6 +685,14 @@ class AppLocalizations {
       'fineAggregationRulesLabel': 'Conditional rules (signal → strategy)',
       'fineAggregationRulesHint': 'Evaluated top-down; first matching firing signal wins.',
       'fineAggregationAddRule': 'Add rule',
+      // Step 43 — workflow signal numeric condition
+      'numericCondLabel': 'Numeric condition (optional)',
+      'numericCondHint': 'AND-combined with the pick predicate above. Leave question empty for a pick-only signal.',
+      'numericCondQuestion': 'Question',
+      'numericCondOp': 'Op',
+      'numericCondValue': 'Value',
+      'numericCondClear': '(no numeric condition)',
+      'numericCondEmptyHint': 'Add a numeric-type question to a quiz in this workflow to enable numeric conditions.',
       'noCustomerContextSelected': 'No customer context selected.',
       'noActiveAssessmentSessions': 'No active assessment sessions.',
       'assessmentLabel': 'Assessment:',
@@ -1045,6 +1062,14 @@ class AppLocalizations {
       'fineAggregationRulesLabel': 'כללים מותנים (סיגנל ← אסטרטגיה)',
       'fineAggregationRulesHint': 'מוערך מלמעלה למטה; הסיגנל הראשון התואם זוכה.',
       'fineAggregationAddRule': 'הוסף כלל',
+      // Step 43 — תנאי מספרי לסיגנל
+      'numericCondLabel': 'תנאי מספרי (אופציונלי)',
+      'numericCondHint': 'מחובר ב-AND עם הפרדיקט של הבחירה לעיל. השאירו את השאלה ריקה לקבלת סיגנל מבוסס בחירה בלבד.',
+      'numericCondQuestion': 'שאלה',
+      'numericCondOp': 'פעולה',
+      'numericCondValue': 'ערך',
+      'numericCondClear': '(ללא תנאי מספרי)',
+      'numericCondEmptyHint': 'הוסיפו שאלה מספרית לאחד מהמבחנים בתהליך זה כדי לאפשר תנאים מספריים.',
       'noCustomerContextSelected': 'לא נבחר לקוח.',
       'noActiveAssessmentSessions': 'אין פגישות הערכה פעילות.',
       'assessmentLabel': 'הערכה:',
@@ -1414,6 +1439,14 @@ class AppLocalizations {
       'fineAggregationRulesLabel': 'Reglas condicionales (señal → estrategia)',
       'fineAggregationRulesHint': 'Se evalúa de arriba a abajo; gana la primera señal activa que coincida.',
       'fineAggregationAddRule': 'Añadir regla',
+      // Step 43 — condición numérica de la señal
+      'numericCondLabel': 'Condición numérica (opcional)',
+      'numericCondHint': 'Combinada con AND con el predicado de selección anterior. Deja la pregunta vacía para una señal solo de selección.',
+      'numericCondQuestion': 'Pregunta',
+      'numericCondOp': 'Op',
+      'numericCondValue': 'Valor',
+      'numericCondClear': '(sin condición numérica)',
+      'numericCondEmptyHint': 'Añade una pregunta de tipo numérico a un cuestionario de este flujo para habilitar condiciones numéricas.',
       'noCustomerContextSelected': 'Sin cliente seleccionado.',
       'noActiveAssessmentSessions': 'Sin sesiones de evaluación activas.',
       'assessmentLabel': 'Evaluación:',
@@ -1783,6 +1816,14 @@ class AppLocalizations {
       'fineAggregationRulesLabel': 'Règles conditionnelles (signal → stratégie)',
       'fineAggregationRulesHint': 'Évaluation de haut en bas ; le premier signal déclenché correspondant gagne.',
       'fineAggregationAddRule': 'Ajouter une règle',
+      // Step 43 — condition numérique du signal
+      'numericCondLabel': 'Condition numérique (optionnelle)',
+      'numericCondHint': 'Combinée par ET avec le prédicat de sélection ci-dessus. Laissez la question vide pour un signal basé uniquement sur la sélection.',
+      'numericCondQuestion': 'Question',
+      'numericCondOp': 'Op',
+      'numericCondValue': 'Valeur',
+      'numericCondClear': '(aucune condition numérique)',
+      'numericCondEmptyHint': 'Ajoutez une question numérique à un quiz de ce flux pour activer les conditions numériques.',
       'noCustomerContextSelected': 'Aucun client sélectionné.',
       'noActiveAssessmentSessions': 'Aucune session d\'évaluation active.',
       'assessmentLabel': 'Évaluation :',
@@ -2153,6 +2194,14 @@ class AppLocalizations {
       'fineAggregationRulesLabel': 'Условные правила (сигнал → стратегия)',
       'fineAggregationRulesHint': 'Оценивается сверху вниз; побеждает первый сработавший сигнал.',
       'fineAggregationAddRule': 'Добавить правило',
+      // Step 43 — числовое условие сигнала
+      'numericCondLabel': 'Числовое условие (опционально)',
+      'numericCondHint': 'Объединяется по И с предикатом выбора выше. Оставьте вопрос пустым для сигнала только на основе выбора.',
+      'numericCondQuestion': 'Вопрос',
+      'numericCondOp': 'Операция',
+      'numericCondValue': 'Значение',
+      'numericCondClear': '(без числового условия)',
+      'numericCondEmptyHint': 'Добавьте вопрос числового типа в один из тестов этого процесса, чтобы включить числовые условия.',
       'noCustomerContextSelected': 'Клиент не выбран.',
       'noActiveAssessmentSessions': 'Нет активных сессий оценки.',
       'assessmentLabel': 'Оценка:',

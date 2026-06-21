@@ -708,6 +708,14 @@ class _SignalDialogState extends State<_SignalDialog> {
   bool _saving = false;
   String? _error;
 
+  // Step 43 — numeric block state. All-or-none rule: all 3 are set
+  // together or all 3 are null. Backend validator enforces this.
+  String? _numericQuestionId;
+  String? _numericOp;
+  final _numericValueCtrl = TextEditingController();
+  List<Map<String, dynamic>> _availableNumericQuestions = const [];
+  bool _loadingNumericQuestions = true;
+
   bool get _isEdit => widget.initial != null;
 
   @override
@@ -720,12 +728,42 @@ class _SignalDialogState extends State<_SignalDialog> {
         (init?['requiredOptionIds'] as List?)?.cast<String>() ?? []);
     _excluded = Set<String>.from(
         (init?['excludedOptionIds'] as List?)?.cast<String>() ?? []);
+    // Step 43 — pre-fill the numeric block from the saved signal.
+    _numericQuestionId = init?['numericQuestionId'] as String?;
+    _numericOp = init?['numericOp'] as String?;
+    final nv = init?['numericValue'] as num?;
+    _numericValueCtrl.text = nv?.toString() ?? '';
+    _loadNumericQuestions();
+  }
+
+  Future<void> _loadNumericQuestions() async {
+    try {
+      final res = await widget.dio.get<List<dynamic>>(
+        '/workflows/${widget.workflowId}/signals/numeric-questions',
+      );
+      if (!mounted) return;
+      setState(() {
+        _availableNumericQuestions =
+            (res.data ?? []).cast<Map<String, dynamic>>();
+        // If saved questionId no longer reachable, clear it so the
+        // dropdown doesn't crash with an unknown value.
+        if (_numericQuestionId != null &&
+            !_availableNumericQuestions
+                .any((q) => q['id'] == _numericQuestionId)) {
+          _numericQuestionId = null;
+        }
+        _loadingNumericQuestions = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingNumericQuestions = false);
+    }
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _descCtrl.dispose();
+    _numericValueCtrl.dispose();
     super.dispose();
   }
 
@@ -745,6 +783,13 @@ class _SignalDialogState extends State<_SignalDialog> {
           : _descCtrl.text.trim(),
       'requiredOptionIds': _required.toList(),
       'excludedOptionIds': _excluded.toList(),
+      // Step 43 — numeric block. Sending null on any of the three when
+      // the others are set triggers the backend's all-or-none 422.
+      'numericQuestionId': _numericQuestionId,
+      'numericOp': _numericOp,
+      'numericValue': _numericValueCtrl.text.trim().isEmpty
+          ? null
+          : double.tryParse(_numericValueCtrl.text.trim()),
     };
     try {
       if (_isEdit) {
@@ -851,6 +896,11 @@ class _SignalDialogState extends State<_SignalDialog> {
                       onToggle: (id, on) => setState(() =>
                           on ? _excluded.add(id) : _excluded.remove(id)),
                     ),
+                    // ── Step 43: numeric condition (optional) ─────
+                    // AND-combined with the pick predicate above. Leave
+                    // all 3 fields empty for pick-only legacy behavior.
+                    const Gap(16),
+                    _buildNumericBlock(),
                     if (_error != null) ...[
                       const Gap(12),
                       Text(_error!,
@@ -887,6 +937,115 @@ class _SignalDialogState extends State<_SignalDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Step 43 — collapsible numeric condition (optional). AND-combined
+  /// with the pick predicate. Empty (no question selected) = pick-only
+  /// signal, unchanged from pre-Step-43 behavior.
+  Widget _buildNumericBlock() {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+            color: const Color(0xFFFB923C).withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.numericCondLabel,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          const Gap(2),
+          Text(
+            l10n.numericCondHint,
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
+          const Gap(12),
+          if (_loadingNumericQuestions)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: LinearProgressIndicator(),
+            )
+          else if (_availableNumericQuestions.isEmpty)
+            Text(
+              l10n.numericCondEmptyHint,
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+            )
+          else
+            Column(children: [
+              DropdownButtonFormField<String?>(
+                // ignore: deprecated_member_use
+                value: _numericQuestionId,
+                decoration: InputDecoration(
+                  labelText: l10n.numericCondQuestion,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(l10n.numericCondClear),
+                  ),
+                  ..._availableNumericQuestions.map((q) {
+                    final text = q['questionText'] as String? ?? '';
+                    final qnum = q['questionNumber'] as int?;
+                    final display = qnum != null
+                        ? '$qnum. ${text.length > 70 ? '${text.substring(0, 70)}…' : text}'
+                        : text;
+                    return DropdownMenuItem(
+                      value: q['id'] as String,
+                      child: Text(display, overflow: TextOverflow.ellipsis),
+                    );
+                  }),
+                ],
+                onChanged: (v) => setState(() => _numericQuestionId = v),
+              ),
+              const Gap(8),
+              Row(children: [
+                SizedBox(
+                  width: 110,
+                  child: DropdownButtonFormField<String?>(
+                    // ignore: deprecated_member_use
+                    value: _numericOp,
+                    decoration: InputDecoration(
+                      labelText: l10n.numericCondOp,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: null, child: Text('—')),
+                      DropdownMenuItem(value: '<',  child: Text('<')),
+                      DropdownMenuItem(value: '<=', child: Text('≤')),
+                      DropdownMenuItem(value: '=',  child: Text('=')),
+                      DropdownMenuItem(value: '!=', child: Text('≠')),
+                      DropdownMenuItem(value: '>=', child: Text('≥')),
+                      DropdownMenuItem(value: '>',  child: Text('>')),
+                    ],
+                    onChanged: (v) => setState(() => _numericOp = v),
+                  ),
+                ),
+                const Gap(8),
+                Expanded(
+                  child: TextField(
+                    controller: _numericValueCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true),
+                    decoration: InputDecoration(
+                      labelText: l10n.numericCondValue,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+              ]),
+            ]),
+        ],
       ),
     );
   }
