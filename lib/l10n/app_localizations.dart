@@ -258,6 +258,26 @@ class AppLocalizations {
   // ── Executive dashboard ───────────────────────────────────────────────────
   String get complianceDashboard         => _t('complianceDashboard');
   String get analyzeAgain                => _t('analyzeAgain');
+
+  // ── Step 41: workflow-answer-group start dialog ──────────────────────────
+  String get start             => _t('start');
+  String startWorkflow(String name) =>
+      _t('startWorkflow').replaceFirst('{name}', name);
+  String get startGroupHint        => _t('startGroupHint');
+  String get startGroupSwitchHint  => _t('startGroupSwitchHint');
+
+  // ── Step 42: per-question / per-rule fine aggregation ──────────────────
+  String get fineAggregationLabel        => _t('fineAggregationLabel');
+  String get fineAggregationAuto         => _t('fineAggregationAuto');
+  String get fineAggregationAutoSum      => _t('fineAggregationAutoSum');
+  String get fineAggregationAutoMax      => _t('fineAggregationAutoMax');
+  String get fineAggregationSum          => _t('fineAggregationSum');
+  String get fineAggregationMax          => _t('fineAggregationMax');
+  String get fineAggregationMin          => _t('fineAggregationMin');
+  String get fineAggregationDefaultLabel => _t('fineAggregationDefaultLabel');
+  String get fineAggregationRulesLabel   => _t('fineAggregationRulesLabel');
+  String get fineAggregationRulesHint    => _t('fineAggregationRulesHint');
+  String get fineAggregationAddRule      => _t('fineAggregationAddRule');
   String get noCustomerContextSelected   => _t('noCustomerContextSelected');
   String get noActiveAssessmentSessions  => _t('noActiveAssessmentSessions');
   String get assessmentLabel             => _t('assessmentLabel');
@@ -639,6 +659,23 @@ class AppLocalizations {
       // Executive dashboard
       'complianceDashboard': 'Compliance Dashboard',
       'analyzeAgain': 'Analyze Again',
+      // Step 41 — workflow-answer-group start dialog
+      'start': 'Start',
+      'startWorkflow': 'Start workflow: {name}',
+      'startGroupHint': 'A new answering session will be created for each environment:',
+      'startGroupSwitchHint': 'You can switch between them while answering.',
+      // Step 42 — per-question / per-rule fine aggregation
+      'fineAggregationLabel': 'Fine aggregation across envs',
+      'fineAggregationAuto': 'Auto (default by question type)',
+      'fineAggregationAutoSum': 'Auto: sum across envs (per-env question)',
+      'fineAggregationAutoMax': 'Auto: maximum across envs (org-wide question)',
+      'fineAggregationSum': 'Sum all envs\' fines',
+      'fineAggregationMax': 'Maximum across envs',
+      'fineAggregationMin': 'Minimum across envs',
+      'fineAggregationDefaultLabel': 'Default strategy',
+      'fineAggregationRulesLabel': 'Conditional rules (signal → strategy)',
+      'fineAggregationRulesHint': 'Evaluated top-down; first matching firing signal wins.',
+      'fineAggregationAddRule': 'Add rule',
       'noCustomerContextSelected': 'No customer context selected.',
       'noActiveAssessmentSessions': 'No active assessment sessions.',
       'assessmentLabel': 'Assessment:',
@@ -991,6 +1028,23 @@ class AppLocalizations {
       // Executive dashboard
       'complianceDashboard': 'לוח בקרת ציות',
       'analyzeAgain': 'נתח שוב',
+      // Step 41 — workflow-answer-group start dialog
+      'start': 'התחל',
+      'startWorkflow': 'התחל תהליך: {name}',
+      'startGroupHint': 'תיווצר סבב חדש של מענה לכל סביבה:',
+      'startGroupSwitchHint': 'ניתן לעבור ביניהן תוך כדי המענה.',
+      // Step 42 — צבירת קנס בין סביבות
+      'fineAggregationLabel': 'צבירת קנס בין סביבות',
+      'fineAggregationAuto': 'אוטומטי (ברירת מחדל לפי סוג שאלה)',
+      'fineAggregationAutoSum': 'אוטומטי: סכימה (שאלה פר־סביבה)',
+      'fineAggregationAutoMax': 'אוטומטי: מקסימום (שאלה כלל־ארגונית)',
+      'fineAggregationSum': 'סיכום כל הקנסות',
+      'fineAggregationMax': 'מקסימום בין הסביבות',
+      'fineAggregationMin': 'מינימום בין הסביבות',
+      'fineAggregationDefaultLabel': 'אסטרטגיית ברירת מחדל',
+      'fineAggregationRulesLabel': 'כללים מותנים (סיגנל ← אסטרטגיה)',
+      'fineAggregationRulesHint': 'מוערך מלמעלה למטה; הסיגנל הראשון התואם זוכה.',
+      'fineAggregationAddRule': 'הוסף כלל',
       'noCustomerContextSelected': 'לא נבחר לקוח.',
       'noActiveAssessmentSessions': 'אין פגישות הערכה פעילות.',
       'assessmentLabel': 'הערכה:',
@@ -1343,6 +1397,23 @@ class AppLocalizations {
       // Executive dashboard
       'complianceDashboard': 'Panel de cumplimiento',
       'analyzeAgain': 'Analizar de nuevo',
+      // Step 41 — workflow-answer-group start dialog
+      'start': 'Comenzar',
+      'startWorkflow': 'Iniciar flujo de trabajo: {name}',
+      'startGroupHint': 'Se creará una nueva sesión de respuesta para cada entorno:',
+      'startGroupSwitchHint': 'Puede cambiar entre ellas mientras responde.',
+      // Step 42 — agregación de multas entre entornos
+      'fineAggregationLabel': 'Agregación de multas entre entornos',
+      'fineAggregationAuto': 'Auto (predeterminado por tipo de pregunta)',
+      'fineAggregationAutoSum': 'Auto: suma entre entornos (pregunta por entorno)',
+      'fineAggregationAutoMax': 'Auto: máximo entre entornos (pregunta global)',
+      'fineAggregationSum': 'Sumar todas las multas',
+      'fineAggregationMax': 'Máximo entre entornos',
+      'fineAggregationMin': 'Mínimo entre entornos',
+      'fineAggregationDefaultLabel': 'Estrategia predeterminada',
+      'fineAggregationRulesLabel': 'Reglas condicionales (señal → estrategia)',
+      'fineAggregationRulesHint': 'Se evalúa de arriba a abajo; gana la primera señal activa que coincida.',
+      'fineAggregationAddRule': 'Añadir regla',
       'noCustomerContextSelected': 'Sin cliente seleccionado.',
       'noActiveAssessmentSessions': 'Sin sesiones de evaluación activas.',
       'assessmentLabel': 'Evaluación:',
@@ -1695,6 +1766,23 @@ class AppLocalizations {
       // Executive dashboard
       'complianceDashboard': 'Tableau de bord conformité',
       'analyzeAgain': 'Analyser à nouveau',
+      // Step 41 — workflow-answer-group start dialog
+      'start': 'Démarrer',
+      'startWorkflow': 'Démarrer le flux : {name}',
+      'startGroupHint': 'Une nouvelle session de réponses sera créée pour chaque environnement :',
+      'startGroupSwitchHint': 'Vous pouvez basculer entre elles pendant que vous répondez.',
+      // Step 42 — agrégation des amendes entre environnements
+      'fineAggregationLabel': 'Agrégation des amendes entre environnements',
+      'fineAggregationAuto': 'Auto (par défaut selon le type de question)',
+      'fineAggregationAutoSum': 'Auto : somme entre environnements (question par environnement)',
+      'fineAggregationAutoMax': 'Auto : maximum entre environnements (question globale)',
+      'fineAggregationSum': 'Additionner toutes les amendes',
+      'fineAggregationMax': 'Maximum entre environnements',
+      'fineAggregationMin': 'Minimum entre environnements',
+      'fineAggregationDefaultLabel': 'Stratégie par défaut',
+      'fineAggregationRulesLabel': 'Règles conditionnelles (signal → stratégie)',
+      'fineAggregationRulesHint': 'Évaluation de haut en bas ; le premier signal déclenché correspondant gagne.',
+      'fineAggregationAddRule': 'Ajouter une règle',
       'noCustomerContextSelected': 'Aucun client sélectionné.',
       'noActiveAssessmentSessions': 'Aucune session d\'évaluation active.',
       'assessmentLabel': 'Évaluation :',
@@ -2048,6 +2136,23 @@ class AppLocalizations {
       // Executive dashboard
       'complianceDashboard': 'Панель соответствия',
       'analyzeAgain': 'Повторить анализ',
+      // Step 41 — workflow-answer-group start dialog
+      'start': 'Начать',
+      'startWorkflow': 'Начать процесс: {name}',
+      'startGroupHint': 'Будет создан отдельный сеанс ответов для каждой среды:',
+      'startGroupSwitchHint': 'Вы можете переключаться между ними во время ответов.',
+      // Step 42 — агрегация штрафов между средами
+      'fineAggregationLabel': 'Агрегация штрафов между средами',
+      'fineAggregationAuto': 'Авто (по типу вопроса)',
+      'fineAggregationAutoSum': 'Авто: сумма по средам (вопрос для каждой среды)',
+      'fineAggregationAutoMax': 'Авто: максимум по средам (общий вопрос)',
+      'fineAggregationSum': 'Сумма штрафов всех сред',
+      'fineAggregationMax': 'Максимум по средам',
+      'fineAggregationMin': 'Минимум по средам',
+      'fineAggregationDefaultLabel': 'Стратегия по умолчанию',
+      'fineAggregationRulesLabel': 'Условные правила (сигнал → стратегия)',
+      'fineAggregationRulesHint': 'Оценивается сверху вниз; побеждает первый сработавший сигнал.',
+      'fineAggregationAddRule': 'Добавить правило',
       'noCustomerContextSelected': 'Клиент не выбран.',
       'noActiveAssessmentSessions': 'Нет активных сессий оценки.',
       'assessmentLabel': 'Оценка:',

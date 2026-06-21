@@ -63,6 +63,11 @@ class WorkflowTask {
   final String? evidenceSummary;
   final String? evidenceReason;
   final DateTime? supersededAt;     // non-null = replaced by a re-analyze run
+  // Step 41 — only populated by /workflow-tasks/by-group/{group_id}.
+  // The Kanban renders these as env badges; other task list endpoints
+  // leave them null.
+  final String? envId;
+  final String? envName;
 
   const WorkflowTask({
     required this.id,
@@ -88,6 +93,8 @@ class WorkflowTask {
     this.evidenceSummary,
     this.evidenceReason,
     this.supersededAt,
+    this.envId,
+    this.envName,
   });
 
   WorkflowTaskStatus get status => WorkflowTaskStatus.fromId(statusId);
@@ -124,6 +131,8 @@ class WorkflowTask {
       supersededAt: j['supersededAt'] != null
           ? DateTime.tryParse(j['supersededAt'] as String)
           : null,
+      envId:   j['envId']   as String?,
+      envName: j['envName'] as String?,
     );
   }
 }

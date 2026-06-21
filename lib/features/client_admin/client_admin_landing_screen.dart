@@ -87,27 +87,38 @@ class _ClientAdminLandingState
       }
 
       // No completed workflow yet → redirect to fill-in.
+      // Step 41: the new model creates a workflow_answer_group (one
+      // session per customer environment). Fall back to single-session
+      // mode only when the backend's workflow-check returns a sessionId
+      // that's NOT linked to a group (legacy in-progress data).
       final workflowId   = data['workflowId']   as String;
       final workflowName = data['workflowName'] as String? ?? '';
       final existingId   = data['sessionId']    as String?;
 
-      String sessionId;
       if (existingId != null) {
-        // Continue the most recent in-progress session.
-        sessionId = existingId;
-      } else {
-        // No session exists yet — create one.
-        final created = await dio.post<Map<String, dynamic>>(
-          '/workflow-answers',
-          data: {'workflowId': workflowId, 'customerId': customerId},
+        // Continue the most recent in-progress legacy session.
+        // (Group resumption isn't covered by /workflow-check yet — that
+        // would require the backend to return a group_id field too.
+        // Tracked as deferred enhancement.)
+        context.goNamed(
+          'workflowAnswer',
+          pathParameters: {'sessionId': existingId},
+          queryParameters: {'workflowName': workflowName},
         );
-        if (!mounted) return;
-        sessionId = created.data!['id'] as String;
+        return;
       }
 
+      // No existing session — create a fresh workflow_answer_group with
+      // one env-session per customer environment.
+      final created = await dio.post<Map<String, dynamic>>(
+        '/workflow-answer-groups',
+        data: {'workflowId': workflowId, 'customerId': customerId},
+      );
+      if (!mounted) return;
+      final groupId = created.data!['id'] as String;
       context.goNamed(
-        'workflowAnswer',
-        pathParameters: {'sessionId': sessionId},
+        'workflowAnswerGroup',
+        pathParameters: {'groupId': groupId},
         queryParameters: {'workflowName': workflowName},
       );
     } catch (_) {

@@ -25,16 +25,25 @@ class ActiveSession {
   final String id;
   final String workflowId;
   final String workflowName;
+  /// Step 41 — when true, `id` is a workflow_answer_group id and the
+  /// task board fetches tasks via /workflow-tasks/by-group/{id} (which
+  /// returns env-tagged tasks across all env-sessions in the group).
+  /// False = legacy single workflow_answer; `id` is the session id and
+  /// tasks come from the per-session endpoint.
+  final bool isGroup;
+
   const ActiveSession({
     required this.id,
     required this.workflowId,
     required this.workflowName,
+    this.isGroup = false,
   });
 
   factory ActiveSession.fromJson(Map<String, dynamic> j) => ActiveSession(
         id: j['id'] as String,
         workflowId: j['workflowId'] as String,
         workflowName: j['workflowName'] as String,
+        isGroup: (j['isGroup'] ?? false) as bool,
       );
 }
 
@@ -68,10 +77,31 @@ final sessionTasksProvider =
       .toList();
 });
 
+/// Step 41 — all tasks across an answering group's env-sessions.
+/// Backend returns each task with envId / envName populated for badge
+/// rendering (Phase 7).
+final groupTasksProvider =
+    FutureProvider.autoDispose.family<List<WorkflowTask>, String>((ref, groupId) async {
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get<List<dynamic>>(
+    '/workflow-tasks/by-group/$groupId',
+  );
+  return (res.data ?? [])
+      .cast<Map<String, dynamic>>()
+      .map(WorkflowTask.fromJson)
+      .toList();
+});
+
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
 class TaskBoardScreen extends ConsumerStatefulWidget {
-  const TaskBoardScreen({super.key});
+  /// Step 41 — when set, the Kanban renders tasks aggregated across all
+  /// env-sessions in the given workflow_answer_group instead of a single
+  /// session. The session-picker bar is hidden. Each task card shows an
+  /// env badge.
+  final String? groupId;
+
+  const TaskBoardScreen({super.key, this.groupId});
 
   @override
   ConsumerState<TaskBoardScreen> createState() => _TaskBoardScreenState();
@@ -139,8 +169,6 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
       );
     }
 
-    final sessionsAsync = ref.watch(activeSessionsProvider(customerId));
-
     // Role resolution:
     //   it_executor    → create / edit / delete any task (always opens edit dialog).
     //   client_admin   → same as it_executor: full read + edit on all tasks.
@@ -152,6 +180,30 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                          ref.watch(isItExecutorProvider) || // fallback for demo users
                          isClientAdmin; // client_admin gets identical full-edit rights
     final canEdit = isItExecutor;
+
+    // Step 41 — group mode: skip the session picker entirely and render
+    // the board straight from groupTasksProvider. Each task card shows
+    // an env badge from envName (Phase 7).
+    if (widget.groupId != null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Column(children: [
+          PageHeader(title: l10n.navMyTasks, variant: PageHeaderVariant.gradient),
+          Expanded(
+            child: _BoardForGroup(
+              groupId: widget.groupId!,
+              isItExecutor: isItExecutor,
+              currentUserId: ref.watch(currentUserProvider)?.id,
+              filter: _filter,
+              onFilterChanged: (v) => setState(() => _filter = v),
+              l10n: l10n,
+            ),
+          ),
+        ]),
+      );
+    }
+
+    final sessionsAsync = ref.watch(activeSessionsProvider(customerId));
 
     // Current user ID — used to check task assignment for status-change permission.
     final currentUserId = ref.watch(currentUserProvider)?.id;
@@ -205,14 +257,30 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                 child: _selectedSessionId == null
                     ? _NoSessionView(
                         hasSessions: sessions.isNotEmpty, l10n: l10n)
-                    : _BoardForSession(
-                        sessionId: _selectedSessionId!,
-                        isItExecutor: isItExecutor,
-                        currentUserId: currentUserId,
-                        filter: _filter,
-                        onFilterChanged: (v) => setState(() => _filter = v),
-                        l10n: l10n,
-                      ),
+                    : (sessions
+                                .where((s) => s.id == _selectedSessionId)
+                                .firstOrNull
+                                ?.isGroup ??
+                            false)
+                        // Step 41 — group entry: aggregate tasks across
+                        // all env-sessions in the group.
+                        ? _BoardForGroup(
+                            groupId: _selectedSessionId!,
+                            isItExecutor: isItExecutor,
+                            currentUserId: currentUserId,
+                            filter: _filter,
+                            onFilterChanged: (v) => setState(() => _filter = v),
+                            l10n: l10n,
+                          )
+                        // Legacy single-session entry.
+                        : _BoardForSession(
+                            sessionId: _selectedSessionId!,
+                            isItExecutor: isItExecutor,
+                            currentUserId: currentUserId,
+                            filter: _filter,
+                            onFilterChanged: (v) => setState(() => _filter = v),
+                            l10n: l10n,
+                          ),
               ),
             ],
           );
@@ -224,7 +292,10 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
 
 // ── Session Selector Bar ───────────────────────────────────────────────────────
 
-class _SessionBar extends StatelessWidget {
+// Step 41 — promoted to ConsumerWidget so the Gap Report button can read
+// dioProvider to resolve a group_id to a session_id before opening the
+// dialog (the per-session report endpoint can't accept a group_id).
+class _SessionBar extends ConsumerWidget {
   final List<ActiveSession> sessions;
   final String? selectedId;
   final bool canEdit;
@@ -249,7 +320,7 @@ class _SessionBar extends StatelessWidget {
       sessions.where((s) => s.id == selectedId).firstOrNull;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -295,11 +366,20 @@ class _SessionBar extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
                 label: Text(l10n.downloadGapReport),
-                onPressed: () => showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) => GapReportDialog(sessionId: _selected!.id),
-                ),
+                onPressed: () async {
+                  final entry = _selected!;
+                  // Step 41b — the GapReportDialog accepts either a
+                  // sessionId (legacy single-session report) or a groupId
+                  // (group-wide PDF aggregating every env-session). Pick
+                  // by entry.isGroup.
+                  await showDialog<void>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => entry.isGroup
+                        ? GapReportDialog(groupId: entry.id)
+                        : GapReportDialog(sessionId: entry.id),
+                  );
+                },
               ),
             ),
             const Gap(8),
@@ -558,6 +638,113 @@ class _BoardForSession extends ConsumerWidget {
             ),
           ],
         );
+      },
+    );
+  }
+}
+
+// ── Step 41 — Board for a workflow_answer_group ────────────────────────────
+// Thin parallel to _BoardForSession that pulls from groupTasksProvider and
+// renders the same metric bar + Kanban layout. Each task already carries
+// envName from the backend; the Kanban card surface should pick it up.
+
+class _BoardForGroup extends ConsumerWidget {
+  final String groupId;
+  final bool isItExecutor;
+  final String? currentUserId;
+  final WorkflowTaskStatus? filter;
+  final ValueChanged<WorkflowTaskStatus?> onFilterChanged;
+  final AppLocalizations l10n;
+
+  const _BoardForGroup({
+    required this.groupId,
+    required this.isItExecutor,
+    required this.currentUserId,
+    required this.filter,
+    required this.onFilterChanged,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tasksAsync = ref.watch(groupTasksProvider(groupId));
+    return tasksAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => _ErrorView(
+        message: e.toString(),
+        onRetry: () => ref.invalidate(groupTasksProvider(groupId)),
+      ),
+      data: (tasks) {
+        final visible = filter == null
+            ? tasks
+            : tasks.where((t) => t.status == filter).toList();
+
+        final todo = visible
+            .where((t) => t.status == WorkflowTaskStatus.todo).toList();
+        final inProg = visible
+            .where((t) => t.status == WorkflowTaskStatus.inProgress).toList();
+        final pending = visible
+            .where((t) => t.status == WorkflowTaskStatus.pendingReview).toList();
+        final done = visible
+            .where((t) => t.status == WorkflowTaskStatus.approved).toList();
+        final overdue = visible
+            .where((t) => t.status == WorkflowTaskStatus.overdue).toList();
+        final overdueTotal = tasks
+            .where((t) => t.status == WorkflowTaskStatus.overdue).length;
+
+        return Column(children: [
+          _MetricBar(
+            tasks: tasks,
+            overdueTotal: overdueTotal,
+            filter: filter,
+            onFilterChanged: onFilterChanged,
+            l10n: l10n,
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: _KanbanBoard(
+                todo: todo,
+                inProgress: inProg,
+                pendingReview: pending,
+                done: done,
+                overdue: overdue,
+                l10n: l10n,
+                isItExecutor: isItExecutor,
+                currentUserId: currentUserId,
+                onStatusChange: (task, newStatus) async {
+                  if (newStatus == WorkflowTaskStatus.approved &&
+                      task.isRequired &&
+                      (task.evidenceDecision?.toUpperCase() ?? '') != 'APPROVE') {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(l10n.cannotApproveWithoutEvidenceApproval),
+                      backgroundColor: AppColors.danger,
+                      behavior: SnackBarBehavior.floating,
+                    ));
+                    ref.invalidate(groupTasksProvider(groupId));
+                    return;
+                  }
+                  try {
+                    await ref.read(dioProvider).patch<void>(
+                      '/workflow-tasks/${task.id}/status',
+                      data: {'statusId': newStatus.id},
+                    );
+                  } catch (_) {}
+                  ref.invalidate(groupTasksProvider(groupId));
+                },
+                onTaskTap: (task) async {
+                  final refreshed = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => TaskEditDialog(task: task, l10n: l10n),
+                  );
+                  if (refreshed == true) {
+                    ref.invalidate(groupTasksProvider(groupId));
+                  }
+                },
+              ),
+            ),
+          ),
+        ]);
       },
     );
   }

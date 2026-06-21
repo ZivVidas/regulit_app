@@ -39,7 +39,13 @@ enum GapReportFormat { pdf, html }
 /// the response arrives we flip the remaining stages to done before the
 /// dialog closes, so the user gets a clean "all green" moment.
 class GapReportDialog extends ConsumerStatefulWidget {
-  final String sessionId;
+  /// Either a session id (legacy single-session report) or a group id
+  /// (Step 41b — aggregated PDF covering all env-sessions in the group).
+  /// Exactly one of these must be non-null. When groupId is set the
+  /// dialog hits /workflow-answer-groups/{groupId}/report/download.pdf;
+  /// otherwise /workflow-answers/{sessionId}/report/download.pdf.
+  final String? sessionId;
+  final String? groupId;
 
   /// Output format. Defaults to PDF (Step 37) — the "Download Gap Report"
   /// button label is most natural when it actually downloads a PDF.
@@ -52,10 +58,25 @@ class GapReportDialog extends ConsumerStatefulWidget {
 
   const GapReportDialog({
     super.key,
-    required this.sessionId,
+    this.sessionId,
+    this.groupId,
     this.format = GapReportFormat.pdf,
     this.skipLlm = false,
-  });
+  }) : assert(sessionId != null || groupId != null,
+            'GapReportDialog needs either sessionId or groupId');
+
+  /// Step 41b — base URL for the report endpoints. Group flavor when
+  /// groupId is set; per-session flavor otherwise.
+  String get _basePath => groupId != null
+      ? '/workflow-answer-groups/$groupId'
+      : '/workflow-answers/$sessionId';
+
+  /// Used for the downloaded file's local name. Group → first 8 chars
+  /// of groupId; session → first 8 chars of sessionId.
+  String get _idShort {
+    final id = groupId ?? sessionId!;
+    return id.length >= 8 ? id.substring(0, 8) : id;
+  }
 
   @override
   ConsumerState<GapReportDialog> createState() => _GapReportDialogState();
@@ -120,12 +141,14 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
     // downloads aren't gesture-restricted the way `window.open` is.
     if (widget.format == GapReportFormat.pdf) {
       try {
+        // Step 41b — widget._basePath branches to the group endpoint
+        // when widget.groupId is set, per-session endpoint otherwise.
         final url =
-            '/workflow-answers/${widget.sessionId}/report/download.pdf'
+            '${widget._basePath}/report/download.pdf'
             '${widget.skipLlm ? '?skip_llm=true' : ''}';
         await platformDownload(
           url: url,
-          fileName: 'gap-report-${widget.sessionId.substring(0, 8)}.pdf',
+          fileName: 'gap-report-${widget._idShort}.pdf',
           dio: ref.read(dioProvider),
         );
         if (!mounted) return;
@@ -142,9 +165,13 @@ class _GapReportDialogState extends ConsumerState<GapReportDialog> {
     }
 
     // HTML path (legacy, still available for browser preview).
+    // Note: group flavor has no /report/preview.html endpoint yet — the
+    // PDF download is the only group output. Calling this path with a
+    // group will 404; the dialog defaults to GapReportFormat.pdf which
+    // takes the branch above.
     try {
       final url =
-          '/workflow-answers/${widget.sessionId}/report/preview.html'
+          '${widget._basePath}/report/preview.html'
           '${widget.skipLlm ? '?skip_llm=true' : ''}';
       final deferred =
           await platformOpenInBrowser(url: url, dio: ref.read(dioProvider));

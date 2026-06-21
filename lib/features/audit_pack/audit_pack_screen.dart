@@ -36,6 +36,11 @@ class _Session {
   final DateTime dateModified;
   final DateTime dateCreated;
   final bool isActive;
+  /// Step 41 — non-null when this session is part of a workflow_answer_group.
+  /// "Edit last" should route to /workflow-answer-group/{answerGroupId} so
+  /// the chip-strip env switcher renders, instead of the legacy per-session
+  /// URL (which falls back to the old per-env card rendering).
+  final String? answerGroupId;
 
   const _Session({
     required this.id,
@@ -44,6 +49,7 @@ class _Session {
     required this.dateModified,
     required this.dateCreated,
     this.isActive = false,
+    this.answerGroupId,
   });
 
   _Session copyWith({bool? isActive}) => _Session(
@@ -53,6 +59,7 @@ class _Session {
         dateModified:  dateModified,
         dateCreated:   dateCreated,
         isActive:      isActive ?? this.isActive,
+        answerGroupId: answerGroupId,
       );
 
   factory _Session.fromJson(Map<String, dynamic> j) => _Session(
@@ -64,6 +71,7 @@ class _Session {
         dateCreated:   DateTime.tryParse(j['datedCreated'] as String? ?? '') ??
             DateTime.now(),
         isActive:      j['isActive'] as bool? ?? false,
+        answerGroupId: j['answerGroupId'] as String?,
       );
 }
 
@@ -143,6 +151,13 @@ class _AuditNotifier extends StateNotifier<_AuditState> {
     }
   }
 
+  /// Step 41 — creates a workflow_answer_group (one session per customer
+  /// environment) and returns the group id. Caller navigates to
+  /// /workflow-answer-group/<groupId> for the chip-strip env switcher.
+  ///
+  /// The returned id is now a GROUP id, NOT a session id. The local
+  /// session-list state isn't updated here — listing groups in the
+  /// audit pack is a separate follow-up (deferred).
   Future<String?> startSession(String workflowId) async {
     state = state.copyWith(
       starting: {...state.starting, workflowId},
@@ -150,27 +165,15 @@ class _AuditNotifier extends StateNotifier<_AuditState> {
     );
     try {
       final res = await _dio.post<Map<String, dynamic>>(
-        '/workflow-answers',
+        '/workflow-answer-groups',
         data: {'workflowId': workflowId, 'customerId': customerId},
       );
-      final sessionId = res.data!['id'] as String;
-
-      // Optimistically add session to local state
-      final newSession = _Session(
-        id:            sessionId,
-        workflowId:    workflowId,
-        answeredCount: 0,
-        dateModified:  DateTime.now(),
-        dateCreated:   DateTime.now(),
-      );
-      final updated = Map<String, List<_Session>>.from(state.sessions);
-      updated[workflowId] = [newSession, ...(updated[workflowId] ?? [])];
+      final groupId = res.data!['id'] as String;
 
       state = state.copyWith(
         starting: state.starting.difference({workflowId}),
-        sessions: updated,
       );
-      return sessionId;
+      return groupId;
     } catch (e) {
       state = state.copyWith(
         starting: state.starting.difference({workflowId}),
@@ -271,20 +274,31 @@ class AuditPackScreen extends ConsumerWidget {
                       starting: s.starting.contains(wfId),
                       onStartNew: () async {
                         final wfName = wf['workflowName'] as String? ?? AppLocalizations.of(context).workflowLabel;
-                        final sid = await not.startSession(wfId);
-                        if (sid != null && context.mounted) {
+                        // Step 41: startSession now returns a GROUP id,
+                        // not a session id. Route to the group flow so
+                        // the chip-strip env switcher renders.
+                        final gid = await not.startSession(wfId);
+                        if (gid != null && context.mounted) {
                           context.push(
-                            Uri(path: '/workflow-answer/$sid',
+                            Uri(path: '/workflow-answer-group/$gid',
                                 queryParameters: {'workflowName': wfName})
                                 .toString(),
                           );
                         }
                       },
                       onEditLast: slist.isEmpty ? null : () {
-                        final sid    = slist.first.id;
+                        // Step 41: route to /workflow-answer-group/{gid}
+                        // when the session belongs to a group (so the
+                        // chip-strip env switcher renders). Falls back
+                        // to the legacy per-session URL for un-grouped
+                        // sessions.
+                        final last   = slist.first;
                         final wfName = wf['workflowName'] as String? ?? AppLocalizations.of(context).workflowLabel;
+                        final path = last.answerGroupId != null
+                            ? '/workflow-answer-group/${last.answerGroupId}'
+                            : '/workflow-answer/${last.id}';
                         context.push(
-                          Uri(path: '/workflow-answer/$sid',
+                          Uri(path: path,
                               queryParameters: {'workflowName': wfName})
                               .toString(),
                         );
@@ -299,12 +313,21 @@ class AuditPackScreen extends ConsumerWidget {
                             workflowName: wfName,
                             sessions: slist,
                             onActivate: (sid) => not.activate(wfId, sid),
-                            onView: (sid) => context.push(
-                              Uri(
-                                path: '/workflow-answer/$sid',
-                                queryParameters: {'workflowName': wfName},
-                              ).toString(),
-                            ),
+                            onView: (sid) {
+                              // Step 41: route to group URL when applicable.
+                              final s = slist
+                                  .where((e) => e.id == sid)
+                                  .firstOrNull;
+                              final path = s?.answerGroupId != null
+                                  ? '/workflow-answer-group/${s!.answerGroupId}'
+                                  : '/workflow-answer/$sid';
+                              context.push(
+                                Uri(
+                                  path: path,
+                                  queryParameters: {'workflowName': wfName},
+                                ).toString(),
+                              );
+                            },
                           ),
                         );
                       },

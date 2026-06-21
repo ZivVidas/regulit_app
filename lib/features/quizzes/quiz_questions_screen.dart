@@ -23,6 +23,53 @@ const _kQTypes = [
   ('numeric',       'Numeric'),
 ];
 
+// ── Step 42: per-question fine aggregation config ─────────────
+// Mirrors `quiz_questions.fine_aggregation_strategy` JSONB shape
+// (see gap_group_fine_aggregation_design.md §3.2).
+class _FineAggregationRule {
+  final String signal;     // workflow_signals.signal_name (free text in v1)
+  final String strategy;   // 'sum' | 'max' | 'min'
+  _FineAggregationRule({required this.signal, required this.strategy});
+
+  factory _FineAggregationRule.fromJson(Map<String, dynamic> j) =>
+      _FineAggregationRule(
+        signal: j['signal'] as String? ?? '',
+        strategy: j['strategy'] as String? ?? 'max',
+      );
+
+  Map<String, dynamic> toJson() => {'signal': signal, 'strategy': strategy};
+}
+
+class _FineAggregationConfig {
+  final List<_FineAggregationRule> rules;
+  final String? defaultStrategy;  // 'sum' | 'max' | 'min' | null
+  _FineAggregationConfig({this.rules = const [], this.defaultStrategy});
+
+  /// Empty = no rules AND no default. Caller should send `null` for the
+  /// whole field so the DB column stays NULL and the calculator falls
+  /// through to the is_data_environment_question default.
+  bool get isEmpty => rules.isEmpty && defaultStrategy == null;
+
+  factory _FineAggregationConfig.fromJson(Map<String, dynamic>? j) {
+    if (j == null) return _FineAggregationConfig();
+    return _FineAggregationConfig(
+      rules: ((j['rules'] ?? const []) as List)
+          .map((e) => _FineAggregationRule.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      defaultStrategy: j['default'] as String?,
+    );
+  }
+
+  /// Returns null when empty so the API payload omits the column.
+  Map<String, dynamic>? toJson() {
+    if (isEmpty) return null;
+    return {
+      'rules': rules.map((r) => r.toJson()).toList(),
+      if (defaultStrategy != null) 'default': defaultStrategy,
+    };
+  }
+}
+
 bool _isPickType(String? t) => t == 'one_pick' || t == 'multiple_pick';
 
 String _qtypeLabel(String? v) =>
@@ -957,6 +1004,9 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
   // Step 36: per-environment question flag. When true the survey UI
   // renders one card with N rows (one per customer_data_environment).
   bool _isDataEnvQuestion = false;
+  // Step 42: per-question fine aggregation rules. Default-empty config →
+  // calculator falls through to is_data_environment_question default.
+  _FineAggregationConfig _fineAgg = _FineAggregationConfig();
   late String _qtype;
   late bool _requiresEvidence;
 
@@ -998,6 +1048,10 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
     _severity = q?['severity'] as String?;
     _isDataEnvQuestion =
         (q?['isDataEnvironmentQuestion'] as bool?) ?? false;
+    // Step 42 — pre-fill the config from the saved JSON (null-safe).
+    _fineAgg = _FineAggregationConfig.fromJson(
+      q?['fineAggregationStrategy'] as Map<String, dynamic>?,
+    );
 
     // Pre-populate options from existing question data
     final existingOptions =
@@ -1109,6 +1163,8 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
           : int.tryParse(_dueDaysCtrl.text.trim()),
       // Step 36
       'isDataEnvironmentQuestion': _isDataEnvQuestion,
+      // Step 42 — empty config sends as null → DB column stays NULL.
+      'fineAggregationStrategy': _fineAgg.toJson(),
     };
 
     try {
@@ -1457,6 +1513,14 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
                               ),
                               activeThumbColor: const Color(0xFF7C3AED),
                             ),
+                            // ── Step 42: fine aggregation across envs ───
+                            const Gap(12),
+                            _FineAggregationSection(
+                              config: _fineAgg,
+                              isDataEnvQuestion: _isDataEnvQuestion,
+                              onChanged: (next) =>
+                                  setState(() => _fineAgg = next),
+                            ),
                           ],
                         ),
                       ),
@@ -1758,6 +1822,170 @@ class _Field extends StatelessWidget {
                   : null),
         ),
       ],
+    );
+  }
+}
+
+
+// ── Step 42 — Fine aggregation editor widget ─────────────────────────
+// Default dropdown + dynamic list of (signal text field, strategy
+// dropdown, delete button). Free-text signal input in v1; an upgrade to
+// a dropdown of the workflow's signals is a future enhancement (needs a
+// new backend endpoint since a quiz can belong to multiple workflows).
+class _FineAggregationSection extends StatelessWidget {
+  final _FineAggregationConfig config;
+  final bool isDataEnvQuestion;
+  final ValueChanged<_FineAggregationConfig> onChanged;
+
+  const _FineAggregationSection({
+    required this.config,
+    required this.isDataEnvQuestion,
+    required this.onChanged,
+  });
+
+  /// Helper text under "Auto" — spells out the effective fallback so the
+  /// admin knows what they get without configuration. Resolves via the
+  /// context's AppLocalizations (passed in build).
+  String _autoHint(AppLocalizations l10n) => isDataEnvQuestion
+      ? l10n.fineAggregationAutoSum
+      : l10n.fineAggregationAutoMax;
+
+  void _updateRule(int i, {String? signal, String? strategy}) {
+    final newRules = [
+      for (var j = 0; j < config.rules.length; j++)
+        if (j == i)
+          _FineAggregationRule(
+            signal: signal ?? config.rules[j].signal,
+            strategy: strategy ?? config.rules[j].strategy,
+          )
+        else
+          config.rules[j],
+    ];
+    onChanged(_FineAggregationConfig(
+      rules: newRules,
+      defaultStrategy: config.defaultStrategy,
+    ));
+  }
+
+  void _removeRule(int i) {
+    final newRules = [...config.rules]..removeAt(i);
+    onChanged(_FineAggregationConfig(
+      rules: newRules,
+      defaultStrategy: config.defaultStrategy,
+    ));
+  }
+
+  void _addRule() {
+    onChanged(_FineAggregationConfig(
+      rules: [
+        ...config.rules,
+        _FineAggregationRule(signal: '', strategy: 'max'),
+      ],
+      defaultStrategy: config.defaultStrategy,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),  // warm amber tint
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFB923C).withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.fineAggregationLabel,
+            style: AppTextStyles.label.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const Gap(2),
+          Text(
+            l10n.fineAggregationRulesHint,
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+          ),
+          const Gap(12),
+
+          // ── Default dropdown ──────────────────────────────────
+          DropdownButtonFormField<String?>(
+            // ignore: deprecated_member_use
+            value: config.defaultStrategy,
+            decoration: InputDecoration(
+              labelText: l10n.fineAggregationDefaultLabel,
+              helperText: _autoHint(l10n),
+              border: const OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: [
+              DropdownMenuItem(value: null,  child: Text(l10n.fineAggregationAuto)),
+              DropdownMenuItem(value: 'sum', child: Text(l10n.fineAggregationSum)),
+              DropdownMenuItem(value: 'max', child: Text(l10n.fineAggregationMax)),
+              DropdownMenuItem(value: 'min', child: Text(l10n.fineAggregationMin)),
+            ],
+            onChanged: (v) => onChanged(_FineAggregationConfig(
+              rules: config.rules,
+              defaultStrategy: v,
+            )),
+          ),
+
+          // ── Rule list ─────────────────────────────────────────
+          if (config.rules.isNotEmpty) ...[
+            const Gap(12),
+            Text(
+              l10n.fineAggregationRulesLabel,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+            const Gap(6),
+            for (var i = 0; i < config.rules.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(children: [
+                  Expanded(child: TextFormField(
+                    initialValue: config.rules[i].signal,
+                    decoration: const InputDecoration(
+                      labelText: 'Signal',
+                      hintText: 'e.g. small_business',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (v) => _updateRule(i, signal: v),
+                  )),
+                  const Gap(8),
+                  SizedBox(width: 120, child: DropdownButtonFormField<String>(
+                    // ignore: deprecated_member_use
+                    value: config.rules[i].strategy,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'sum', child: Text('Sum')),
+                      DropdownMenuItem(value: 'max', child: Text('Max')),
+                      DropdownMenuItem(value: 'min', child: Text('Min')),
+                    ],
+                    onChanged: (v) => _updateRule(i, strategy: v),
+                  )),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    onPressed: () => _removeRule(i),
+                  ),
+                ]),
+              ),
+          ],
+          const Gap(4),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              icon: const Icon(Icons.add, size: 16),
+              label: Text(l10n.fineAggregationAddRule),
+              onPressed: _addRule,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

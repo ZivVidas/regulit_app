@@ -15,6 +15,7 @@ import '../../app/router.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
 import '../../core/customer/customer_context_provider.dart';
+import '../../core/models/workflow_answer_group.dart';
 import '../../core/widgets/gap_report_dialog.dart';
 import '../../core/widgets/reanalyze_dialog.dart';
 import '../../l10n/app_localizations.dart';
@@ -857,14 +858,21 @@ final _ansProvider = StateNotifierProvider.autoDispose
 
 // ── Screen ────────────────────────────────────────────────────
 class WorkflowAnswerScreen extends ConsumerStatefulWidget {
-  final String sessionId;
+  /// Either `sessionId` (legacy single-session entry point) or `groupId`
+  /// (Step 41 grouped entry point) must be provided. When both are
+  /// provided, `groupId` wins and the screen mounts in group mode with
+  /// the chip-strip env switcher.
+  final String? sessionId;
+  final String? groupId;
   final String workflowName;
 
   const WorkflowAnswerScreen({
     super.key,
-    required this.sessionId,
+    this.sessionId,
+    this.groupId,
     required this.workflowName,
-  });
+  }) : assert(sessionId != null || groupId != null,
+            'WorkflowAnswerScreen needs either sessionId or groupId');
 
   @override
   ConsumerState<WorkflowAnswerScreen> createState() =>
@@ -876,6 +884,90 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
   final FocusNode             _keyFocus = FocusNode();
   String? _lastTextQuestionId;
   Timer?  _autoAdvanceTimer;
+
+  // ── Step 41: group-mode state ────────────────────────────────
+  // _envSessions is the chip-strip data; _currentSessionId is the
+  // session id of the chip the user has selected. Both are null when
+  // the screen is opened in legacy (single-session) mode.
+  List<EnvSessionSummary> _envSessions = const [];
+  String? _currentSessionId;
+  bool _groupLoading = false;
+  String? _groupError;
+
+  /// The session id we should be watching right now:
+  ///   - group mode: the active chip's session id (null until /
+  ///     workflow-answer-groups/{id} resolves)
+  ///   - legacy:     widget.sessionId (constructor-validated non-null)
+  String? get _activeSessionId =>
+      widget.groupId != null ? _currentSessionId : widget.sessionId;
+
+  bool get _isGroupMode => widget.groupId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isGroupMode) {
+      _loadGroup();
+    }
+  }
+
+  Future<void> _loadGroup() async {
+    if (widget.groupId == null) return;
+    setState(() {
+      _groupLoading = true;
+      _groupError = null;
+    });
+    try {
+      final dio = ref.read(dioProvider);
+      final resp = await dio.get<Map<String, dynamic>>(
+        '/workflow-answer-groups/${widget.groupId}',
+      );
+      final group = WorkflowAnswerGroupFull.fromJson(resp.data!);
+      setState(() {
+        _envSessions = group.envSessions;
+        // Pick the first env that has answers in progress, else the
+        // first env in the list. Both default to envSessions.first.
+        final firstInProgress = group.envSessions.firstWhere(
+          (e) => e.answeredCount > 0,
+          orElse: () => group.envSessions.first,
+        );
+        _currentSessionId = firstInProgress.sessionId;
+        _groupLoading = false;
+      });
+    } on DioException catch (e) {
+      final detail = e.response?.data is Map
+          ? (e.response!.data as Map)['detail']?.toString()
+          : null;
+      setState(() {
+        _groupError = detail ?? 'Failed to load group: ${e.message ?? e}';
+        _groupLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _groupError = 'Failed to load group: $e';
+        _groupLoading = false;
+      });
+    }
+  }
+
+  void _switchEnv(String sessionId) {
+    if (sessionId == _currentSessionId) return;
+    _autoAdvanceTimer?.cancel();
+    // Reset the text-controller bookkeeping so the next q-text sync
+    // doesn't re-fire for the wrong question.
+    _lastTextQuestionId = null;
+    setState(() => _currentSessionId = sessionId);
+  }
+
+  /// Step 41 — find the next env-session AFTER `currentSid` in the
+  /// envSessions list order (which is env created_at ASC). Returns null
+  /// when `currentSid` is the last env in the group — in that case the
+  /// survey screen shows _FinishedView and triggers group analyze.
+  String? _nextEnvSessionIdAfter(String currentSid) {
+    final idx = _envSessions.indexWhere((e) => e.sessionId == currentSid);
+    if (idx < 0 || idx + 1 >= _envSessions.length) return null;
+    return _envSessions[idx + 1].sessionId;
+  }
 
   @override
   void dispose() {
@@ -900,9 +992,14 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
     _autoAdvanceTimer?.cancel();
     _autoAdvanceTimer = Timer(const Duration(milliseconds: 550), () {
       if (!mounted) return;
+      // Step 41: callbacks only fire from widgets we render inside the
+      // body, which itself only mounts once _activeSessionId is set —
+      // so the bang is always safe here.
+      final sid = _activeSessionId;
+      if (sid == null) return;
       // Block auto-advance when evidence is required and condition is met
       // but no file has been uploaded yet.
-      final s = ref.read(_ansProvider(widget.sessionId));
+      final s = ref.read(_ansProvider(sid));
       final q = s.currentQuestion;
       if (q != null) {
         final qId      = q['id'] as String;
@@ -921,26 +1018,30 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
 
   Future<void> _advance() async {
     _autoAdvanceTimer?.cancel();
-    final s = ref.read(_ansProvider(widget.sessionId));
+    final sid = _activeSessionId;
+    if (sid == null) return;
+    final s = ref.read(_ansProvider(sid));
     final q = s.currentQuestion;
     final _qt = q?['qType'] as String?;
     if (q != null && (_qt == 'text' || _qt == 'numeric')) {
-      ref.read(_ansProvider(widget.sessionId).notifier)
+      ref.read(_ansProvider(sid).notifier)
           .setAnswerText(q['id'] as String, _textCtrl.text);
     }
-    await ref.read(_ansProvider(widget.sessionId).notifier).submitAndAdvance();
+    await ref.read(_ansProvider(sid).notifier).submitAndAdvance();
     _keyFocus.requestFocus();
   }
 
   KeyEventResult _onKey(FocusNode node, RawKeyEvent event) {
     if (event is! RawKeyDownEvent) return KeyEventResult.ignored;
-    final s = ref.read(_ansProvider(widget.sessionId));
+    final sid = _activeSessionId;
+    if (sid == null) return KeyEventResult.ignored;
+    final s = ref.read(_ansProvider(sid));
     if (s.saving || s.finished || s.currentQuestion == null) {
       return KeyEventResult.ignored;
     }
     final qType = s.currentQuestion!['qType'] as String;
     final qId   = s.currentQuestion!['id'] as String;
-    final notif = ref.read(_ansProvider(widget.sessionId).notifier);
+    final notif = ref.read(_ansProvider(sid).notifier);
 
     if (event.logicalKey == LogicalKeyboardKey.enter ||
         event.logicalKey == LogicalKeyboardKey.space) {
@@ -978,8 +1079,73 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final s = ref.watch(_ansProvider(widget.sessionId));
+    // Step 41: group-mode guards — show loading / error until the active
+    // session id is resolved. Legacy (sessionId-only) mode skips these
+    // branches because _activeSessionId is non-null from the constructor.
+    if (_groupLoading) {
+      return Scaffold(
+        backgroundColor: _kBg,
+        body: Column(children: [
+          _TopBar(
+            workflowName: widget.workflowName,
+            onBack: () => context.pop(),
+          ),
+          const Expanded(child: _LoadingView()),
+        ]),
+      );
+    }
+    if (_groupError != null) {
+      return Scaffold(
+        backgroundColor: _kBg,
+        body: Column(children: [
+          _TopBar(
+            workflowName: widget.workflowName,
+            onBack: () => context.pop(),
+          ),
+          Expanded(child: _ErrorView(message: _groupError!, onRetry: _loadGroup)),
+        ]),
+      );
+    }
+    final sid = _activeSessionId;
+    if (sid == null) {
+      // Defensive — shouldn't reach here (constructor asserts at least one
+      // of sessionId / groupId is provided; group load above resolves
+      // _currentSessionId or sets _groupError).
+      return const Scaffold(body: _LoadingView());
+    }
+
+    final s = ref.watch(_ansProvider(sid));
     _syncTextCtrl(s);
+
+    // Step 41 — auto-advance to next env when the current env-session
+    // finishes, unless this is the last env in the group (in which case
+    // _FinishedView renders below and triggers group analyze).
+    if (s.finished && _isGroupMode) {
+      final nextSid = _nextEnvSessionIdAfter(sid);
+      if (nextSid != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _switchEnv(nextSid);
+        });
+        return Scaffold(
+          backgroundColor: _kBg,
+          body: Column(children: [
+            _TopBar(
+              workflowName: widget.workflowName,
+              onBack: () => context.pop(),
+            ),
+            if (_envSessions.isNotEmpty)
+              _EnvChipStrip(
+                envSessions: _envSessions,
+                activeSessionId: sid,
+                onSelect: _switchEnv,
+              ),
+            const Expanded(child: _LoadingView()),
+          ]),
+        );
+      }
+      // Last env — fall through to the normal _FinishedView path below
+      // (it'll trigger group-level analyze via _FinishedView.groupId).
+    }
 
     return Focus(
       focusNode: _keyFocus,
@@ -994,6 +1160,14 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
               workflowName: widget.workflowName,
               onBack: () => context.pop(),
             ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.06, end: 0),
+
+            // ── Step 41: env-switcher chip strip ──────────────
+            if (_isGroupMode && _envSessions.isNotEmpty)
+              _EnvChipStrip(
+                envSessions: _envSessions,
+                activeSessionId: sid,
+                onSelect: _switchEnv,
+              ),
 
             // ── Thin overall progress bar ────────────────────────
             if (!s.isLoading && s.data != null && !s.finished)
@@ -1019,12 +1193,16 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
                       ? _ErrorView(
                           message: s.error!,
                           onRetry: () => ref
-                              .read(_ansProvider(widget.sessionId).notifier)
+                              .read(_ansProvider(sid).notifier)
                               ._load(),
                         )
                       : s.finished
                           ? _FinishedView(
-                              sessionId: widget.sessionId,
+                              sessionId: sid,
+                              // Step 41 — when in group mode, _FinishedView
+                              // triggers analyze on the whole group rather
+                              // than just this env-session.
+                              groupId: widget.groupId,
                               workflowName: widget.workflowName,
                               totalAnswered: s.totalAnswered,
                               totalQuestions: s.totalQuestions,
@@ -1035,10 +1213,10 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
                               : _QuestionView(
                                   s:          s,
                                   textCtrl:   _textCtrl,
-                                  sessionId:  widget.sessionId,
+                                  sessionId:  sid,
                                   ref:        ref,
                                   onTextChanged: (v) => ref
-                                      .read(_ansProvider(widget.sessionId).notifier)
+                                      .read(_ansProvider(sid).notifier)
                                       .setAnswerText(s.currentQuestion!['id'] as String, v),
                                   onAutoAdvance: _scheduleAutoAdvance,
                                 ),
@@ -1081,7 +1259,7 @@ class _WorkflowAnswerScreenState extends ConsumerState<WorkflowAnswerScreen> {
                 error:      s.error,
                 onBack:    () {
                   _autoAdvanceTimer?.cancel();
-                  ref.read(_ansProvider(widget.sessionId).notifier).goBack();
+                  ref.read(_ansProvider(sid).notifier).goBack();
                 },
                 onNext:    _advance,
               ),
@@ -1181,6 +1359,49 @@ class _TopBar extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Step 41: Env-switcher chip strip ──────────────────────────
+// Horizontal scrolling row of ChoiceChips, one per env-session in the
+// active workflow_answer_group. Selected chip mirrors the currently-
+// surveyed env; tapping a non-selected chip calls onSelect(sessionId).
+class _EnvChipStrip extends StatelessWidget {
+  final List<EnvSessionSummary> envSessions;
+  final String activeSessionId;
+  final void Function(String sessionId) onSelect;
+
+  const _EnvChipStrip({
+    required this.envSessions,
+    required this.activeSessionId,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: _kCard,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final env in envSessions) ...[
+              ChoiceChip(
+                label: Text(
+                  // Hardcoded suffix — Phase 11 l10n will swap for
+                  // envBadgeLabel(envName) + an answered-count formatter.
+                  '${env.envName}  ·  ${env.answeredCount}',
+                ),
+                selected: env.sessionId == activeSessionId,
+                onSelected: (_) => onSelect(env.sessionId),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ],
         ),
       ),
     );
@@ -3401,6 +3622,10 @@ class _NavBar extends StatelessWidget {
 // then reveals quiz results + tasks-created count.
 class _FinishedView extends ConsumerStatefulWidget {
   final String sessionId;
+  /// Step 41 — when non-null, this view triggers analysis against the
+  /// whole workflow_answer_group rather than just the active env-session.
+  /// Used by the polling URL and the analyze trigger.
+  final String? groupId;
   final String workflowName;
   final int totalAnswered;
   final int totalQuestions;
@@ -3408,6 +3633,7 @@ class _FinishedView extends ConsumerStatefulWidget {
 
   const _FinishedView({
     required this.sessionId,
+    this.groupId,
     required this.workflowName,
     required this.totalAnswered,
     required this.totalQuestions,
@@ -3431,6 +3657,18 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
   // 5 s × 72 polls = 6 minutes maximum wait before giving up.
   static const _kPollInterval = Duration(seconds: 5);
   static const _kMaxPolls     = 72;
+
+  // Step 41 — URL routers. In group mode, hit /workflow-answer-groups
+  // endpoints (which fan out per env-session and tag tasks with env name).
+  // /reanalyze in group mode supersedes prior non-approved tasks per env
+  // BEFORE re-emitting, so re-triggering on subsequent finishes is safe.
+  bool get _isGroupMode => widget.groupId != null;
+  String get _statusUrl => _isGroupMode
+      ? '/workflow-answer-groups/${widget.groupId}/analyze-status'
+      : '/workflow-answers/${widget.sessionId}/analyze-status';
+  String get _analyzeUrl => _isGroupMode
+      ? '/workflow-answer-groups/${widget.groupId}/reanalyze'
+      : '/workflow-answers/${widget.sessionId}/analyze';
 
   @override
   void initState() {
@@ -3472,9 +3710,7 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
       }
       try {
         final dio = ref.read(dioProvider);
-        final res = await dio.get<Map<String, dynamic>>(
-          '/workflow-answers/${widget.sessionId}/analyze-status',
-        );
+        final res = await dio.get<Map<String, dynamic>>(_statusUrl);
         final pending = res.data?['pending'] as bool? ?? true;
         if (!pending && mounted) {
           _pollTimer?.cancel();
@@ -3520,9 +3756,7 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
     dio.options.receiveTimeout  = const Duration(seconds: 15);
 
     try {
-      final res = await dio.post<Map<String, dynamic>>(
-        '/workflow-answers/${widget.sessionId}/analyze',
-      );
+      final res = await dio.post<Map<String, dynamic>>(_analyzeUrl);
       final created  = res.data?['tasksCreated']   as int?  ?? 0;
       final pending  = res.data?['analysisPending'] as bool? ?? false;
       if (mounted) {
@@ -3752,7 +3986,13 @@ class _FinishedViewState extends ConsumerState<_FinishedView> {
                       onPressed: () => showDialog(
                         context: context,
                         barrierDismissible: false,
-                        builder: (_) => GapReportDialog(sessionId: widget.sessionId),
+                        // Step 41b — in group mode, generate a group-wide
+                        // PDF (sums exposure across envs, includes every
+                        // env's answers + env-tagged tasks). In legacy
+                        // single-session mode, pass the session id.
+                        builder: (_) => widget.groupId != null
+                            ? GapReportDialog(groupId: widget.groupId)
+                            : GapReportDialog(sessionId: widget.sessionId),
                       ),
                       icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
                       label: Text(AppLocalizations.of(context).downloadGapReport),

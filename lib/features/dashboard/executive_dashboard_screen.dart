@@ -26,11 +26,22 @@ import 'widgets/risk_meter_widget.dart';
 class _ExecSession {
   final String id;
   final String workflowName;
-  const _ExecSession({required this.id, required this.workflowName});
+  /// Step 41 — true when this entry represents a workflow_answer_group.
+  /// `id` is then a group_id and dashboard providers must hit
+  /// /workflow-answer-groups/{id}/* endpoints. The active-sessions
+  /// endpoint dedupes env-sessions by group and sets this flag.
+  final bool isGroup;
+
+  const _ExecSession({
+    required this.id,
+    required this.workflowName,
+    this.isGroup = false,
+  });
 
   factory _ExecSession.fromJson(Map<String, dynamic> j) => _ExecSession(
         id: j['id'] as String,
         workflowName: j['workflowName'] as String? ?? '—',
+        isGroup: (j['isGroup'] ?? false) as bool,
       );
 }
 
@@ -96,12 +107,21 @@ final _execSessionsProvider =
   },
 );
 
+/// Step 41 — provider key for the per-session OR per-group dashboard
+/// endpoints. `isGroup` true → hit `/workflow-answer-groups/{id}/...`
+/// instead of `/workflow-answers/{id}/...`. Same response shapes both
+/// sides (Phase 6 ensured this).
+typedef _DashKey = ({String id, bool isGroup});
+
+String _basePath(_DashKey k) =>
+    k.isGroup ? '/workflow-answer-groups/${k.id}' : '/workflow-answers/${k.id}';
+
 final _execSummaryProvider =
-    FutureProvider.autoDispose.family<_ExecSummary, String>(
-  (ref, sessionId) async {
+    FutureProvider.autoDispose.family<_ExecSummary, _DashKey>(
+  (ref, key) async {
     final dio = ref.watch(dioProvider);
     final res = await dio.get<Map<String, dynamic>>(
-      '/workflow-answers/$sessionId/dashboard-summary',
+      '${_basePath(key)}/dashboard-summary',
     );
     return _ExecSummary.fromJson(res.data!);
   },
@@ -174,11 +194,11 @@ class _TopRiskItem {
 }
 
 final _topRisksProvider =
-    FutureProvider.autoDispose.family<List<_TopRiskItem>, String>(
-  (ref, sessionId) async {
+    FutureProvider.autoDispose.family<List<_TopRiskItem>, _DashKey>(
+  (ref, key) async {
     final dio = ref.watch(dioProvider);
     final res = await dio.get<List<dynamic>>(
-      '/workflow-answers/$sessionId/top-risks',
+      '${_basePath(key)}/top-risks',
       queryParameters: {'limit': 5},
     );
     return (res.data ?? [])
@@ -206,11 +226,15 @@ class _CategoryItem {
 }
 
 final _categoryBreakdownProvider =
-    FutureProvider.autoDispose.family<List<_CategoryItem>, String>(
-  (ref, sessionId) async {
+    FutureProvider.autoDispose.family<List<_CategoryItem>, _DashKey>(
+  (ref, key) async {
+    // Step 41 — group mode has no /category-breakdown endpoint yet.
+    // Return empty so the widget renders its empty-state without erroring.
+    // Tracked as deferred in gap_grouped_workflow_answers_design.md §10.
+    if (key.isGroup) return const [];
     final dio = ref.watch(dioProvider);
     final res = await dio.get<List<dynamic>>(
-      '/workflow-answers/$sessionId/category-breakdown',
+      '${_basePath(key)}/category-breakdown',
     );
     return (res.data ?? [])
         .cast<Map<String, dynamic>>()
@@ -221,7 +245,13 @@ final _categoryBreakdownProvider =
 
 // ═══════════════════════════════════════════════════════════════
 class ExecutiveDashboardScreen extends ConsumerStatefulWidget {
-  const ExecutiveDashboardScreen({super.key});
+  /// Step 41 — when set, the dashboard renders aggregated data for the
+  /// whole workflow_answer_group instead of a single session. The session
+  /// picker is hidden in this mode. Both providers (`_execSummaryProvider`
+  /// + `_topRisksProvider`) route to `/workflow-answer-groups/{id}/...`.
+  final String? groupId;
+
+  const ExecutiveDashboardScreen({super.key, this.groupId});
 
   @override
   ConsumerState<ExecutiveDashboardScreen> createState() =>
@@ -236,6 +266,7 @@ class _ExecutiveDashboardScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final customerId = ref.watch(customerContextProvider)?['customerId'] as String?;
+    final isGroupMode = widget.groupId != null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -262,6 +293,14 @@ class _ExecutiveDashboardScreenState
           ),
           if (customerId == null)
             Expanded(child: Center(child: Text(l10n.noCustomerContextSelected)))
+          else if (isGroupMode)
+            // Step 41 — direct group dashboard, no session picker.
+            Expanded(
+              child: _SessionBody(
+                dashKey: (id: widget.groupId!, isGroup: true),
+                customerId: customerId,
+              ),
+            )
           else
             Expanded(
               child: _DashboardWithSession(
@@ -311,6 +350,13 @@ class _DashboardWithSession extends ConsumerWidget {
             ? selectedSessionId!
             : (sessions.isNotEmpty ? sessions.first.id : null);
 
+        // Step 41 — preserve the picked entry's isGroup flag so dashboard
+        // providers hit the right endpoint (/workflow-answer-groups/{id}/...
+        // when the entry is a group, /workflow-answers/{id}/... otherwise).
+        final selectedEntry = effectiveId == null
+            ? null
+            : sessions.where((s) => s.id == effectiveId).firstOrNull;
+
         return Column(
           children: [
             // ── Session picker bar ───────────────────────────
@@ -322,12 +368,15 @@ class _DashboardWithSession extends ConsumerWidget {
 
             // ── Dashboard body ───────────────────────────────
             Expanded(
-              child: effectiveId == null
+              child: effectiveId == null || selectedEntry == null
                   ? Center(
                       child: Text(AppLocalizations.of(context).noActiveAssessmentSessions,
                           style: const TextStyle(color: AppColors.muted)))
                   : _SessionBody(
-                      sessionId: effectiveId,
+                      dashKey: (
+                        id: effectiveId,
+                        isGroup: selectedEntry.isGroup,
+                      ),
                       customerId: customerId,
                     ),
             ),
@@ -411,20 +460,21 @@ class _SessionPickerBar extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 
 class _SessionBody extends ConsumerWidget {
-  final String sessionId;
+  /// Either a session id (legacy) or a group id (Step 41) — see _DashKey.
+  final _DashKey dashKey;
   final String customerId;
 
-  const _SessionBody({required this.sessionId, required this.customerId});
+  const _SessionBody({required this.dashKey, required this.customerId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final summaryAsync = ref.watch(_execSummaryProvider(sessionId));
+    final summaryAsync = ref.watch(_execSummaryProvider(dashKey));
 
     return summaryAsync.when(
       loading: () => const _LoadingSkeleton(),
       error: (e, _) => _ErrorState(error: e.toString()),
       data: (summary) => _DashboardBody(
-        sessionId: sessionId,
+        dashKey: dashKey,
         customerId: customerId,
         summary: summary.toGapSummary(),
         execSummary: summary,
@@ -438,13 +488,13 @@ class _SessionBody extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────
 
 class _DashboardBody extends StatelessWidget {
-  final String sessionId;
+  final _DashKey dashKey;
   final String customerId;
   final GapSummary summary;
   final _ExecSummary execSummary;
 
   const _DashboardBody({
-    required this.sessionId,
+    required this.dashKey,
     required this.customerId,
     required this.summary,
     required this.execSummary,
@@ -506,7 +556,7 @@ class _DashboardBody extends StatelessWidget {
                     const Gap(AppSpacing.lg),
                     Expanded(
                       flex: 2,
-                      child: _CategoryBreakdown(sessionId: sessionId),
+                      child: _CategoryBreakdown(dashKey: dashKey),
                     ),
                   ],
                 );
@@ -514,14 +564,14 @@ class _DashboardBody extends StatelessWidget {
               return Column(children: [
                 _TrendChart(customerId: customerId),
                 const Gap(AppSpacing.lg),
-                _CategoryBreakdown(sessionId: sessionId),
+                _CategoryBreakdown(dashKey: dashKey),
               ]);
             },
           ),
           const Gap(AppSpacing.xl),
 
           // ── Top Open Risks ─────────────────────────────────
-          _TopRisksCard(sessionId: sessionId),
+          _TopRisksCard(dashKey: dashKey),
         ],
       ),
     );
@@ -862,8 +912,8 @@ class _TrendChartState extends ConsumerState<_TrendChart> {
 
 // ── Category Breakdown ─────────────────────────────────────────
 class _CategoryBreakdown extends ConsumerWidget {
-  final String sessionId;
-  const _CategoryBreakdown({required this.sessionId});
+  final _DashKey dashKey;
+  const _CategoryBreakdown({required this.dashKey});
 
   /// Colour for the fine amount based on magnitude.
   static Color _fineColor(double fine) {
@@ -970,7 +1020,7 @@ class _CategoryBreakdown extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(_categoryBreakdownProvider(sessionId));
+    final async = ref.watch(_categoryBreakdownProvider(dashKey));
 
     return AppCard(
       padding: EdgeInsets.zero,
@@ -986,7 +1036,7 @@ class _CategoryBreakdown extends ConsumerWidget {
             visualDensity: VisualDensity.compact,
             tooltip: AppLocalizations.of(context).retry,
             onPressed: () =>
-                ref.invalidate(_categoryBreakdownProvider(sessionId)),
+                ref.invalidate(_categoryBreakdownProvider(dashKey)),
           ),
         ),
       ),
@@ -1103,12 +1153,12 @@ class _CategoryBreakdown extends ConsumerWidget {
 
 // ── Top Risks ──────────────────────────────────────────────────
 class _TopRisksCard extends ConsumerWidget {
-  final String sessionId;
-  const _TopRisksCard({required this.sessionId});
+  final _DashKey dashKey;
+  const _TopRisksCard({required this.dashKey});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final risksAsync = ref.watch(_topRisksProvider(sessionId));
+    final risksAsync = ref.watch(_topRisksProvider(dashKey));
 
     return Card(
       child: Padding(

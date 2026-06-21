@@ -300,6 +300,22 @@ GoRouter router(RouterRef ref) {
               ));
             },
           ),
+          // Step 41 — survey screen for a workflow_answer_group. The
+          // screen renders the env-switcher chip strip and lets the user
+          // answer each env-session independently.
+          GoRoute(
+            path: '/workflow-answer-group/:groupId',
+            name: 'workflowAnswerGroup',
+            pageBuilder: (context, state) {
+              final groupId = state.pathParameters['groupId']!;
+              final workflowName =
+                  state.uri.queryParameters['workflowName'] ?? 'Workflow';
+              return _fadePage(WorkflowAnswerScreen(
+                groupId: groupId,
+                workflowName: workflowName,
+              ));
+            },
+          ),
           GoRoute(
             path: AppRoutes.agents,
             name: 'agents',
@@ -329,6 +345,16 @@ GoRouter router(RouterRef ref) {
             pageBuilder: (_, __) =>
                 _fadePage(const ExecutiveDashboardScreen()),
           ),
+          // Step 41 — dashboard scoped to a workflow_answer_group
+          // (aggregates across env-sessions). The same screen, just
+          // initialized with groupId.
+          GoRoute(
+            path: '/dashboard/group/:groupId',
+            name: 'dashboardGroup',
+            pageBuilder: (_, state) => _fadePage(ExecutiveDashboardScreen(
+              groupId: state.pathParameters['groupId'],
+            )),
+          ),
           GoRoute(
             path: AppRoutes.auditPack,
             name: 'auditPack',
@@ -345,6 +371,16 @@ GoRouter router(RouterRef ref) {
             path: AppRoutes.tasks,
             name: 'tasks',
             pageBuilder: (_, __) => _fadePage(const TaskBoardScreen()),
+          ),
+          // Step 41 — Kanban scoped to a workflow_answer_group, aggregating
+          // tasks across every env-session in the group. Same screen,
+          // initialized with groupId.
+          GoRoute(
+            path: '/tasks/group/:groupId',
+            name: 'tasksGroup',
+            pageBuilder: (_, state) => _fadePage(TaskBoardScreen(
+              groupId: state.pathParameters['groupId'],
+            )),
           ),
 
           // ── Task list (flat view — employee / itExecutor / clientAdmin) ──

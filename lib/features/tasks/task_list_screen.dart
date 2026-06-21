@@ -31,11 +31,21 @@ import 'task_edit_dialog.dart';
 class _ListSession {
   final String id;
   final String workflowName;
-  const _ListSession({required this.id, required this.workflowName});
+  /// Step 41 — true when this entry represents a workflow_answer_group
+  /// (one entry per group, not per env-session). When true, `id` is the
+  /// group_id; the screen fetches tasks via /workflow-tasks/by-group/{id}.
+  final bool isGroup;
+
+  const _ListSession({
+    required this.id,
+    required this.workflowName,
+    this.isGroup = false,
+  });
 
   factory _ListSession.fromJson(Map<String, dynamic> j) => _ListSession(
         id: j['id'] as String,
         workflowName: j['workflowName'] as String? ?? '—',
+        isGroup: (j['isGroup'] ?? false) as bool,
       );
 }
 
@@ -72,6 +82,22 @@ final _sessionTasksListProvider =
     );
     final items = (res.data?['items'] as List<dynamic>?) ?? [];
     return items
+        .cast<Map<String, dynamic>>()
+        .map(WorkflowTask.fromJson)
+        .toList();
+  },
+);
+
+/// Step 41 — all live tasks across an answering group's env-sessions.
+/// Each task carries envName for badge rendering (Phase 7).
+final _groupTasksListProvider =
+    FutureProvider.autoDispose.family<List<WorkflowTask>, String>(
+  (ref, groupId) async {
+    final dio = ref.watch(dioProvider);
+    final res = await dio.get<List<dynamic>>(
+      '/workflow-tasks/by-group/$groupId',
+    );
+    return (res.data ?? [])
         .cast<Map<String, dynamic>>()
         .map(WorkflowTask.fromJson)
         .toList();
@@ -236,6 +262,19 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                           isItExecutor: canEditTasks,
                           currentUserId: currentUserId,
                           search: _search,
+                          // Step 41 — when the picker entry is a group,
+                          // the body fetches via /workflow-tasks/by-group.
+                          // Watch the same provider the picker uses; it's
+                          // already loaded by this point so .valueOrNull
+                          // returns the cached list.
+                          isGroup: (ref
+                                      .watch(_listSessionsProvider(customerId))
+                                      .valueOrNull ??
+                                  const [])
+                              .where((s) => s.id == _selectedSessionId)
+                              .firstOrNull
+                              ?.isGroup ??
+                              false,
                         ),
                 ),
               ],
@@ -350,18 +389,26 @@ class _TaskListBody extends ConsumerWidget {
   /// Current logged-in user UUID — for status-change assignment check.
   final String? currentUserId;
   final String search;
+  /// Step 41 — true when `sessionId` is actually a workflow_answer_group
+  /// id; the body fetches tasks via the by-group endpoint (env-tagged
+  /// across all env-sessions in the group) instead of the per-session
+  /// endpoint.
+  final bool isGroup;
 
   const _TaskListBody({
     required this.sessionId,
     required this.isItExecutor,
     required this.currentUserId,
     required this.search,
+    this.isGroup = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final tasksAsync = ref.watch(_sessionTasksListProvider(sessionId));
+    final tasksAsync = isGroup
+        ? ref.watch(_groupTasksListProvider(sessionId))
+        : ref.watch(_sessionTasksListProvider(sessionId));
 
     return tasksAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -375,8 +422,9 @@ class _TaskListBody extends ConsumerWidget {
                 style: const TextStyle(color: AppColors.danger, fontSize: 13)),
             const Gap(12),
             OutlinedButton(
-              onPressed: () =>
-                  ref.invalidate(_sessionTasksListProvider(sessionId)),
+              onPressed: () => ref.invalidate(isGroup
+                  ? _groupTasksListProvider(sessionId)
+                  : _sessionTasksListProvider(sessionId)),
               child: Text(l10n.retry),
             ),
           ],
@@ -419,7 +467,9 @@ class _TaskListBody extends ConsumerWidget {
                 .where((t) => t.assignedToUserId != currentUserId)
                 .toList();
 
-        void refresh() => ref.invalidate(_sessionTasksListProvider(sessionId));
+        void refresh() => ref.invalidate(isGroup
+            ? _groupTasksListProvider(sessionId)
+            : _sessionTasksListProvider(sessionId));
 
         SliverList _buildSliver(List<WorkflowTask> items, bool isMine) =>
             SliverList(

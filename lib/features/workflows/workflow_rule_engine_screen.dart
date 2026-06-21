@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
+import '../../l10n/app_localizations.dart';
 
 // ── Palette ───────────────────────────────────────────────────
 const _kGrad1 = Color(0xFF1B4D3E);
@@ -1011,6 +1012,9 @@ class _RuleDialogState extends State<_RuleDialog> {
   bool _isRequired = false;
   bool _saving = false;
   String? _error;
+  // Step 42 — per-rule fine aggregation override. null = "Auto" (the
+  // calculator falls through to the question-level / is_data_env default).
+  String? _fineAggregation;
 
   // Condition builder state: top-level operator + list of term nodes
   String _topOperator = 'AND';
@@ -1037,6 +1041,7 @@ class _RuleDialogState extends State<_RuleDialog> {
     _fineCtrl.text = (init?['estimatedFine'] as num?)?.toString() ?? '';
     _isRequired = init?['isRequired'] as bool? ?? false;
     _selectedQuestionId = init?['questionId'] as String?;
+    _fineAggregation = init?['fineAggregationStrategy'] as String?;
     if (init != null) {
       final cond = init['condition'] as Map<String, dynamic>?;
       if (cond != null) {
@@ -1128,6 +1133,9 @@ class _RuleDialogState extends State<_RuleDialog> {
           ? null
           : double.tryParse(_fineCtrl.text.trim()),
       'questionId': _selectedQuestionId,
+      // Step 42 — null sends as JSON null, which the PATCH-aware router
+      // treats as "clear the column" → falls through to question/default.
+      'fineAggregationStrategy': _fineAggregation,
     };
     try {
       if (_isEdit) {
@@ -1275,6 +1283,33 @@ class _RuleDialogState extends State<_RuleDialog> {
                             style: TextStyle(fontSize: 13)),
                       ]),
                     ]),
+                    const Gap(12),
+                    // ── Step 42 — fine aggregation across envs ────
+                    // Per-rule override. Auto = NULL = falls through to
+                    // the question-level / is_data_env default.
+                    Builder(builder: (ctx) {
+                      final l10n = AppLocalizations.of(ctx);
+                      return DropdownButtonFormField<String?>(
+                        // ignore: deprecated_member_use
+                        value: _fineAggregation,
+                        decoration: InputDecoration(
+                          labelText: l10n.fineAggregationLabel,
+                          helperText: l10n.fineAggregationAuto,
+                          border: const OutlineInputBorder(),
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                              value: null,  child: Text(l10n.fineAggregationAuto)),
+                          DropdownMenuItem(
+                              value: 'sum', child: Text(l10n.fineAggregationSum)),
+                          DropdownMenuItem(
+                              value: 'max', child: Text(l10n.fineAggregationMax)),
+                          DropdownMenuItem(
+                              value: 'min', child: Text(l10n.fineAggregationMin)),
+                        ],
+                        onChanged: (v) => setState(() => _fineAggregation = v),
+                      );
+                    }),
                     const Gap(12),
                     // ── Linked question dropdown ──────────────────
                     // Optional. When set + the created task gets Approved,
