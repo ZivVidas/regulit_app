@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
+import '../../shared/widgets/condition_builder.dart';
 
 // ── Palette ───────────────────────────────────────────────────
 const _kGrad1 = Color(0xFF059669); // emerald
@@ -1110,7 +1111,7 @@ class _RuleDialogState extends State<_RuleDialog> {
   late final TextEditingController _orderCtrl;
   late final TextEditingController _labelCtrl;
   late final TextEditingController _valueCtrl;
-  late _TermNode _root;
+  late TermNode _root;
   bool _saving = false;
   String? _error;
 
@@ -1139,9 +1140,9 @@ class _RuleDialogState extends State<_RuleDialog> {
     _valueCtrl =
         TextEditingController(text: r?['value']?.toString() ?? '');
     _root = r != null
-        ? _TermNode.fromJson(
+        ? TermNode.fromJson(
             r['condition'] as Map<String, dynamic>? ?? {'always': true})
-        : _TermNode.always();
+        : TermNode.always();
     _selectedRefQuestionId = r?['refQuestionId'] as String?;
     _selectedRefQuizId = r?['refQuizId'] as String?;
 
@@ -1574,10 +1575,10 @@ class _RuleDialogState extends State<_RuleDialog> {
                             border: Border.all(
                                 color: const Color(0xFFE2E8F0)),
                           ),
-                          child: _ConditionNode(
+                          child: ConditionBuilder(
                             node: _root,
                             signals: widget.signals,
-                            depth: 0,
+                            primaryColor: _kGrad1,
                             onChanged: (n) =>
                                 setState(() => _root = n),
                           ),
@@ -1625,384 +1626,6 @@ class _RuleDialogState extends State<_RuleDialog> {
         begin: const Offset(0.93, 0.93),
         duration: 250.ms,
         curve: Curves.easeOutBack);
-  }
-}
-
-// ── Condition Tree Node (data model) ─────────────────────────
-class _TermNode {
-  /// 'signal' | 'group' | 'not' | 'always'
-  final String type;
-  final String signalName; // when type == 'signal'
-  final String operator; // 'AND' | 'OR' when type == 'group'
-  final List<_TermNode> children; // when type == 'group' or 'not'
-
-  const _TermNode({
-    required this.type,
-    this.signalName = '',
-    this.operator = 'AND',
-    this.children = const [],
-  });
-
-  factory _TermNode.always() => const _TermNode(type: 'always');
-
-  factory _TermNode.signal(String name) =>
-      _TermNode(type: 'signal', signalName: name);
-
-  factory _TermNode.group({String op = 'AND', List<_TermNode>? children}) =>
-      _TermNode(
-          type: 'group',
-          operator: op,
-          children: children ?? [_TermNode.always()]);
-
-  factory _TermNode.not(_TermNode child) =>
-      _TermNode(type: 'not', children: [child]);
-
-  factory _TermNode.fromJson(Map<String, dynamic> json) {
-    if (json.containsKey('always')) return _TermNode.always();
-    if (json.containsKey('signal')) {
-      return _TermNode.signal(json['signal'] as String);
-    }
-    if (json.containsKey('not')) {
-      return _TermNode.not(
-          _TermNode.fromJson(json['not'] as Map<String, dynamic>));
-    }
-    final op = json['operator'] as String? ?? 'AND';
-    final terms = (json['terms'] as List? ?? [])
-        .map((t) => _TermNode.fromJson(t as Map<String, dynamic>))
-        .toList();
-    return _TermNode(type: 'group', operator: op, children: terms);
-  }
-
-  Map<String, dynamic> toJson() {
-    switch (type) {
-      case 'always':
-        return {'always': true};
-      case 'signal':
-        return {'signal': signalName};
-      case 'not':
-        return {'not': children.first.toJson()};
-      default: // group
-        return {
-          'operator': operator,
-          'terms': children.map((c) => c.toJson()).toList(),
-        };
-    }
-  }
-
-  _TermNode copyWith({
-    String? type,
-    String? signalName,
-    String? operator,
-    List<_TermNode>? children,
-  }) =>
-      _TermNode(
-        type: type ?? this.type,
-        signalName: signalName ?? this.signalName,
-        operator: operator ?? this.operator,
-        children: children ?? this.children,
-      );
-}
-
-// ── Condition Node Widget ─────────────────────────────────────
-class _ConditionNode extends StatelessWidget {
-  final _TermNode node;
-  final List<Map<String, dynamic>> signals;
-  final int depth;
-  final void Function(_TermNode) onChanged;
-
-  const _ConditionNode({
-    required this.node,
-    required this.signals,
-    required this.depth,
-    required this.onChanged,
-  });
-
-  static const _depthColors = [
-    Color(0xFF2563EB),
-    Color(0xFF7C3AED),
-    Color(0xFF059669),
-    Color(0xFFD97706),
-  ];
-
-  Color get _color => _depthColors[depth % _depthColors.length];
-
-  @override
-  Widget build(BuildContext context) {
-    return switch (node.type) {
-      'always' => _buildLeaf(context),
-      'signal' => _buildSignalLeaf(context),
-      'not'    => _buildNot(context),
-      _        => _buildGroup(context),
-    };
-  }
-
-  // ── shared popup menu items ───────────────────────────────────
-  List<PopupMenuEntry<String>> get _typeMenuItems => [
-        const PopupMenuItem(
-            value: 'always',
-            child: Row(children: [
-              Icon(Icons.all_inclusive_rounded, size: 16),
-              Gap(8),
-              Text('Always (matches all)'),
-            ])),
-        const PopupMenuItem(
-            value: 'signal',
-            child: Row(children: [
-              Icon(Icons.sensors_rounded, size: 16),
-              Gap(8),
-              Text('Signal'),
-            ])),
-        const PopupMenuItem(
-            value: 'group',
-            child: Row(children: [
-              Icon(Icons.account_tree_rounded, size: 16),
-              Gap(8),
-              Text('Group (AND / OR)'),
-            ])),
-        const PopupMenuItem(
-            value: 'not',
-            child: Row(children: [
-              Icon(Icons.block_rounded, size: 16),
-              Gap(8),
-              Text('NOT'),
-            ])),
-      ];
-
-  void _handleTypeSelect(String value) {
-    switch (value) {
-      case 'always':
-        onChanged(_TermNode.always());
-      case 'signal':
-        onChanged(_TermNode.signal(
-            signals.isNotEmpty ? signals.first['signalName'] as String : ''));
-      case 'group':
-        onChanged(_TermNode.group());
-      case 'not':
-        onChanged(_TermNode.not(_TermNode.always()));
-    }
-  }
-
-  Widget _buildLeaf(BuildContext context) {
-    return Row(children: [
-      _NodeTypeButton(
-        label: 'ALWAYS',
-        color: Colors.grey,
-        items: _typeMenuItems,
-        onSelected: _handleTypeSelect,
-      ),
-    ]);
-  }
-
-  Widget _buildSignalLeaf(BuildContext context) {
-    final signalNames = signals.map((s) => s['signalName'] as String).toList();
-    final currentName =
-        signalNames.contains(node.signalName) ? node.signalName : null;
-    return Row(children: [
-      _NodeTypeButton(
-          label: 'SIGNAL',
-          color: _color,
-          items: _typeMenuItems,
-          onSelected: _handleTypeSelect),
-      const Gap(6),
-      Expanded(
-        child: DropdownButton<String>(
-          value: currentName,
-          isExpanded: true,
-          hint: const Text('Select signal'),
-          isDense: true,
-          items: signalNames
-              .map((n) =>
-                  DropdownMenuItem(value: n, child: Text(n, style: const TextStyle(fontSize: 13))))
-              .toList(),
-          onChanged: (v) =>
-              onChanged(node.copyWith(signalName: v ?? '')),
-        ),
-      ),
-    ]);
-  }
-
-  Widget _buildNot(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        _NodeTypeButton(
-            label: 'NOT',
-            color: AppColors.danger,
-            items: _typeMenuItems,
-            onSelected: _handleTypeSelect),
-      ]),
-      Padding(
-        padding: const EdgeInsets.only(left: 16, top: 6),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-                left: BorderSide(color: AppColors.danger.withOpacity(0.3), width: 2)),
-          ),
-          padding: const EdgeInsets.only(left: 10),
-          child: _ConditionNode(
-            node: node.children.first,
-            signals: signals,
-            depth: depth + 1,
-            onChanged: (child) =>
-                onChanged(node.copyWith(children: [child])),
-          ),
-        ),
-      ),
-    ]);
-  }
-
-  Widget _buildGroup(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        _NodeTypeButton(
-            label: 'GROUP',
-            color: _color,
-            items: _typeMenuItems,
-            onSelected: _handleTypeSelect),
-        const Gap(6),
-        _OperatorToggle(
-          value: node.operator,
-          onChanged: (op) => onChanged(node.copyWith(operator: op)),
-        ),
-        const Spacer(),
-        TextButton.icon(
-          onPressed: () => onChanged(node.copyWith(
-            children: [...node.children, _TermNode.always()],
-          )),
-          icon: const Icon(Icons.add_rounded, size: 14),
-          label: const Text('Add term', style: TextStyle(fontSize: 12)),
-          style: TextButton.styleFrom(
-            foregroundColor: _color,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        ),
-      ]),
-      const Gap(4),
-      ...node.children.asMap().entries.map((e) {
-        final i = e.key;
-        final child = e.value;
-        return Padding(
-          padding: const EdgeInsets.only(left: 16, top: 4),
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                  left: BorderSide(color: _color.withOpacity(0.3), width: 2)),
-            ),
-            padding: const EdgeInsets.only(left: 10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _ConditionNode(
-                    node: child,
-                    signals: signals,
-                    depth: depth + 1,
-                    onChanged: (updated) {
-                      final newChildren = [...node.children];
-                      newChildren[i] = updated;
-                      onChanged(node.copyWith(children: newChildren));
-                    },
-                  ),
-                ),
-                if (node.children.length > 1)
-                  GestureDetector(
-                    onTap: () {
-                      final newChildren = [...node.children]..removeAt(i);
-                      onChanged(node.copyWith(children: newChildren));
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4, top: 2),
-                      child: Icon(Icons.close_rounded,
-                          size: 14, color: Colors.grey[400]),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      }),
-    ]);
-  }
-
-}
-
-// ── Operator Toggle ───────────────────────────────────────────
-class _OperatorToggle extends StatelessWidget {
-  final String value;
-  final void Function(String) onChanged;
-  const _OperatorToggle({required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: ['AND', 'OR'].map((op) {
-        final selected = value == op;
-        return GestureDetector(
-          onTap: () => onChanged(op),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: selected ? _kGrad1 : Colors.grey[100],
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              op,
-              style: TextStyle(
-                color: selected ? Colors.white : Colors.grey[600],
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-// ── Node Type Button ──────────────────────────────────────────
-// Uses PopupMenuButton so the menu appears directly below the button,
-// not at a hardcoded screen position.
-class _NodeTypeButton extends StatelessWidget {
-  final String label;
-  final Color color;
-  final List<PopupMenuEntry<String>> items;
-  final void Function(String) onSelected;
-
-  const _NodeTypeButton({
-    required this.label,
-    required this.color,
-    required this.items,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      onSelected: onSelected,
-      tooltip: 'Change type',
-      itemBuilder: (_) => items,
-      offset: const Offset(0, 28), // drop down below the button
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(
-            label,
-            style: TextStyle(
-                color: color, fontSize: 11, fontWeight: FontWeight.w700),
-          ),
-          const Gap(4),
-          Icon(Icons.arrow_drop_down_rounded, size: 14, color: color),
-        ]),
-      ),
-    );
   }
 }
 

@@ -70,6 +70,54 @@ class _FineAggregationConfig {
   }
 }
 
+// ── Step 45: per-question fine cap (Stage 2 of group fine calculator) ─
+// Mirrors `quiz_questions.fine_cap` JSONB shape (see
+// gap_group_fine_aggregation_design.md §3.4). A rule's `limit: null` is
+// an explicit exemption — that rule "matches" and disables capping for
+// the question (does NOT fall through to the next rule).
+class _FineCapRule {
+  final String signal;
+  final num? limit;
+  _FineCapRule({required this.signal, this.limit});
+
+  factory _FineCapRule.fromJson(Map<String, dynamic> j) => _FineCapRule(
+        signal: j['signal'] as String? ?? '',
+        limit: j['limit'] as num?,
+      );
+
+  /// We always include the `limit` key — `null` is meaningful (exemption),
+  /// distinct from "absent" (which would be ambiguous on the wire).
+  Map<String, dynamic> toJson() => {'signal': signal, 'limit': limit};
+}
+
+class _FineCapConfig {
+  final List<_FineCapRule> rules;
+  final num? defaultLimit;   // null = no cap when no rule matches
+  _FineCapConfig({this.rules = const [], this.defaultLimit});
+
+  /// Empty = no rules AND no default. Caller should send `null` so the
+  /// JSONB column stays NULL and Stage 2 stays a no-op for this question.
+  bool get isEmpty => rules.isEmpty && defaultLimit == null;
+
+  factory _FineCapConfig.fromJson(Map<String, dynamic>? j) {
+    if (j == null) return _FineCapConfig();
+    return _FineCapConfig(
+      rules: ((j['rules'] ?? const []) as List)
+          .map((e) => _FineCapRule.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      defaultLimit: j['default'] as num?,
+    );
+  }
+
+  Map<String, dynamic>? toJson() {
+    if (isEmpty) return null;
+    return {
+      'rules': rules.map((r) => r.toJson()).toList(),
+      if (defaultLimit != null) 'default': defaultLimit,
+    };
+  }
+}
+
 bool _isPickType(String? t) => t == 'one_pick' || t == 'multiple_pick';
 
 String _qtypeLabel(String? v) =>
@@ -1007,6 +1055,13 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
   // Step 42: per-question fine aggregation rules. Default-empty config →
   // calculator falls through to is_data_environment_question default.
   _FineAggregationConfig _fineAgg = _FineAggregationConfig();
+  // Step 44: per-question fine by classification label. Map of label → fine
+  // in NIS. Empty map → JSONB column stays NULL and the resolver returns
+  // None for tasks tied to this question.
+  Map<String, num> _fineByLabel = {};
+  // Step 45: per-question Stage-2 cap. Empty config → JSONB column stays
+  // NULL and Stage 2 is a no-op for this question.
+  _FineCapConfig _fineCap = _FineCapConfig();
   late String _qtype;
   late bool _requiresEvidence;
 
@@ -1051,6 +1106,18 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
     // Step 42 — pre-fill the config from the saved JSON (null-safe).
     _fineAgg = _FineAggregationConfig.fromJson(
       q?['fineAggregationStrategy'] as Map<String, dynamic>?,
+    );
+    // Step 44 — pre-fill the label → fine map from the saved JSON.
+    final fbl = q?['fineByResultLabel'] as Map<String, dynamic>?;
+    if (fbl != null) {
+      _fineByLabel = {
+        for (final e in fbl.entries)
+          if (e.value is num) e.key: e.value as num,
+      };
+    }
+    // Step 45 — pre-fill the cap config from the saved JSON (null-safe).
+    _fineCap = _FineCapConfig.fromJson(
+      q?['fineCap'] as Map<String, dynamic>?,
     );
 
     // Pre-populate options from existing question data
@@ -1165,6 +1232,10 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
       'isDataEnvironmentQuestion': _isDataEnvQuestion,
       // Step 42 — empty config sends as null → DB column stays NULL.
       'fineAggregationStrategy': _fineAgg.toJson(),
+      // Step 44 — empty map sends as null so the JSONB column stays NULL.
+      'fineByResultLabel': _fineByLabel.isEmpty ? null : _fineByLabel,
+      // Step 45 — empty config sends as null → DB column stays NULL.
+      'fineCap': _fineCap.toJson(),
     };
 
     try {
@@ -1520,6 +1591,20 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
                               isDataEnvQuestion: _isDataEnvQuestion,
                               onChanged: (next) =>
                                   setState(() => _fineAgg = next),
+                            ),
+                            // ── Step 44: per-question fine by label ───
+                            const Gap(12),
+                            _FineByLabelSection(
+                              initial: _fineByLabel,
+                              onChanged: (next) =>
+                                  setState(() => _fineByLabel = next),
+                            ),
+                            // ── Step 45: Stage-2 per-question cap ──────
+                            const Gap(12),
+                            _FineCapSection(
+                              config: _fineCap,
+                              onChanged: (next) =>
+                                  setState(() => _fineCap = next),
                             ),
                           ],
                         ),
@@ -1981,6 +2066,391 @@ class _FineAggregationSection extends StatelessWidget {
             child: TextButton.icon(
               icon: const Icon(Icons.add, size: 16),
               label: Text(l10n.fineAggregationAddRule),
+              onPressed: _addRule,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+// ── Step 44 — Per-question fine by classification label editor ────────
+// Two-column table of (label, fine in NIS). When the workflow has a
+// classification quiz set, each violation task uses the env's label to
+// look up its fine here. Empty table → JSONB column stays NULL and the
+// resolver returns None (legacy override or rule/LLM takes over).
+class _FineByLabelSection extends StatefulWidget {
+  final Map<String, num> initial;
+  final ValueChanged<Map<String, num>> onChanged;
+
+  const _FineByLabelSection({
+    required this.initial,
+    required this.onChanged,
+  });
+
+  @override
+  State<_FineByLabelSection> createState() => _FineByLabelSectionState();
+}
+
+class _FineByLabelSectionState extends State<_FineByLabelSection> {
+  late List<_FineByLabelRowCtrls> _rows;
+
+  @override
+  void initState() {
+    super.initState();
+    _rows = [
+      for (final e in widget.initial.entries)
+        _FineByLabelRowCtrls(label: e.key, fine: e.value),
+    ];
+  }
+
+  @override
+  void dispose() {
+    for (final r in _rows) {
+      r.labelCtrl.dispose();
+      r.fineCtrl.dispose();
+    }
+    super.dispose();
+  }
+
+  /// Convert the current rows back into a Map and notify the parent.
+  /// Skips rows with blank label or non-numeric / blank fine. Duplicate
+  /// labels collapse — last entry wins (admin sees a duplicate-error
+  /// chip but we don't block the parent's setState).
+  void _emit() {
+    final m = <String, num>{};
+    for (final r in _rows) {
+      final label = r.labelCtrl.text.trim();
+      final fineText = r.fineCtrl.text.trim();
+      if (label.isEmpty || fineText.isEmpty) continue;
+      final n = num.tryParse(fineText);
+      if (n == null || n < 0) continue;
+      m[label] = n;
+    }
+    widget.onChanged(m);
+  }
+
+  void _addRow() {
+    setState(() => _rows.add(_FineByLabelRowCtrls()));
+    _emit();
+  }
+
+  void _removeRow(int i) {
+    final r = _rows[i];
+    r.labelCtrl.dispose();
+    r.fineCtrl.dispose();
+    setState(() => _rows.removeAt(i));
+    _emit();
+  }
+
+  /// Returns the indexes whose label appears more than once across rows
+  /// (so we can paint them with an error border).
+  Set<int> _duplicateIndexes() {
+    final seen = <String, int>{};
+    final dups = <int>{};
+    for (var i = 0; i < _rows.length; i++) {
+      final label = _rows[i].labelCtrl.text.trim();
+      if (label.isEmpty) continue;
+      final prev = seen[label];
+      if (prev != null) {
+        dups.add(prev);
+        dups.add(i);
+      } else {
+        seen[label] = i;
+      }
+    }
+    return dups;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final dups = _duplicateIndexes();
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4), // soft green tint to distinguish from Step 42's amber
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.fineByResultLabelLabel,
+            style: AppTextStyles.label.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const Gap(2),
+          Text(
+            l10n.fineByResultLabelHint,
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+          ),
+          const Gap(10),
+
+          if (_rows.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text(
+                l10n.fineByResultLabelEmptyHint,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.muted,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            )
+          else ...[
+            // Header row
+            Row(children: [
+              Expanded(
+                flex: 3,
+                child: Text(
+                  l10n.fineByResultLabelLabelCol,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                ),
+              ),
+              const Gap(8),
+              SizedBox(
+                width: 140,
+                child: Text(
+                  l10n.fineByResultLabelFineCol,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                ),
+              ),
+              const SizedBox(width: 40),
+            ]),
+            const Gap(4),
+            for (var i = 0; i < _rows.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextFormField(
+                      controller: _rows[i].labelCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'BASIC',
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                        errorText: dups.contains(i)
+                            ? l10n.fineByResultLabelDuplicateError
+                            : null,
+                      ),
+                      onChanged: (_) {
+                        setState(() {});  // re-evaluate duplicates
+                        _emit();
+                      },
+                    ),
+                  ),
+                  const Gap(8),
+                  SizedBox(
+                    width: 140,
+                    child: TextFormField(
+                      controller: _rows[i].fineCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: '2000',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return null;
+                        final n = num.tryParse(v.trim());
+                        if (n == null) return null;
+                        if (n < 0) return l10n.fineByResultLabelNegativeError;
+                        return null;
+                      },
+                      onChanged: (_) => _emit(),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    onPressed: () => _removeRow(i),
+                  ),
+                ]),
+              ),
+          ],
+          const Gap(4),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              icon: const Icon(Icons.add, size: 16),
+              label: Text(l10n.fineByResultLabelAddRow),
+              onPressed: _addRow,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FineByLabelRowCtrls {
+  final TextEditingController labelCtrl;
+  final TextEditingController fineCtrl;
+  _FineByLabelRowCtrls({String label = '', num? fine})
+      : labelCtrl = TextEditingController(text: label),
+        fineCtrl = TextEditingController(text: fine?.toString() ?? '');
+}
+
+
+// ── Step 45 — Fine cap editor widget ─────────────────────────────────
+// Stage 2 of the group fine calculator. Per-question, signal-conditional
+// cap applied AFTER the sum/max/min aggregation. Same shape as Step 42's
+// _FineAggregationSection: default value + ordered list of {signal,
+// limit} rules. A blank limit field means "explicit exemption" — that
+// rule still matches and explicitly disables capping.
+class _FineCapSection extends StatelessWidget {
+  final _FineCapConfig config;
+  final ValueChanged<_FineCapConfig> onChanged;
+
+  const _FineCapSection({
+    required this.config,
+    required this.onChanged,
+  });
+
+  void _addRule() {
+    onChanged(_FineCapConfig(
+      rules: [...config.rules, _FineCapRule(signal: '', limit: null)],
+      defaultLimit: config.defaultLimit,
+    ));
+  }
+
+  void _updateRule(int i, {String? signal, num? limit, bool clearLimit = false}) {
+    final newRules = [
+      for (var j = 0; j < config.rules.length; j++)
+        if (j == i)
+          _FineCapRule(
+            signal: signal ?? config.rules[j].signal,
+            limit: clearLimit ? null : (limit ?? config.rules[j].limit),
+          )
+        else
+          config.rules[j],
+    ];
+    onChanged(_FineCapConfig(
+      rules: newRules,
+      defaultLimit: config.defaultLimit,
+    ));
+  }
+
+  void _removeRule(int i) {
+    final newRules = [...config.rules]..removeAt(i);
+    onChanged(_FineCapConfig(
+      rules: newRules,
+      defaultLimit: config.defaultLimit,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        // Soft red tint — distinct from Step 42's amber and Step 44's green.
+        color: const Color(0xFFFFF1F2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFB7185).withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.fineCapSectionTitle,
+            style: AppTextStyles.label.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const Gap(2),
+          Text(
+            l10n.fineCapHint,
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+          ),
+          const Gap(10),
+
+          // ── Default cap (applied when no rule fires) ──────────
+          TextFormField(
+            initialValue: config.defaultLimit?.toString() ?? '',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: l10n.fineCapDefaultLabel,
+              helperText: l10n.fineCapDefaultHint,
+              border: const OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (v) {
+              final t = v.trim();
+              onChanged(_FineCapConfig(
+                rules: config.rules,
+                defaultLimit: t.isEmpty ? null : num.tryParse(t),
+              ));
+            },
+          ),
+
+          // ── Conditional rule list ─────────────────────────────
+          if (config.rules.isNotEmpty) ...[
+            const Gap(12),
+            Text(
+              l10n.fineCapRulesLabel,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+            const Gap(6),
+            for (var i = 0; i < config.rules.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextFormField(
+                      initialValue: config.rules[i].signal,
+                      decoration: InputDecoration(
+                        labelText: l10n.fineCapSignalCol,
+                        hintText: 'tiny_org',
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onChanged: (v) => _updateRule(i, signal: v),
+                    ),
+                  ),
+                  const Gap(8),
+                  SizedBox(
+                    width: 140,
+                    child: TextFormField(
+                      initialValue: config.rules[i].limit?.toString() ?? '',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: l10n.fineCapLimitCol,
+                        hintText: config.rules[i].limit == null
+                            ? l10n.fineCapLimitExempt
+                            : '70000',
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onChanged: (v) {
+                        final t = v.trim();
+                        if (t.isEmpty) {
+                          _updateRule(i, clearLimit: true);
+                        } else {
+                          final n = num.tryParse(t);
+                          if (n != null) _updateRule(i, limit: n);
+                        }
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    onPressed: () => _removeRule(i),
+                  ),
+                ]),
+              ),
+          ],
+          const Gap(4),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              icon: const Icon(Icons.add, size: 16),
+              label: Text(l10n.fineCapAddRule),
               onPressed: _addRule,
             ),
           ),

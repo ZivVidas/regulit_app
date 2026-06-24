@@ -28,6 +28,7 @@ import '../features/quizzes/quizzes_screen.dart';
 import '../features/workflows/workflow_answer_screen.dart';
 import '../features/workflows/workflow_quizzes_screen.dart';
 import '../features/workflows/workflow_rule_engine_screen.dart';
+import '../features/workflows/workflow_total_fine_pipeline_screen.dart';
 import '../features/workflows/workflows_screen.dart';
 import '../features/agents/agents_screen.dart';
 import '../features/users/users_screen.dart';
@@ -61,6 +62,9 @@ abstract class AppRoutes {
   static const workflows = '/admin/workflows';
   static const workflowQuizzes = '/admin/workflows/:workflowId/quizzes';
   static const workflowRuleEngine = '/admin/workflows/:workflowId/rule-engine';
+  // Step 46 — Stage-3 total fine pipeline editor.
+  static const workflowTotalFinePipeline =
+      '/admin/workflows/:workflowId/total-fine-pipeline';
   static const workflowAnswer = '/workflow-answer/:sessionId';
   static const agents = '/admin/agents';
   // Step 2: new admin routes
@@ -282,6 +286,19 @@ GoRouter router(RouterRef ref) {
               final workflowName =
                   state.uri.queryParameters['name'] ?? 'Workflow';
               return _fadePage(WorkflowRuleEngineScreen(
+                workflowId: workflowId,
+                workflowName: workflowName,
+              ));
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.workflowTotalFinePipeline,
+            name: 'workflowTotalFinePipeline',
+            pageBuilder: (context, state) {
+              final workflowId = state.pathParameters['workflowId']!;
+              final workflowName =
+                  state.uri.queryParameters['name'] ?? 'Workflow';
+              return _fadePage(WorkflowTotalFinePipelineScreen(
                 workflowId: workflowId,
                 workflowName: workflowName,
               ));

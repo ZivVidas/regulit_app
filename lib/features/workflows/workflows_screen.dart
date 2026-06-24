@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/router.dart';
 import '../../app/theme.dart';
 import '../../core/api/api_client.dart';
+import '../../l10n/app_localizations.dart';
 
 // ── Palette ───────────────────────────────────────────────────
 const _kGrad1 = Color(0xFF1B4D3E); // deep teal
@@ -175,6 +176,9 @@ class _WorkflowsScreenState extends ConsumerState<WorkflowsScreen> {
                                   ),
                                   onRuleEngine: () => context.push(
                                     '/admin/workflows/${wf['id']}/rule-engine?name=${Uri.encodeComponent(wf['name'] as String? ?? '')}',
+                                  ),
+                                  onTotalFinePipeline: () => context.push(
+                                    '/admin/workflows/${wf['id']}/total-fine-pipeline?name=${Uri.encodeComponent(wf['name'] as String? ?? '')}',
                                   ),
                                   onEdit: () => _showForm(context, wf),
                                   onDeactivate: () => _confirmDeactivate(
@@ -403,6 +407,8 @@ class _WorkflowCard extends StatefulWidget {
   final int index;
   final VoidCallback onQuizzes;
   final VoidCallback onRuleEngine;
+  // Step 46 — direct entry into the total-fine pipeline editor.
+  final VoidCallback onTotalFinePipeline;
   final VoidCallback onEdit;
   final VoidCallback onDeactivate;
 
@@ -411,6 +417,7 @@ class _WorkflowCard extends StatefulWidget {
     required this.index,
     required this.onQuizzes,
     required this.onRuleEngine,
+    required this.onTotalFinePipeline,
     required this.onEdit,
     required this.onDeactivate,
   });
@@ -547,6 +554,14 @@ class _WorkflowCardState extends State<_WorkflowCard> {
                     color: const Color(0xFF7C3AED),
                     tooltip: 'Rule Engine',
                     onTap: widget.onRuleEngine,
+                  ),
+                  const Gap(2),
+                  // Step 46 — total fine pipeline editor.
+                  _ActionIcon(
+                    icon: Icons.tune_rounded,
+                    color: const Color(0xFF1B4D3E),
+                    tooltip: 'Total Fine Pipeline',
+                    onTap: widget.onTotalFinePipeline,
                   ),
                   const Gap(2),
                   _ActionIcon(
@@ -836,6 +851,9 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
   // ── Fine source state ────────────────────────────────────────
   String _fineSource = 'llm';
   String? _fineQuizId;
+  // Step 44 — classification quiz pointer. Per-question fine-by-label
+  // (set on quiz_questions) keys off this quiz's result_label.
+  String? _classificationQuizId;
   List<Map<String, String>> _quizzes = []; // [{id, name}]
   bool _quizzesLoading = false;
 
@@ -862,6 +880,8 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
     _fineSource =
         (widget.initial?['fineSource'] as String?) ?? 'llm';
     _fineQuizId = widget.initial?['fineQuizId'] as String?;
+    _classificationQuizId =
+        widget.initial?['classificationQuizId'] as String?;
     if (_isEdit && _workflowId != null) {
       _loadFiles();
       _loadQuizzes();
@@ -1013,6 +1033,8 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
             : _descCtrl.text.trim(),
         'fineSource': _fineSource,
         'fineQuizId': _fineSource == 'quiz_numeric' ? _fineQuizId : null,
+        // Step 44 — independent of fineSource; sent as-is.
+        'classificationQuizId': _classificationQuizId,
         'regulatoryContextText': _regContextCtrl.text.trim().isEmpty
             ? null
             : _regContextCtrl.text.trim(),
@@ -1124,6 +1146,96 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
                       ),
                       if (_isEdit) ...[
                       const Gap(16),
+                      // ── Step 44: classification quiz picker (top-level) ──
+                      Text(
+                        AppLocalizations.of(context).classificationQuizLabel,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                      const Gap(6),
+                      if (_quizzesLoading)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        )
+                      else
+                        DropdownButtonFormField<String?>(
+                          value: _classificationQuizId,
+                          decoration: InputDecoration(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide:
+                                  const BorderSide(color: AppColors.border),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide:
+                                  const BorderSide(color: AppColors.border),
+                            ),
+                          ),
+                          items: [
+                            DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text(
+                                AppLocalizations.of(context)
+                                    .classificationQuizNone,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                            ..._quizzes.map((q) => DropdownMenuItem<String?>(
+                                  value: q['id'],
+                                  child: Text(q['name'] ?? '',
+                                      style: const TextStyle(fontSize: 12)),
+                                )),
+                          ],
+                          onChanged: (v) =>
+                              setState(() => _classificationQuizId = v),
+                        ),
+                      const Gap(4),
+                      Text(
+                        AppLocalizations.of(context).classificationQuizHelp,
+                        style: const TextStyle(
+                            fontSize: 11, color: AppColors.muted),
+                      ),
+
+                      // ── Step 44: legacy fine modifier (collapsed) ────────
+                      const Gap(12),
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          dividerColor: Colors.transparent,
+                        ),
+                        child: ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          childrenPadding:
+                              const EdgeInsets.only(top: 6, bottom: 4),
+                          initiallyExpanded: _fineSource == 'quiz_numeric',
+                          title: Text(
+                            AppLocalizations.of(context)
+                                .legacyFineOverrideSectionTitle,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                          subtitle: Text(
+                            AppLocalizations.of(context)
+                                .legacyFineOverrideSectionHint,
+                            style: const TextStyle(
+                                fontSize: 10, color: AppColors.muted),
+                          ),
+                          children: [
                       // ── Fine Source Picker ────────────────────────
                       const Text(
                         'Estimated Fine Source',
@@ -1237,6 +1349,18 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
                               TextStyle(fontSize: 11, color: AppColors.muted),
                         ),
                       ],   // closes if (_fineSource == 'quiz_numeric')
+                          ],   // closes ExpansionTile.children
+                        ),
+                      ),   // closes Theme
+
+                      // ── Step 46: total fine pipeline summary ──────────
+                      const Gap(12),
+                      _TotalFinePipelineSummary(
+                        workflowId: _workflowId!,
+                        workflowName: _nameCtrl.text.trim().isEmpty
+                            ? 'Workflow'
+                            : _nameCtrl.text.trim(),
+                      ),
                       ],   // closes if (_isEdit)
                     ],
                   ),
@@ -1905,6 +2029,165 @@ class _WfImageDescView extends StatelessWidget {
           const Gap(10),
           SelectableText(description,
               style: AppTextStyles.body.copyWith(height: 1.6)),
+        ],
+      ),
+    );
+  }
+}
+
+
+// ── Step 46 — Total fine pipeline summary ─────────────────────────
+// Read-only snapshot of the workflow's pipeline rules + a button to
+// navigate to the dedicated editor screen. Re-fetches each time the
+// dialog is built (cheap; a handful of rows at most).
+class _TotalFinePipelineSummary extends ConsumerStatefulWidget {
+  final String workflowId;
+  final String workflowName;
+  const _TotalFinePipelineSummary({
+    required this.workflowId,
+    required this.workflowName,
+  });
+
+  @override
+  ConsumerState<_TotalFinePipelineSummary> createState() =>
+      _TotalFinePipelineSummaryState();
+}
+
+class _TotalFinePipelineSummaryState
+    extends ConsumerState<_TotalFinePipelineSummary> {
+  bool _loading = true;
+  List<Map<String, dynamic>> _rules = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final dio = ref.read(dioProvider);
+      final res = await dio.get<List<dynamic>>(
+        '/workflows/${widget.workflowId}/total-fine-rules',
+      );
+      if (!mounted) return;
+      setState(() {
+        _rules = (res.data ?? [])
+            .cast<Map<String, dynamic>>()
+            .where((r) => r['isActive'] as bool? ?? true)
+            .toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String _ruleLabel(BuildContext context, Map<String, dynamic> r) {
+    final l10n = AppLocalizations.of(context);
+    final op = r['operation'] as String;
+    final opLabel = switch (op) {
+      'multiply'         => l10n.tfpOpMultiply,
+      'percent_discount' => l10n.tfpOpPercentDiscount,
+      'add'              => l10n.tfpOpAdd,
+      'subtract'         => l10n.tfpOpSubtract,
+      'cap'              => l10n.tfpOpCap,
+      'floor'            => l10n.tfpOpFloor,
+      _                  => op,
+    };
+    String value;
+    if (r['valueLiteral'] != null) {
+      value = r['valueLiteral'].toString();
+    } else if (r['valueSourceQuestionId'] != null) {
+      final m = r['valueSourceMultiplier'];
+      value = m != null ? 'question × $m' : 'question';
+    } else {
+      value = '?';
+    }
+    return '${r['name']}  —  $opLabel = $value';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9), // slate-50
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${l10n.totalFinePipelineTitle} '
+                  '(${_loading ? '…' : '${_rules.length}'} active)',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () async {
+                  await context.push(
+                    '/admin/workflows/${widget.workflowId}/total-fine-pipeline'
+                    '?name=${Uri.encodeComponent(widget.workflowName)}',
+                  );
+                  // Refresh the summary when the user returns.
+                  if (mounted) {
+                    setState(() => _loading = true);
+                    await _load();
+                  }
+                },
+                icon: const Icon(Icons.open_in_new, size: 14),
+                label: Text(
+                  l10n.totalFinePipelineOpenEditor,
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 6),
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else if (_rules.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                l10n.totalFinePipelineEmpty,
+                style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.muted,
+                    fontStyle: FontStyle.italic),
+              ),
+            )
+          else
+            ...[
+              const Gap(2),
+              for (final r in _rules)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 1),
+                  child: Text(
+                    '• ${_ruleLabel(context, r)}',
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.muted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
         ],
       ),
     );

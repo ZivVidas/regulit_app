@@ -279,6 +279,57 @@ class AppLocalizations {
   String get fineAggregationRulesHint    => _t('fineAggregationRulesHint');
   String get fineAggregationAddRule      => _t('fineAggregationAddRule');
 
+  // ── Step 44: classification quiz + legacy modifier (workflow editor) ──
+  String get classificationQuizLabel        => _t('classificationQuizLabel');
+  String get classificationQuizHelp         => _t('classificationQuizHelp');
+  String get classificationQuizNone         => _t('classificationQuizNone');
+  String get legacyFineOverrideSectionTitle => _t('legacyFineOverrideSectionTitle');
+  String get legacyFineOverrideSectionHint  => _t('legacyFineOverrideSectionHint');
+
+  // ── Step 46: total fine pipeline (Stage 3 of group fine calculator) ───
+  String get totalFinePipelineTitle      => _t('totalFinePipelineTitle');
+  String get totalFinePipelineHint       => _t('totalFinePipelineHint');
+  String get totalFinePipelineOpenEditor => _t('totalFinePipelineOpenEditor');
+  String get totalFinePipelineEmpty      => _t('totalFinePipelineEmpty');
+  String get totalFinePipelineAddRule    => _t('totalFinePipelineAddRule');
+  String get tfpRuleName                 => _t('tfpRuleName');
+  String get tfpRuleActive               => _t('tfpRuleActive');
+  String get tfpRuleCondition            => _t('tfpRuleCondition');
+  String get tfpRuleConditionHint        => _t('tfpRuleConditionHint');
+  String get tfpRuleOperation            => _t('tfpRuleOperation');
+  String get tfpRuleValueMode            => _t('tfpRuleValueMode');
+  String get tfpRuleValueLiteral         => _t('tfpRuleValueLiteral');
+  String get tfpRuleValueSourced         => _t('tfpRuleValueSourced');
+  String get tfpRuleValueQuestion        => _t('tfpRuleValueQuestion');
+  String get tfpRuleValueMultiplier      => _t('tfpRuleValueMultiplier');
+  String get tfpOpMultiply               => _t('tfpOpMultiply');
+  String get tfpOpPercentDiscount        => _t('tfpOpPercentDiscount');
+  String get tfpOpAdd                    => _t('tfpOpAdd');
+  String get tfpOpSubtract               => _t('tfpOpSubtract');
+  String get tfpOpCap                    => _t('tfpOpCap');
+  String get tfpOpFloor                  => _t('tfpOpFloor');
+
+  // ── Step 45: per-question fine cap (Stage 2 of group fine calculator) ─
+  String get fineCapSectionTitle => _t('fineCapSectionTitle');
+  String get fineCapHint         => _t('fineCapHint');
+  String get fineCapDefaultLabel => _t('fineCapDefaultLabel');
+  String get fineCapDefaultHint  => _t('fineCapDefaultHint');
+  String get fineCapRulesLabel   => _t('fineCapRulesLabel');
+  String get fineCapSignalCol    => _t('fineCapSignalCol');
+  String get fineCapLimitCol     => _t('fineCapLimitCol');
+  String get fineCapLimitExempt  => _t('fineCapLimitExempt');
+  String get fineCapAddRule      => _t('fineCapAddRule');
+
+  // ── Step 44: per-question fine by classification label ─────────────────
+  String get fineByResultLabelLabel          => _t('fineByResultLabelLabel');
+  String get fineByResultLabelHint           => _t('fineByResultLabelHint');
+  String get fineByResultLabelLabelCol       => _t('fineByResultLabelLabelCol');
+  String get fineByResultLabelFineCol        => _t('fineByResultLabelFineCol');
+  String get fineByResultLabelAddRow         => _t('fineByResultLabelAddRow');
+  String get fineByResultLabelEmptyHint      => _t('fineByResultLabelEmptyHint');
+  String get fineByResultLabelDuplicateError => _t('fineByResultLabelDuplicateError');
+  String get fineByResultLabelNegativeError  => _t('fineByResultLabelNegativeError');
+
   // ── Step 43: workflow signal numeric condition ─────────────────────────
   String get numericCondLabel       => _t('numericCondLabel');
   String get numericCondHint        => _t('numericCondHint');
@@ -685,6 +736,53 @@ class AppLocalizations {
       'fineAggregationRulesLabel': 'Conditional rules (signal → strategy)',
       'fineAggregationRulesHint': 'Evaluated top-down; first matching firing signal wins.',
       'fineAggregationAddRule': 'Add rule',
+      // Step 46 — total fine pipeline (Stage 3)
+      'totalFinePipelineTitle': 'Total fine pipeline',
+      'totalFinePipelineHint': 'Ordered, signal-conditional rules applied to the group total after per-question caps.',
+      'totalFinePipelineOpenEditor': 'Open editor →',
+      'totalFinePipelineEmpty': '(no pipeline rules)',
+      'totalFinePipelineAddRule': '+ Add rule',
+      'tfpRuleName': 'Name',
+      'tfpRuleActive': 'Active',
+      'tfpRuleCondition': 'When (condition JSON)',
+      'tfpRuleConditionHint': 'Same shape as the rule engine. Leave empty for "always fires". Example: {"operator":"AND","terms":[{"signal":"clean_record"},{"operator":"NOT","terms":[{"signal":"public_body"}]}]}',
+      'tfpRuleOperation': 'Operation',
+      'tfpRuleValueMode': 'Value source',
+      'tfpRuleValueLiteral': 'Literal number',
+      'tfpRuleValueSourced': 'From a question × multiplier',
+      'tfpRuleValueQuestion': 'Question (numeric)',
+      'tfpRuleValueMultiplier': 'Multiplier (e.g. 0.05 for 5%)',
+      'tfpOpMultiply': 'Multiply',
+      'tfpOpPercentDiscount': 'Percent discount',
+      'tfpOpAdd': 'Add',
+      'tfpOpSubtract': 'Subtract',
+      'tfpOpCap': 'Cap (max)',
+      'tfpOpFloor': 'Floor (min)',
+      // Step 44 — classification quiz + legacy modifier (workflow editor)
+      'classificationQuizLabel': 'Classification quiz',
+      'classificationQuizHelp': 'Quiz that produces the env\'s classification label (BASIC / MEDIUM / HIGH). Used by Fine by classification label on questions.',
+      'classificationQuizNone': '(none)',
+      'legacyFineOverrideSectionTitle': 'Legacy fine modifier',
+      'legacyFineOverrideSectionHint': 'Adds on top of Fine by classification label when both are set. Used alone, replaces the rule/LLM value as before.',
+      // Step 44 — per-question fine by classification label
+      'fineByResultLabelLabel': 'Fine by classification label',
+      'fineByResultLabelHint': 'When the workflow has a classification quiz, each violation task uses the env\'s label to look up its fine here. Missing label → falls back to the legacy override or rule/LLM value.',
+      'fineByResultLabelLabelCol': 'Label',
+      'fineByResultLabelFineCol': 'Fine (₪)',
+      'fineByResultLabelAddRow': '+ Add label',
+      'fineByResultLabelEmptyHint': 'No label-based fines configured',
+      'fineByResultLabelDuplicateError': 'Labels must be unique',
+      'fineByResultLabelNegativeError': 'Fine must be ≥ 0',
+      // Step 45 — per-question fine cap (Stage 2)
+      'fineCapSectionTitle': 'Fine cap (Stage 2)',
+      'fineCapHint': 'Caps this question\'s total AFTER sum/max/min aggregation. First firing-signal rule wins. Leave the limit empty for an explicit exemption (signal fires → no cap).',
+      'fineCapDefaultLabel': 'Default cap (₪)',
+      'fineCapDefaultHint': 'Applied when no rule matches. Leave empty for no cap.',
+      'fineCapRulesLabel': 'Conditional caps (signal → limit)',
+      'fineCapSignalCol': 'Signal',
+      'fineCapLimitCol': 'Limit (₪)',
+      'fineCapLimitExempt': '(exempt)',
+      'fineCapAddRule': '+ Add cap rule',
       // Step 43 — workflow signal numeric condition
       'numericCondLabel': 'Numeric condition (optional)',
       'numericCondHint': 'AND-combined with the pick predicate above. Leave question empty for a pick-only signal.',
@@ -1062,6 +1160,53 @@ class AppLocalizations {
       'fineAggregationRulesLabel': 'כללים מותנים (סיגנל ← אסטרטגיה)',
       'fineAggregationRulesHint': 'מוערך מלמעלה למטה; הסיגנל הראשון התואם זוכה.',
       'fineAggregationAddRule': 'הוסף כלל',
+      // Step 44 — חידון סיווג + מתאם ישן (עורך התהליך)
+      'classificationQuizLabel': 'חידון סיווג',
+      'classificationQuizHelp': 'חידון שמפיק את תווית הסיווג של הסביבה (BASIC / MEDIUM / HIGH). משמש את "קנס לפי תווית סיווג" בשאלות.',
+      'classificationQuizNone': '(ללא)',
+      'legacyFineOverrideSectionTitle': 'מתאם קנס (מנגנון ישן)',
+      'legacyFineOverrideSectionHint': 'מתווסף ל"קנס לפי תווית סיווג" כשגם הוא מוגדר. בשימוש לבד — מחליף את הקנס מהכלל/LLM כמו בעבר.',
+      // Step 44 — קנס לפי תווית סיווג בשאלה
+      'fineByResultLabelLabel': 'קנס לפי תווית סיווג',
+      'fineByResultLabelHint': 'כשמוגדר חידון סיווג בתהליך, כל משימת הפרה משתמשת בתווית של הסביבה כדי לאתר את הקנס כאן. תווית חסרה → חוזרים למתאם הישן או לערך מהכלל/LLM.',
+      'fineByResultLabelLabelCol': 'תווית',
+      'fineByResultLabelFineCol': 'קנס (₪)',
+      'fineByResultLabelAddRow': '+ הוסף תווית',
+      'fineByResultLabelEmptyHint': 'לא הוגדרו קנסות לפי תווית',
+      'fineByResultLabelDuplicateError': 'תוויות חייבות להיות ייחודיות',
+      'fineByResultLabelNegativeError': 'קנס חייב להיות ≥ 0',
+      // Step 45 — תקרת קנס לשאלה (שלב 2)
+      'fineCapSectionTitle': 'תקרת קנס (שלב 2)',
+      'fineCapHint': 'מגביל את סך הקנס של השאלה לאחר צבירת sum/max/min. הסיגנל הראשון שמתאים זוכה. השאירו את התקרה ריקה כדי לציין פטור (הסיגנל פועל → ללא תקרה).',
+      'fineCapDefaultLabel': 'תקרת ברירת מחדל (₪)',
+      'fineCapDefaultHint': 'מוחל כשאף כלל לא מתאים. השאירו ריק כדי לא להגביל.',
+      'fineCapRulesLabel': 'תקרות מותנות (סיגנל ← תקרה)',
+      'fineCapSignalCol': 'סיגנל',
+      'fineCapLimitCol': 'תקרה (₪)',
+      'fineCapLimitExempt': '(פטור)',
+      'fineCapAddRule': '+ הוסף כלל תקרה',
+      // Step 46 — תהליך חישוב הקנס הכולל (שלב 3)
+      'totalFinePipelineTitle': 'תהליך חישוב הקנס הכולל',
+      'totalFinePipelineHint': 'כללים מסודרים ומותנים בסיגנלים שמופעלים על סך הקנס של הקבוצה לאחר תקרות לפי שאלה.',
+      'totalFinePipelineOpenEditor': 'פתח עורך ←',
+      'totalFinePipelineEmpty': '(אין כללים)',
+      'totalFinePipelineAddRule': '+ הוסף כלל',
+      'tfpRuleName': 'שם',
+      'tfpRuleActive': 'פעיל',
+      'tfpRuleCondition': 'מתי (תנאי JSON)',
+      'tfpRuleConditionHint': 'אותו מבנה כמו מנוע הכללים. השאירו ריק עבור "תמיד פועל". דוגמה: {"operator":"AND","terms":[{"signal":"clean_record"},{"operator":"NOT","terms":[{"signal":"public_body"}]}]}',
+      'tfpRuleOperation': 'פעולה',
+      'tfpRuleValueMode': 'מקור הערך',
+      'tfpRuleValueLiteral': 'מספר קבוע',
+      'tfpRuleValueSourced': 'משאלה × מקדם',
+      'tfpRuleValueQuestion': 'שאלה (מספרית)',
+      'tfpRuleValueMultiplier': 'מקדם (לדוגמה 0.05 ל-5%)',
+      'tfpOpMultiply': 'כפל',
+      'tfpOpPercentDiscount': 'הנחה באחוזים',
+      'tfpOpAdd': 'חיבור',
+      'tfpOpSubtract': 'חיסור',
+      'tfpOpCap': 'תקרה (גג)',
+      'tfpOpFloor': 'רצפה (מינימום)',
       // Step 43 — תנאי מספרי לסיגנל
       'numericCondLabel': 'תנאי מספרי (אופציונלי)',
       'numericCondHint': 'מחובר ב-AND עם הפרדיקט של הבחירה לעיל. השאירו את השאלה ריקה לקבלת סיגנל מבוסס בחירה בלבד.',
@@ -1439,6 +1584,53 @@ class AppLocalizations {
       'fineAggregationRulesLabel': 'Reglas condicionales (señal → estrategia)',
       'fineAggregationRulesHint': 'Se evalúa de arriba a abajo; gana la primera señal activa que coincida.',
       'fineAggregationAddRule': 'Añadir regla',
+      // Step 44 — cuestionario de clasificación + modificador heredado (editor de flujo)
+      'classificationQuizLabel': 'Cuestionario de clasificación',
+      'classificationQuizHelp': 'Cuestionario que produce la etiqueta de clasificación del entorno (BASIC / MEDIUM / HIGH). Usado por "Multa por etiqueta de clasificación" en las preguntas.',
+      'classificationQuizNone': '(ninguno)',
+      'legacyFineOverrideSectionTitle': 'Modificador de multa heredado',
+      'legacyFineOverrideSectionHint': 'Se suma a "Multa por etiqueta de clasificación" cuando ambos están configurados. Usado solo — reemplaza el valor de la regla/LLM como antes.',
+      // Step 44 — multa por etiqueta de clasificación
+      'fineByResultLabelLabel': 'Multa por etiqueta de clasificación',
+      'fineByResultLabelHint': 'Cuando el flujo de trabajo tiene un cuestionario de clasificación, cada tarea de violación usa la etiqueta del entorno para buscar su multa aquí. Etiqueta faltante → recurre al modificador heredado o al valor de la regla/LLM.',
+      'fineByResultLabelLabelCol': 'Etiqueta',
+      'fineByResultLabelFineCol': 'Multa (₪)',
+      'fineByResultLabelAddRow': '+ Añadir etiqueta',
+      'fineByResultLabelEmptyHint': 'No hay multas por etiqueta configuradas',
+      'fineByResultLabelDuplicateError': 'Las etiquetas deben ser únicas',
+      'fineByResultLabelNegativeError': 'La multa debe ser ≥ 0',
+      // Step 45 — tope de multa por pregunta (Etapa 2)
+      'fineCapSectionTitle': 'Tope de multa (Etapa 2)',
+      'fineCapHint': 'Limita el total de esta pregunta DESPUÉS de la agregación sum/max/min. Gana la primera regla cuya señal está activa. Deja el límite vacío para una exención explícita (la señal se activa → sin tope).',
+      'fineCapDefaultLabel': 'Tope por defecto (₪)',
+      'fineCapDefaultHint': 'Se aplica cuando ninguna regla coincide. Deja vacío para no aplicar tope.',
+      'fineCapRulesLabel': 'Topes condicionales (señal → límite)',
+      'fineCapSignalCol': 'Señal',
+      'fineCapLimitCol': 'Límite (₪)',
+      'fineCapLimitExempt': '(exento)',
+      'fineCapAddRule': '+ Añadir regla de tope',
+      // Step 46 — flujo de cálculo de la multa total (Etapa 3)
+      'totalFinePipelineTitle': 'Flujo de cálculo de la multa total',
+      'totalFinePipelineHint': 'Reglas ordenadas y condicionadas por señales aplicadas al total del grupo después de los topes por pregunta.',
+      'totalFinePipelineOpenEditor': 'Abrir editor →',
+      'totalFinePipelineEmpty': '(sin reglas)',
+      'totalFinePipelineAddRule': '+ Añadir regla',
+      'tfpRuleName': 'Nombre',
+      'tfpRuleActive': 'Activa',
+      'tfpRuleCondition': 'Cuándo (condición JSON)',
+      'tfpRuleConditionHint': 'Misma estructura que el motor de reglas. Deja vacío para "siempre se aplica". Ejemplo: {"operator":"AND","terms":[{"signal":"clean_record"},{"operator":"NOT","terms":[{"signal":"public_body"}]}]}',
+      'tfpRuleOperation': 'Operación',
+      'tfpRuleValueMode': 'Origen del valor',
+      'tfpRuleValueLiteral': 'Número literal',
+      'tfpRuleValueSourced': 'De una pregunta × multiplicador',
+      'tfpRuleValueQuestion': 'Pregunta (numérica)',
+      'tfpRuleValueMultiplier': 'Multiplicador (p. ej. 0.05 para 5%)',
+      'tfpOpMultiply': 'Multiplicar',
+      'tfpOpPercentDiscount': 'Descuento porcentual',
+      'tfpOpAdd': 'Sumar',
+      'tfpOpSubtract': 'Restar',
+      'tfpOpCap': 'Tope (máx.)',
+      'tfpOpFloor': 'Suelo (mín.)',
       // Step 43 — condición numérica de la señal
       'numericCondLabel': 'Condición numérica (opcional)',
       'numericCondHint': 'Combinada con AND con el predicado de selección anterior. Deja la pregunta vacía para una señal solo de selección.',
@@ -1816,6 +2008,53 @@ class AppLocalizations {
       'fineAggregationRulesLabel': 'Règles conditionnelles (signal → stratégie)',
       'fineAggregationRulesHint': 'Évaluation de haut en bas ; le premier signal déclenché correspondant gagne.',
       'fineAggregationAddRule': 'Ajouter une règle',
+      // Step 44 — questionnaire de classification + modificateur hérité (éditeur de flux)
+      'classificationQuizLabel': 'Questionnaire de classification',
+      'classificationQuizHelp': 'Questionnaire qui produit l\'étiquette de classification de l\'environnement (BASIC / MEDIUM / HIGH). Utilisé par "Amende par étiquette de classification" sur les questions.',
+      'classificationQuizNone': '(aucun)',
+      'legacyFineOverrideSectionTitle': 'Modificateur d\'amende hérité',
+      'legacyFineOverrideSectionHint': 'S\'ajoute à "Amende par étiquette de classification" lorsque les deux sont configurés. Utilisé seul — remplace la valeur de la règle/LLM comme auparavant.',
+      // Step 44 — amende par étiquette de classification
+      'fineByResultLabelLabel': 'Amende par étiquette de classification',
+      'fineByResultLabelHint': 'Lorsque le flux de travail a un questionnaire de classification, chaque tâche de violation utilise l\'étiquette de l\'environnement pour rechercher son amende ici. Étiquette manquante → revient au modificateur hérité ou à la valeur de la règle/LLM.',
+      'fineByResultLabelLabelCol': 'Étiquette',
+      'fineByResultLabelFineCol': 'Amende (₪)',
+      'fineByResultLabelAddRow': '+ Ajouter une étiquette',
+      'fineByResultLabelEmptyHint': 'Aucune amende par étiquette configurée',
+      'fineByResultLabelDuplicateError': 'Les étiquettes doivent être uniques',
+      'fineByResultLabelNegativeError': 'L\'amende doit être ≥ 0',
+      // Step 45 — plafond d\'amende par question (Étape 2)
+      'fineCapSectionTitle': 'Plafond d\'amende (Étape 2)',
+      'fineCapHint': 'Plafonne le total de cette question APRÈS l\'agrégation sum/max/min. La première règle dont le signal est actif gagne. Laissez la limite vide pour une exonération explicite (le signal s\'active → pas de plafond).',
+      'fineCapDefaultLabel': 'Plafond par défaut (₪)',
+      'fineCapDefaultHint': 'Appliqué lorsqu\'aucune règle ne correspond. Laissez vide pour aucun plafond.',
+      'fineCapRulesLabel': 'Plafonds conditionnels (signal → limite)',
+      'fineCapSignalCol': 'Signal',
+      'fineCapLimitCol': 'Limite (₪)',
+      'fineCapLimitExempt': '(exempté)',
+      'fineCapAddRule': '+ Ajouter une règle de plafond',
+      // Step 46 — pipeline d\'amende totale (Étape 3)
+      'totalFinePipelineTitle': 'Pipeline d\'amende totale',
+      'totalFinePipelineHint': 'Règles ordonnées et conditionnées par signaux appliquées au total du groupe après les plafonds par question.',
+      'totalFinePipelineOpenEditor': 'Ouvrir l\'éditeur →',
+      'totalFinePipelineEmpty': '(aucune règle)',
+      'totalFinePipelineAddRule': '+ Ajouter une règle',
+      'tfpRuleName': 'Nom',
+      'tfpRuleActive': 'Active',
+      'tfpRuleCondition': 'Quand (condition JSON)',
+      'tfpRuleConditionHint': 'Même structure que le moteur de règles. Laissez vide pour "se déclenche toujours". Exemple : {"operator":"AND","terms":[{"signal":"clean_record"},{"operator":"NOT","terms":[{"signal":"public_body"}]}]}',
+      'tfpRuleOperation': 'Opération',
+      'tfpRuleValueMode': 'Source de la valeur',
+      'tfpRuleValueLiteral': 'Nombre littéral',
+      'tfpRuleValueSourced': 'D\'une question × multiplicateur',
+      'tfpRuleValueQuestion': 'Question (numérique)',
+      'tfpRuleValueMultiplier': 'Multiplicateur (p. ex. 0.05 pour 5%)',
+      'tfpOpMultiply': 'Multiplier',
+      'tfpOpPercentDiscount': 'Remise en pourcentage',
+      'tfpOpAdd': 'Ajouter',
+      'tfpOpSubtract': 'Soustraire',
+      'tfpOpCap': 'Plafond (max)',
+      'tfpOpFloor': 'Plancher (min)',
       // Step 43 — condition numérique du signal
       'numericCondLabel': 'Condition numérique (optionnelle)',
       'numericCondHint': 'Combinée par ET avec le prédicat de sélection ci-dessus. Laissez la question vide pour un signal basé uniquement sur la sélection.',
@@ -2194,6 +2433,53 @@ class AppLocalizations {
       'fineAggregationRulesLabel': 'Условные правила (сигнал → стратегия)',
       'fineAggregationRulesHint': 'Оценивается сверху вниз; побеждает первый сработавший сигнал.',
       'fineAggregationAddRule': 'Добавить правило',
+      // Step 44 — опросник классификации + устаревший модификатор (редактор процесса)
+      'classificationQuizLabel': 'Опросник классификации',
+      'classificationQuizHelp': 'Опросник, определяющий метку классификации среды (BASIC / MEDIUM / HIGH). Используется параметром «Штраф по метке классификации» на вопросах.',
+      'classificationQuizNone': '(нет)',
+      'legacyFineOverrideSectionTitle': 'Модификатор штрафа (устаревший)',
+      'legacyFineOverrideSectionHint': 'Прибавляется к «Штрафу по метке классификации», когда настроены оба. При самостоятельном использовании — заменяет значение правила/LLM, как раньше.',
+      // Step 44 — штраф по метке классификации
+      'fineByResultLabelLabel': 'Штраф по метке классификации',
+      'fineByResultLabelHint': 'Когда у процесса задан опросник классификации, каждая задача нарушения использует метку среды для поиска штрафа здесь. Отсутствующая метка → возврат к устаревшему модификатору или значению правила/LLM.',
+      'fineByResultLabelLabelCol': 'Метка',
+      'fineByResultLabelFineCol': 'Штраф (₪)',
+      'fineByResultLabelAddRow': '+ Добавить метку',
+      'fineByResultLabelEmptyHint': 'Штрафы по меткам не настроены',
+      'fineByResultLabelDuplicateError': 'Метки должны быть уникальными',
+      'fineByResultLabelNegativeError': 'Штраф должен быть ≥ 0',
+      // Step 45 — потолок штрафа по вопросу (Этап 2)
+      'fineCapSectionTitle': 'Потолок штрафа (Этап 2)',
+      'fineCapHint': 'Ограничивает сумму этого вопроса ПОСЛЕ агрегации sum/max/min. Побеждает первое сработавшее правило по сигналу. Оставьте лимит пустым для явного исключения (сигнал срабатывает → без потолка).',
+      'fineCapDefaultLabel': 'Потолок по умолчанию (₪)',
+      'fineCapDefaultHint': 'Применяется, когда ни одно правило не подошло. Оставьте пустым для отсутствия потолка.',
+      'fineCapRulesLabel': 'Условные потолки (сигнал → лимит)',
+      'fineCapSignalCol': 'Сигнал',
+      'fineCapLimitCol': 'Лимит (₪)',
+      'fineCapLimitExempt': '(освобождён)',
+      'fineCapAddRule': '+ Добавить правило потолка',
+      // Step 46 — конвейер расчёта общего штрафа (Этап 3)
+      'totalFinePipelineTitle': 'Конвейер расчёта общего штрафа',
+      'totalFinePipelineHint': 'Упорядоченные правила с сигнальными условиями, применяемые к общему штрафу группы после потолков по вопросам.',
+      'totalFinePipelineOpenEditor': 'Открыть редактор →',
+      'totalFinePipelineEmpty': '(нет правил)',
+      'totalFinePipelineAddRule': '+ Добавить правило',
+      'tfpRuleName': 'Название',
+      'tfpRuleActive': 'Активное',
+      'tfpRuleCondition': 'Когда (условие JSON)',
+      'tfpRuleConditionHint': 'Та же структура, что у движка правил. Оставьте пустым для «всегда срабатывает». Пример: {"operator":"AND","terms":[{"signal":"clean_record"},{"operator":"NOT","terms":[{"signal":"public_body"}]}]}',
+      'tfpRuleOperation': 'Операция',
+      'tfpRuleValueMode': 'Источник значения',
+      'tfpRuleValueLiteral': 'Литеральное число',
+      'tfpRuleValueSourced': 'Из вопроса × множитель',
+      'tfpRuleValueQuestion': 'Вопрос (числовой)',
+      'tfpRuleValueMultiplier': 'Множитель (например, 0.05 для 5%)',
+      'tfpOpMultiply': 'Умножить',
+      'tfpOpPercentDiscount': 'Скидка в процентах',
+      'tfpOpAdd': 'Прибавить',
+      'tfpOpSubtract': 'Вычесть',
+      'tfpOpCap': 'Потолок (макс.)',
+      'tfpOpFloor': 'Пол (мин.)',
       // Step 43 — числовое условие сигнала
       'numericCondLabel': 'Числовое условие (опционально)',
       'numericCondHint': 'Объединяется по И с предикатом выбора выше. Оставьте вопрос пустым для сигнала только на основе выбора.',
