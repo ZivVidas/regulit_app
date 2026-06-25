@@ -1076,6 +1076,12 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
   bool _saving = false;
   String? _error;
 
+  // Step 45 — signal names available for the Fine cap rule dropdown.
+  // Loaded once from /quizzes/{quizId}/available-signals (union across
+  // workflows that include this quiz). Empty list = no workflow signals
+  // configured yet; the dropdown shows an empty-state hint.
+  List<String> _availableSignals = [];
+
   bool get _isEdit => widget.initialQuestion != null;
   String get _baseUrl =>
       '/quizzes/${widget.quizId}/steps/${widget.stepId}/questions';
@@ -1127,6 +1133,23 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
       _optionCtrls.add(
           TextEditingController(text: opt['optionText'] as String? ?? ''));
       _optionIds.add(opt['id'] as String?);
+    }
+
+    // Load available workflow signals for the Fine cap dropdown.
+    _loadAvailableSignals();
+  }
+
+  Future<void> _loadAvailableSignals() async {
+    try {
+      final res = await widget.dio.get<List<dynamic>>(
+        '/quizzes/${widget.quizId}/available-signals',
+      );
+      if (!mounted) return;
+      setState(() {
+        _availableSignals = (res.data ?? []).cast<String>();
+      });
+    } catch (_) {
+      // Non-fatal — the dropdown just shows the empty-state hint.
     }
   }
 
@@ -1603,6 +1626,7 @@ class _QuestionFormDialogState extends State<_QuestionFormDialog> {
                             const Gap(12),
                             _FineCapSection(
                               config: _fineCap,
+                              availableSignals: _availableSignals,
                               onChanged: (next) =>
                                   setState(() => _fineCap = next),
                             ),
@@ -2305,10 +2329,16 @@ class _FineByLabelRowCtrls {
 // rule still matches and explicitly disables capping.
 class _FineCapSection extends StatelessWidget {
   final _FineCapConfig config;
+  /// Signal names admins can pick for a rule. Source: union across all
+  /// workflows that include this quiz (GET /quizzes/{id}/available-signals).
+  /// Empty list = no signals configured yet; the dropdown renders an
+  /// empty-state hint instead of an open dropdown.
+  final List<String> availableSignals;
   final ValueChanged<_FineCapConfig> onChanged;
 
   const _FineCapSection({
     required this.config,
+    required this.availableSignals,
     required this.onChanged,
   });
 
@@ -2402,14 +2432,10 @@ class _FineCapSection extends StatelessWidget {
                 child: Row(children: [
                   Expanded(
                     flex: 2,
-                    child: TextFormField(
-                      initialValue: config.rules[i].signal,
-                      decoration: InputDecoration(
-                        labelText: l10n.fineCapSignalCol,
-                        hintText: 'tiny_org',
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
+                    child: _SignalPickerField(
+                      value: config.rules[i].signal,
+                      available: availableSignals,
+                      labelText: l10n.fineCapSignalCol,
                       onChanged: (v) => _updateRule(i, signal: v),
                     ),
                   ),
@@ -2456,6 +2482,69 @@ class _FineCapSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+// ── Step 45 — Signal-name dropdown for fine-cap rules ────────────
+// Strict dropdown over the union of workflow signals known to this quiz
+// (GET /quizzes/{id}/available-signals).
+//
+//   • Empty `available` → render a disabled field with a hint to add a
+//     workflow signal first; previously-saved orphan values are still shown.
+//   • Saved value NOT in `available` (e.g. signal was renamed/removed)
+//     → include it as a sentinel item so the row remains visible until
+//     the admin reassigns it.
+class _SignalPickerField extends StatelessWidget {
+  final String value;
+  final List<String> available;
+  final String labelText;
+  final ValueChanged<String> onChanged;
+
+  const _SignalPickerField({
+    required this.value,
+    required this.available,
+    required this.labelText,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAny = available.isNotEmpty;
+    final knownValue =
+        (value.isNotEmpty && available.contains(value)) ? value : null;
+    final orphan = (value.isNotEmpty && knownValue == null) ? value : null;
+
+    return DropdownButtonFormField<String?>(
+      // ignore: deprecated_member_use
+      value: knownValue ?? orphan,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: labelText,
+        hintText: hasAny ? 'Pick a signal' : 'No signals configured',
+        border: const OutlineInputBorder(),
+        isDense: true,
+        helperText: orphan != null ? 'Saved value not in current list' : null,
+        helperStyle: const TextStyle(
+            fontSize: 10, color: Color(0xFFD97706)), // amber
+      ),
+      items: [
+        if (orphan != null)
+          DropdownMenuItem<String?>(
+            value: orphan,
+            child: Text('$orphan  (missing)',
+                style: const TextStyle(
+                    fontSize: 12, fontStyle: FontStyle.italic)),
+          ),
+        ...available.map((s) => DropdownMenuItem<String?>(
+              value: s,
+              child: Text(s, style: const TextStyle(fontSize: 12)),
+            )),
+      ],
+      onChanged: hasAny || orphan != null
+          ? (v) => onChanged(v ?? '')
+          : null, // disabled when nothing to pick
     );
   }
 }
