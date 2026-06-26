@@ -845,6 +845,9 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
   // Gap-report boilerplate (step 34); may contain {{company_name}}.
   late final TextEditingController _regContextCtrl;
   late final TextEditingController _reportPurposeCtrl;
+  // Closing paragraph appended to the Gap Report (signature line,
+  // contact info, follow-up steps, etc.). May contain {{company_name}}.
+  late final TextEditingController _reportEndingCtrl;
   bool _saving = false;
   String? _error;
 
@@ -877,6 +880,8 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
         text: widget.initial?['regulatoryContextText'] as String? ?? '');
     _reportPurposeCtrl = TextEditingController(
         text: widget.initial?['reportPurposeText'] as String? ?? '');
+    _reportEndingCtrl = TextEditingController(
+        text: widget.initial?['reportEndingText'] as String? ?? '');
     _fineSource =
         (widget.initial?['fineSource'] as String?) ?? 'llm';
     _fineQuizId = widget.initial?['fineQuizId'] as String?;
@@ -895,6 +900,7 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
     _descCtrl.dispose();
     _regContextCtrl.dispose();
     _reportPurposeCtrl.dispose();
+    _reportEndingCtrl.dispose();
     super.dispose();
   }
 
@@ -1041,6 +1047,9 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
         'reportPurposeText': _reportPurposeCtrl.text.trim().isEmpty
             ? null
             : _reportPurposeCtrl.text.trim(),
+        'reportEndingText': _reportEndingCtrl.text.trim().isEmpty
+            ? null
+            : _reportEndingCtrl.text.trim(),
       });
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -1142,6 +1151,14 @@ class _WorkflowFormDialogState extends ConsumerState<_WorkflowFormDialog> {
                             'Report purpose (for the Gap Report intro) '
                             '— may use {{company_name}}',
                         ctrl: _reportPurposeCtrl,
+                        maxLines: 4,
+                      ),
+                      const Gap(12),
+                      _FormField(
+                        label:
+                            'Report ending text (for the Gap Report closing) '
+                            '— may use {{company_name}}',
+                        ctrl: _reportEndingCtrl,
                         maxLines: 4,
                       ),
                       if (_isEdit) ...[
