@@ -9,6 +9,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/platform/file_download.dart';
 
 import '../../app/router.dart';
@@ -54,6 +55,59 @@ class _PendingFile {
     this.fileText,
     this.imageDescription,
   });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        if (fileText != null) 'fileText': fileText,
+        if (imageDescription != null) 'imageDescription': imageDescription,
+      };
+
+  factory _PendingFile.fromJson(Map<String, dynamic> j) => _PendingFile(
+        id: j['id'] as String,
+        name: j['name'] as String? ?? '(file)',
+        fileText: j['fileText'] as String?,
+        imageDescription: j['imageDescription'] as String?,
+      );
+}
+
+
+/// Persists the per-question pending-files queue across navigation /
+/// env-switches / app restarts so file blobs that were uploaded but
+/// not yet linked don't become orphans. Keyed by `sessionId` so each
+/// env-session in a group has its own queue.
+class _PendingFilesStore {
+  static String _key(String sessionId) => 'pending_files::$sessionId';
+
+  static Future<Map<String, List<_PendingFile>>> load(String sessionId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key(sessionId));
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return decoded.map((qid, list) => MapEntry(
+            qid,
+            (list as List)
+                .map((e) => _PendingFile.fromJson(e as Map<String, dynamic>))
+                .toList(),
+          ));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  static Future<void> save(
+      String sessionId, Map<String, List<_PendingFile>> queue) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (queue.isEmpty) {
+      await prefs.remove(_key(sessionId));
+      return;
+    }
+    final encoded = jsonEncode(queue.map(
+      (qid, list) => MapEntry(qid, list.map((f) => f.toJson()).toList()),
+    ));
+    await prefs.setString(_key(sessionId), encoded);
+  }
 }
 
 // ── Local answer model ────────────────────────────────────────
@@ -294,7 +348,71 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
   final String sessionId;
 
   _AnsNotifier(this._dio, this.sessionId) : super(const _AnsState()) {
+    // Restore any pending uploads that were saved to disk on a prior visit
+    // (e.g. user uploaded evidence, switched envs, never submitted). The
+    // restore is best-effort and runs in parallel with the session load.
+    _restorePending();
     _load();
+  }
+
+  /// Re-hydrate the pending-files queue from disk. If a persisted entry's
+  /// question already has a server-saved answer, attempt to link it now
+  /// so the file isn't left orphaned.
+  Future<void> _restorePending() async {
+    try {
+      final disk = await _PendingFilesStore.load(sessionId);
+      if (disk.isEmpty) return;
+      // Merge into state (don't clobber any pending added since boot)
+      final merged = Map<String, List<_PendingFile>>.from(state.pendingFiles);
+      disk.forEach((qid, list) {
+        merged[qid] = [...(merged[qid] ?? []), ...list];
+      });
+      state = state.copyWith(pendingFiles: merged);
+      // Try to flush any pendings whose answer is already on the server.
+      await _flushPendingForKnownAnswers();
+    } catch (_) {
+      // Restore failures are non-fatal — user can re-upload.
+    }
+  }
+
+  /// For each persisted pending file, if the answer row already exists for
+  /// that question, POST the link and drop it from the queue.
+  Future<void> _flushPendingForKnownAnswers() async {
+    final flushedQids = <String>{};
+    final failures = <String>[];
+    for (final entry in state.pendingFiles.entries) {
+      final qid = entry.key;
+      final ans = state.answers[qid];
+      final aid = ans?.answerId;
+      if (aid == null || entry.value.isEmpty) continue;
+      bool allOk = true;
+      for (final f in entry.value) {
+        try {
+          await _dio.post<dynamic>(
+            '/answers/$aid/files',
+            data: {'fileId': f.id},
+          );
+        } catch (e) {
+          allOk = false;
+          failures.add('${f.name}: ${_dioMsg(e)}');
+        }
+      }
+      if (allOk) flushedQids.add(qid);
+    }
+    if (flushedQids.isNotEmpty) {
+      final newPending = Map<String, List<_PendingFile>>.from(state.pendingFiles);
+      for (final qid in flushedQids) {
+        newPending.remove(qid);
+      }
+      state = state.copyWith(pendingFiles: newPending);
+      await _PendingFilesStore.save(sessionId, newPending);
+    }
+    if (failures.isNotEmpty) {
+      state = state.copyWith(
+        error: 'Evidence link failed: ${failures.first}'
+              + (failures.length > 1 ? ' (+${failures.length - 1} more)' : ''),
+      );
+    }
   }
 
   Future<void> _load() async {
@@ -514,13 +632,19 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
       ),
     ];
     state = state.copyWith(pendingFiles: updated);
+    // Fire-and-forget persistence — survives env-switch / app restart so
+    // the file blob doesn't become an orphan if the answer never gets
+    // submitted before the user leaves the screen.
+    unawaited(_PendingFilesStore.save(sessionId, updated));
   }
 
   void removePendingFile(String questionId, String fileId) {
     final updated = Map<String, List<_PendingFile>>.from(state.pendingFiles);
     updated[questionId] =
         (updated[questionId] ?? []).where((f) => f.id != fileId).toList();
+    if (updated[questionId]!.isEmpty) updated.remove(questionId);
     state = state.copyWith(pendingFiles: updated);
+    unawaited(_PendingFilesStore.save(sessionId, updated));
   }
 
   // ── Navigation ──────────────────────────────────────────────
@@ -658,21 +782,39 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
         );
 
         final toLink = List<_PendingFile>.from(state.pendingFiles[qId] ?? []);
+        // Track which files actually got linked. Failures stay in the
+        // queue (persisted) so the user can see what's still pending +
+        // we can retry on next mount via _flushPendingForKnownAnswers.
+        final stillPending = <_PendingFile>[];
+        final linkErrors = <String>[];
         for (final f in toLink) {
           try {
             await _dio.post<dynamic>(
               '/answers/$answerId/files',
               data: {'fileId': f.id},
             );
-          } catch (_) {
-            // Non-critical: file upload already succeeded; linking failure
-            // is logged but does not block the user from advancing.
+          } catch (e) {
+            stillPending.add(f);
+            linkErrors.add('${f.name}: ${_dioMsg(e)}');
+            // ignore: avoid_print
+            print('[evidence-link] failed for $answerId / ${f.id}: $e');
           }
         }
         if (toLink.isNotEmpty) {
-          final newPending = Map<String, List<_PendingFile>>.from(state.pendingFiles)
-            ..remove(qId);
+          final newPending = Map<String, List<_PendingFile>>.from(state.pendingFiles);
+          if (stillPending.isEmpty) {
+            newPending.remove(qId);
+          } else {
+            newPending[qId] = stillPending;
+          }
           state = state.copyWith(pendingFiles: newPending);
+          await _PendingFilesStore.save(sessionId, newPending);
+          if (linkErrors.isNotEmpty) {
+            state = state.copyWith(
+              error: 'Evidence link failed: ${linkErrors.first}'
+                + (linkErrors.length > 1 ? ' (+${linkErrors.length - 1} more)' : ''),
+            );
+          }
 
           // ── 3b. Evidence review (blocking) ─────────────────────────────────
           // Files were just linked — run the review synchronously so we can
