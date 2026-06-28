@@ -426,6 +426,8 @@ class AppLocalizations {
   String get workflowLabel              => _t('workflowLabel');
   String get pleaseAnswerBeforeContinuing => _t('pleaseAnswerBeforeContinuing');
   String get evidenceRequiredBeforeContinuing => _t('evidenceRequiredBeforeContinuing');
+  String get evidenceNotApprovedTitle => _t('evidenceNotApprovedTitle');
+  String get evidenceNotApprovedHint  => _t('evidenceNotApprovedHint');
   String get nextHintYN                 => _t('nextHintYN');
   String get uploadFailed               => _t('uploadFailed');
   String get uploadFailedRetry          => _t('uploadFailedRetry');
@@ -872,6 +874,8 @@ class AppLocalizations {
       'workflowLabel': 'Workflow',
       'pleaseAnswerBeforeContinuing': 'Please answer before continuing.',
       'evidenceRequiredBeforeContinuing': 'Please upload at least one evidence file before continuing.',
+      'evidenceNotApprovedTitle': 'Evidence not approved',
+      'evidenceNotApprovedHint':  'Upload additional evidence (or remove the rejected file and try again) to continue.',
       'nextHintYN': 'Press Y for Yes or N for No.',
       'uploadFailed': 'Upload failed',
       'uploadFailedRetry': 'Upload failed. Please try again.',
@@ -1296,6 +1300,8 @@ class AppLocalizations {
       'workflowLabel': 'תהליך עבודה',
       'pleaseAnswerBeforeContinuing': 'אנא ענה לפני שממשיכים.',
       'evidenceRequiredBeforeContinuing': 'אנא העלה לפחות קובץ ראיה אחד לפני שממשיכים.',
+      'evidenceNotApprovedTitle': 'הראיה לא אושרה',
+      'evidenceNotApprovedHint':  'העלה ראיה נוספת (או הסר את הקובץ הדחוי ונסה שוב) כדי להמשיך.',
       'nextHintYN': 'לחץ כ לכן או ל ללאו.',
       'uploadFailed': 'ההעלאה נכשלה',
       'uploadFailedRetry': 'ההעלאה נכשלה. אנא נסה שנית.',
@@ -1720,6 +1726,8 @@ class AppLocalizations {
       'workflowLabel': 'Flujo de trabajo',
       'pleaseAnswerBeforeContinuing': 'Por favor responde antes de continuar.',
       'evidenceRequiredBeforeContinuing': 'Por favor sube al menos un archivo de evidencia antes de continuar.',
+      'evidenceNotApprovedTitle': 'Evidencia no aprobada',
+      'evidenceNotApprovedHint':  'Sube evidencia adicional (o elimina el archivo rechazado e inténtalo de nuevo) para continuar.',
       'nextHintYN': 'Presiona S para Sí o N para No.',
       'uploadFailed': 'Error al subir',
       'uploadFailedRetry': 'Error al subir. Por favor, inténtalo de nuevo.',

@@ -355,6 +355,35 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
     _load();
   }
 
+  /// Coalesced disk persistence for the pending-files queue.
+  ///
+  /// Multiple add/remove actions in quick succession (e.g. upload A → remove A
+  /// → upload B) would otherwise schedule N parallel SharedPreferences
+  /// writes, which can complete out of order and leave a stale snapshot on
+  /// disk. Symptom: after notifier dispose+restore, file A reappears.
+  ///
+  /// This buffer tracks ONLY the latest target state; if a save is already in
+  /// flight, we just update the target and return. The runner loop keeps
+  /// draining `_pendingSaveState` until it matches the latest in-memory
+  /// state, so disk ALWAYS ends up reflecting the most recent action.
+  Map<String, List<_PendingFile>>? _pendingSaveState;
+  bool _saveRunning = false;
+
+  Future<void> _persistPending(Map<String, List<_PendingFile>> queue) async {
+    _pendingSaveState = queue;
+    if (_saveRunning) return;
+    _saveRunning = true;
+    try {
+      while (_pendingSaveState != null) {
+        final toSave = _pendingSaveState!;
+        _pendingSaveState = null;
+        await _PendingFilesStore.save(sessionId, toSave);
+      }
+    } finally {
+      _saveRunning = false;
+    }
+  }
+
   /// Re-hydrate the pending-files queue from disk. If a persisted entry's
   /// question already has a server-saved answer, attempt to link it now
   /// so the file isn't left orphaned.
@@ -405,7 +434,7 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
         newPending.remove(qid);
       }
       state = state.copyWith(pendingFiles: newPending);
-      await _PendingFilesStore.save(sessionId, newPending);
+      await _persistPending(newPending);
     }
     if (failures.isNotEmpty) {
       state = state.copyWith(
@@ -635,7 +664,7 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
     // Fire-and-forget persistence — survives env-switch / app restart so
     // the file blob doesn't become an orphan if the answer never gets
     // submitted before the user leaves the screen.
-    unawaited(_PendingFilesStore.save(sessionId, updated));
+    unawaited(_persistPending(updated));
   }
 
   void removePendingFile(String questionId, String fileId) {
@@ -644,7 +673,7 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
         (updated[questionId] ?? []).where((f) => f.id != fileId).toList();
     if (updated[questionId]!.isEmpty) updated.remove(questionId);
     state = state.copyWith(pendingFiles: updated);
-    unawaited(_PendingFilesStore.save(sessionId, updated));
+    unawaited(_persistPending(updated));
   }
 
   // ── Navigation ──────────────────────────────────────────────
@@ -674,20 +703,33 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
       return;
     }
 
-    // Guard: evidence required and condition met but no file uploaded yet.
+    // Guard: evidence required and condition met but evidence isn't approved.
     // NOTE: per-env questions skip the evidence flow in v1 — there's no
     // single answer_id to attach evidence to. The reviewer can attach
     // task-level evidence post-analysis instead.
+    //
+    // The check intentionally does NOT short-circuit on
+    // serverAnsweredIds.contains(qId): the user may have submitted once,
+    // gotten an INSUFFICIENT verdict, navigated away, and come back. In
+    // that case we still need to block advance unless there are NEW
+    // pending files to upload+review on this attempt.
     final reqsEv   = q['requiresEvidence'] as bool? ?? false;
     final evidCond = q['evidenceCondition'] as String?;
     if (!isPerEnv &&
         reqsEv &&
         _evidenceConditionMet(evidCond, local) &&
-        local.evidenceDecision?.toUpperCase() != 'APPROVE' &&
-        !state.serverAnsweredIds.contains(qId)) {
-      final hasFiles = state.pendingFiles[qId]?.isNotEmpty ?? false;
-      if (!hasFiles) {
-        state = state.copyWith(error: 'evidenceRequiredBeforeContinuing');
+        local.evidenceDecision?.toUpperCase() != 'APPROVE') {
+      final hasNewFiles = state.pendingFiles[qId]?.isNotEmpty ?? false;
+      if (!hasNewFiles) {
+        // No new files to re-trigger the review. Surface the prior
+        // verdict's reason if we have one; otherwise the i18n placeholder.
+        final priorReason =
+            (local.evidenceReason ?? '').trim();
+        state = state.copyWith(
+          error: priorReason.isNotEmpty
+              ? priorReason
+              : 'evidenceRequiredBeforeContinuing',
+        );
         return;
       }
     }
@@ -808,7 +850,7 @@ class _AnsNotifier extends StateNotifier<_AnsState> {
             newPending[qId] = stillPending;
           }
           state = state.copyWith(pendingFiles: newPending);
-          await _PendingFilesStore.save(sessionId, newPending);
+          await _persistPending(newPending);
           if (linkErrors.isNotEmpty) {
             state = state.copyWith(
               error: 'Evidence link failed: ${linkErrors.first}'
